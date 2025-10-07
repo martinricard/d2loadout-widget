@@ -18,8 +18,10 @@
 API Key: baadf0eb52e14b6f9a6e79dbd1f824f4
 OAuth Client ID: 50883
 OAuth Authorization URL: https://www.bungie.net/en/OAuth/Authorize
-Client Secret: [PENDING - You need to obtain this from Bungie]
+OAuth Client Type: Public (No client secret needed!)
 ```
+
+**Important**: Your application uses a **Public OAuth Client**, which doesn't require or have a client secret. This is correct for browser-based widgets and StreamElements.
 
 ## 📋 Next Steps to Deploy
 
@@ -55,9 +57,10 @@ In your Render dashboard, go to your service settings and add these environment 
 ```
 BUNGIE_API_KEY = baadf0eb52e14b6f9a6e79dbd1f824f4
 BUNGIE_CLIENT_ID = 50883
-BUNGIE_CLIENT_SECRET = [Get this from Bungie Developer Portal]
 NODE_ENV = production
 ```
+
+**Note**: No client secret needed - you're using a Public OAuth client!
 
 ### 4. Update Bungie Application
 
@@ -66,7 +69,10 @@ Once deployed, update your Bungie application with the Render URL:
 1. Go to https://www.bungie.net/en/Application
 2. Edit your "StreamElement Loadout Widget" application
 3. Update Redirect URL to: `https://[your-render-url].onrender.com/auth/callback`
-4. Note your **Client Secret** (you'll need this for Render environment variables)
+   - Example: `https://d2-loadout-widget.onrender.com/auth/callback`
+4. Save changes
+
+**Current Redirect URL**: `https://d2loadout-widget.onrender.com` (needs `/auth/callback` added)
 
 ### 5. Test Deployment
 

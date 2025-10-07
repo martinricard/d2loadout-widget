@@ -15,7 +15,7 @@ This is a minimal Express backend deployed to Render.com to provide:
 
 ### Bungie Application Details
 - **Application Name**: StreamElement Loadout Widget
-- **OAuth Client Type**: Public
+- **OAuth Client Type**: Public (no client secret required)
 - **Redirect URL**: `https://d2-loadout-widget.onrender.com/auth/callback` (Update with actual Render URL)
 - **Scope**: Read Destiny 2 information (Vault, Inventory, and Vendors)
 
@@ -37,10 +37,11 @@ Required environment variables (set in Render dashboard):
 ```bash
 BUNGIE_API_KEY=baadf0eb52e14b6f9a6e79dbd1f824f4
 BUNGIE_CLIENT_ID=50883
-BUNGIE_CLIENT_SECRET=<your_client_secret>
 NODE_ENV=production
 PORT=<auto-set-by-render>
 ```
+
+**Note**: No client secret needed - Public OAuth clients don't use secrets.
 
 ## Local Development
 
