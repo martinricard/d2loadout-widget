@@ -16,12 +16,12 @@
 
 ```
 API Key: baadf0eb52e14b6f9a6e79dbd1f824f4
-OAuth Client ID: 50883
-OAuth Authorization URL: https://www.bungie.net/en/OAuth/Authorize
-OAuth Client Type: Public (No client secret needed!)
 ```
 
-**Important**: Your application uses a **Public OAuth Client**, which doesn't require or have a client secret. This is correct for browser-based widgets and StreamElements.
+**Important**: We're using the **simple approach** (no OAuth required!)
+- Users just enter their Bungie Membership ID
+- No login flow needed
+- Works immediately like your Competitive Crucible widget ✅
 
 ## 📋 Next Steps to Deploy
 
@@ -52,40 +52,30 @@ git push origin main
 
 ### 3. Configure Environment Variables in Render
 
-In your Render dashboard, go to your service settings and add these environment variables:
+In your Render dashboard, go to your service settings and add this environment variable:
 
 ```
 BUNGIE_API_KEY = baadf0eb52e14b6f9a6e79dbd1f824f4
-BUNGIE_CLIENT_ID = 50883
 NODE_ENV = production
 ```
 
-**Note**: No client secret needed - you're using a Public OAuth client!
+**That's it!** No OAuth credentials needed! ✅
 
-### 4. Update Bungie Application
+### 4. Test Deployment
 
-Once deployed, update your Bungie application with the Render URL:
-
-1. Go to https://www.bungie.net/en/Application
-2. Edit your "StreamElement Loadout Widget" application
-3. Update Redirect URL to: `https://[your-render-url].onrender.com/auth/callback`
-   - Example: `https://d2-loadout-widget.onrender.com/auth/callback`
-4. Save changes
-
-**Current Redirect URL**: `https://d2loadout-widget.onrender.com` (needs `/auth/callback` added)
-
-### 5. Test Deployment
-
-After deployment completes:
+After deployment completes, test these endpoints:
 
 1. Visit: `https://[your-render-url].onrender.com/`
-   - Should see: `{"status":"ok","message":"D2 Loadout Widget Backend is running","timestamp":"..."}`
+   - Should see: `{"status":"ok","message":"D2 Loadout Widget Backend is running",...}`
 
 2. Visit: `https://[your-render-url].onrender.com/health`
    - Should see: `{"status":"healthy"}`
 
-3. Visit: `https://[your-render-url].onrender.com/auth/callback?code=test123`
-   - Should see: `{"message":"OAuth callback received","note":"Token exchange will be implemented next"}`
+3. Test loadout endpoint: `https://[your-render-url].onrender.com/api/loadout/3/4611686018467484767`
+   - Should see: Character loadout data (your account: Marty#2689)
+
+4. Test search endpoint: `https://[your-render-url].onrender.com/api/search/Marty%232689`
+   - Should see: Player search results
 
 ## ⚠️ Important Notes
 

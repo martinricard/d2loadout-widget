@@ -10,5 +10,4 @@ services:
         value: production
       - key: BUNGIE_API_KEY
         sync: false
-      - key: BUNGIE_CLIENT_ID
-        sync: false
+        # Set this in Render dashboard to: baadf0eb52e14b6f9a6e79dbd1f824f4
