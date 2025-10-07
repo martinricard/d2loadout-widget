@@ -24,6 +24,8 @@ const BUNGIE_API_BASE = 'https://www.bungie.net/Platform';
 const manifestCache = {
   items: new Map(),
   stats: new Map(),
+  plugs: new Map(),
+  artifacts: new Map(),
   lastUpdate: null,
   TTL: 3600000 // 1 hour
 };
@@ -163,9 +165,9 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   
   try {
     // Fetch profile with character equipment and stats
-    // Components: 100=Profile, 200=Characters, 205=CharacterEquipment, 
+    // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 205=CharacterEquipment, 
     //             300=ItemInstances, 304=ItemStats, 305=ItemSockets
-    const components = '?components=100,200,205,300,304,305';
+    const components = '?components=100,104,200,205,300,304,305';
     const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
     
     const response = await axios.get(profileUrl, {
@@ -177,11 +179,20 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const data = response.data.Response;
     const characters = data.characters?.data || {};
     const equipment = data.characterEquipment?.data || {};
+    const profileProgression = data.profileProgression?.data || {};
     const itemComponents = {
       instances: data.itemComponents?.instances?.data || {},
       stats: data.itemComponents?.stats?.data || {},
       sockets: data.itemComponents?.sockets?.data || {}
     };
+    
+    // Get seasonal artifact info
+    const seasonalArtifact = profileProgression.seasonalArtifact || null;
+    let artifactInfo = null;
+    
+    if (seasonalArtifact && seasonalArtifact.artifactHash) {
+      artifactInfo = await fetchArtifactModHashes(seasonalArtifact.artifactHash);
+    }
     
     // Find the most recently played character
     let mostRecentCharacterId = null;
@@ -214,6 +225,15 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       itemComponents
     );
     
+    // Extract artifact mods from equipped armor
+    const artifactMods = await extractArtifactMods(loadout._armorPieces, artifactInfo);
+    
+    // Remove internal armor pieces data
+    delete loadout._armorPieces;
+    
+    // Add artifact mods to loadout
+    loadout.artifactMods = artifactMods;
+    
     // Get class name
     const classNames = {
       0: 'Titan',
@@ -237,6 +257,13 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
           : null,
         lastPlayed: character.dateLastPlayed
       },
+      artifact: seasonalArtifact ? {
+        name: artifactInfo?.name || 'Unknown Artifact',
+        icon: artifactInfo?.icon || '',
+        iconUrl: artifactInfo?.iconUrl || null,
+        powerBonus: seasonalArtifact.powerBonus || 0,
+        pointsUnlocked: seasonalArtifact.pointsAcquired || 0
+      } : null,
       loadout: loadout,
       timestamp: new Date().toISOString()
     });
@@ -292,6 +319,85 @@ async function fetchItemDefinition(itemHash) {
   }
 }
 
+// Fetch plug (mod/perk) definition from Bungie manifest
+async function fetchPlugDefinition(plugHash) {
+  // Check cache first
+  if (manifestCache.plugs.has(plugHash)) {
+    return manifestCache.plugs.get(plugHash);
+  }
+  
+  try {
+    const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyInventoryItemDefinition/${plugHash}/`;
+    const response = await axios.get(url, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+    
+    const definition = response.data.Response;
+    const plugData = {
+      name: definition.displayProperties?.name || 'Unknown Mod',
+      description: definition.displayProperties?.description || '',
+      icon: definition.displayProperties?.icon || '',
+      iconUrl: definition.displayProperties?.icon 
+        ? `https://www.bungie.net${definition.displayProperties.icon}` 
+        : null
+    };
+    
+    // Cache the result
+    manifestCache.plugs.set(plugHash, plugData);
+    
+    return plugData;
+  } catch (error) {
+    console.error(`Failed to fetch plug definition for ${plugHash}:`, error.message);
+    return null;
+  }
+}
+
+// Fetch seasonal artifact definition and get all artifact mod hashes
+async function fetchArtifactModHashes(artifactHash) {
+  // Check cache first
+  if (manifestCache.artifacts.has(artifactHash)) {
+    return manifestCache.artifacts.get(artifactHash);
+  }
+  
+  try {
+    const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyArtifactDefinition/${artifactHash}/`;
+    const response = await axios.get(url, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+    
+    const artifactDef = response.data.Response;
+    const artifactModHashes = new Set();
+    const artifactInfo = {
+      name: artifactDef.displayProperties?.name || 'Unknown Artifact',
+      description: artifactDef.displayProperties?.description || '',
+      icon: artifactDef.displayProperties?.icon || '',
+      iconUrl: artifactDef.displayProperties?.icon 
+        ? `https://www.bungie.net${artifactDef.displayProperties.icon}` 
+        : null,
+      modHashes: artifactModHashes
+    };
+    
+    // Collect all artifact mod hashes from all tiers
+    if (artifactDef.tiers) {
+      for (const tier of artifactDef.tiers) {
+        if (tier.items) {
+          for (const item of tier.items) {
+            artifactModHashes.add(item.itemHash);
+          }
+        }
+      }
+    }
+    
+    // Cache the result
+    manifestCache.artifacts.set(artifactHash, artifactInfo);
+    
+    return artifactInfo;
+  } catch (error) {
+    console.error(`Failed to fetch artifact definition for ${artifactHash}:`, error.message);
+    return { name: 'Unknown Artifact', modHashes: new Set() };
+  }
+}
+
 // Process a single equipment item
 async function processEquipmentItem(itemData, itemComponents) {
   const itemHash = itemData.itemHash;
@@ -314,13 +420,24 @@ async function processEquipmentItem(itemData, itemComponents) {
   
   // Extract perks and mods from sockets
   const perksAndMods = [];
+  const allSockets = [];
   if (sockets.sockets) {
     for (const socket of sockets.sockets) {
-      if (socket.plugHash && socket.isEnabled && socket.isVisible) {
-        perksAndMods.push({
-          plugHash: socket.plugHash
-          // We'll fetch plug definitions in a batch later if needed
+      if (socket.plugHash && socket.isEnabled) {
+        // Store all sockets for artifact mod detection
+        allSockets.push({
+          plugHash: socket.plugHash,
+          isVisible: socket.isVisible || false,
+          isEnabled: socket.isEnabled || false
         });
+        
+        // Only add visible sockets to perks list
+        if (socket.isVisible) {
+          perksAndMods.push({
+            plugHash: socket.plugHash
+            // We'll fetch plug definitions in a batch later if needed
+          });
+        }
       }
     }
   }
@@ -341,6 +458,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     primaryStat: instance.primaryStat || null,
     stats: stats.stats || {},
     perks: perksAndMods.slice(0, 5), // Limit to first 5 visible perks
+    sockets: allSockets, // Store ALL sockets for artifact mod detection
     energy: instance.energy || null
   };
 }
@@ -421,8 +539,54 @@ async function processLoadout(characterId, equipment, itemComponents) {
       classItem: classItemData
     },
     subclass: subclassData,
-    stats: totalStats
+    stats: totalStats,
+    // Pass armor data for artifact mod extraction
+    _armorPieces: { helmet: helmetData, arms: armsData, chest: chestData, legs: legsData, classItem: classItemData }
   };
+}
+
+// Extract artifact mods from equipped armor
+async function extractArtifactMods(armorPieces, artifactInfo) {
+  if (!artifactInfo || !artifactInfo.modHashes || artifactInfo.modHashes.size === 0) {
+    return [];
+  }
+  
+  const artifactMods = [];
+  const slotNames = {
+    helmet: 'Helmet',
+    arms: 'Arms',
+    chest: 'Chest',
+    legs: 'Legs',
+    classItem: 'Class Item'
+  };
+  
+  // Check each armor piece for artifact mods
+  for (const [slotKey, armorData] of Object.entries(armorPieces)) {
+    if (!armorData || !armorData.sockets) continue;
+    
+    // Check all sockets for artifact mods
+    for (const socket of armorData.sockets) {
+      // If this socket's plugHash is in the artifact mod list
+      if (socket.isVisible && artifactInfo.modHashes.has(socket.plugHash)) {
+        // Fetch the mod's name from manifest
+        const plugDef = await fetchPlugDefinition(socket.plugHash);
+        
+        if (plugDef) {
+          artifactMods.push({
+            name: plugDef.name,
+            description: plugDef.description,
+            icon: plugDef.icon,
+            iconUrl: plugDef.iconUrl,
+            hash: socket.plugHash,
+            equippedOn: slotNames[slotKey] || slotKey,
+            equippedOnSlot: slotKey
+          });
+        }
+      }
+    }
+  }
+  
+  return artifactMods;
 }
 
 // Start server
