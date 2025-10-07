@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D2 Loadout Widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+  <div id="d2-loadout-widget" class="loadout-widget">
+    <div class="widget-container">
+      <!-- Character Header -->
+      <div class="character-header">
+        <div class="character-emblem" id="characterEmblem"></div>
+        <div class="character-info">
+          <div class="character-name" id="characterName">Loading...</div>
+          <div class="character-details">
+            <span class="character-class" id="characterClass"></span>
+            <span class="character-separator">•</span>
+            <span class="character-light" id="characterLight"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weapons Section -->
+      <div class="weapons-section" id="weaponsSection">
+        <div class="section-title">Weapons</div>
+        <div class="weapon-grid">
+          <div class="weapon-slot" id="kineticSlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Kinetic</div>
+            </div>
+            <div class="weapon-power"></div>
+          </div>
+          <div class="weapon-slot" id="energySlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Energy</div>
+            </div>
+            <div class="weapon-power"></div>
+          </div>
+          <div class="weapon-slot" id="powerSlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Power</div>
+            </div>
+            <div class="weapon-power"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Armor Section -->
+      <div class="armor-section" id="armorSection">
+        <div class="section-title">Armor</div>
+        <div class="armor-grid">
+          <div class="armor-slot" id="helmetSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Helmet</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="armsSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Arms</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="chestSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Chest</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="legsSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Legs</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="classItemSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Class Item</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="stats-section" id="statsSection">
+        <div class="section-title">Stats</div>
+        <div class="stats-grid">
+          <div class="stat-row" data-stat="Mobility">
+            <div class="stat-label">
+              <span class="stat-icon">🏃</span>
+              <span class="stat-name">Mobility</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Mobility"></div>
+            </div>
+            <div class="stat-value" data-stat="Mobility">0</div>
+            <div class="stat-tier" data-stat="Mobility">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Resilience">
+            <div class="stat-label">
+              <span class="stat-icon">🛡️</span>
+              <span class="stat-name">Resilience</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Resilience"></div>
+            </div>
+            <div class="stat-value" data-stat="Resilience">0</div>
+            <div class="stat-tier" data-stat="Resilience">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Recovery">
+            <div class="stat-label">
+              <span class="stat-icon">❤️</span>
+              <span class="stat-name">Recovery</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Recovery"></div>
+            </div>
+            <div class="stat-value" data-stat="Recovery">0</div>
+            <div class="stat-tier" data-stat="Recovery">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Discipline">
+            <div class="stat-label">
+              <span class="stat-icon">💥</span>
+              <span class="stat-name">Discipline</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Discipline"></div>
+            </div>
+            <div class="stat-value" data-stat="Discipline">0</div>
+            <div class="stat-tier" data-stat="Discipline">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Intellect">
+            <div class="stat-label">
+              <span class="stat-icon">🧠</span>
+              <span class="stat-name">Intellect</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Intellect"></div>
+            </div>
+            <div class="stat-value" data-stat="Intellect">0</div>
+            <div class="stat-tier" data-stat="Intellect">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Strength">
+            <div class="stat-label">
+              <span class="stat-icon">💪</span>
+              <span class="stat-name">Strength</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Strength"></div>
+            </div>
+            <div class="stat-value" data-stat="Strength">0</div>
+            <div class="stat-tier" data-stat="Strength">T0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subclass Section -->
+      <div class="subclass-section" id="subclassSection">
+        <div class="section-title">Subclass</div>
+        <div class="subclass-info">
+          <div class="subclass-icon" id="subclassIcon"></div>
+          <div class="subclass-name" id="subclassName">-</div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message" id="errorMessage" style="display:none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-text" id="errorText"></div>
+      </div>
+
+      <!-- Last Updated -->
+      <div class="last-updated" id="lastUpdated">v1.0</div>
+    </div>
+  </div>
+</body>
+</html>

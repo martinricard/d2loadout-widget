@@ -1,0 +1,121 @@
+{
+  "bungieInput": {
+    "type": "text",
+    "label": "🎮 Your Bungie Name",
+    "value": "",
+    "placeholder": "Marty#2689",
+    "group": "⚙️ ⋮ Settings"
+  },
+  "characterSelect": {
+    "type": "dropdown",
+    "label": "Character",
+    "value": "last-played",
+    "options": {
+      "last-played": "Last Played",
+      "hunter": "Hunter",
+      "titan": "Titan",
+      "warlock": "Warlock"
+    },
+    "group": "⚙️ ⋮ Settings"
+  },
+  "refreshRate": {
+    "type": "number",
+    "label": "Refresh Rate (seconds)",
+    "value": 60,
+    "min": 30,
+    "max": 300,
+    "group": "⚙️ ⋮ Settings"
+  },
+  "widgetSize": {
+    "type": "dropdown",
+    "label": "Widget Size",
+    "value": "standard",
+    "options": {
+      "compact": "Compact",
+      "standard": "Standard",
+      "full": "Full Details"
+    },
+    "group": "🎨 ⋮ Display"
+  },
+  "showWeapons": {
+    "type": "checkbox",
+    "label": "Show Weapons",
+    "value": true,
+    "group": "🎨 ⋮ Display"
+  },
+  "showArmor": {
+    "type": "checkbox",
+    "label": "Show Armor",
+    "value": true,
+    "group": "🎨 ⋮ Display"
+  },
+  "showStats": {
+    "type": "checkbox",
+    "label": "Show Stats",
+    "value": true,
+    "group": "🎨 ⋮ Display"
+  },
+  "showSubclass": {
+    "type": "checkbox",
+    "label": "Show Subclass",
+    "value": true,
+    "group": "🎨 ⋮ Display"
+  },
+  "showPerks": {
+    "type": "checkbox",
+    "label": "Show Weapon Perks",
+    "value": false,
+    "group": "🎨 ⋮ Display"
+  },
+  "backgroundColor": {
+    "type": "colorpicker",
+    "label": "Background Color",
+    "value": "#101014",
+    "group": "🎨 ⋮ Colors"
+  },
+  "borderColor": {
+    "type": "colorpicker",
+    "label": "Border Color",
+    "value": "#2c2c2f",
+    "group": "🎨 ⋮ Colors"
+  },
+  "textColor": {
+    "type": "colorpicker",
+    "label": "Text Color",
+    "value": "#ffffff",
+    "group": "🎨 ⋮ Colors"
+  },
+  "exoticColor": {
+    "type": "colorpicker",
+    "label": "Exotic Highlight",
+    "value": "#CEAE33",
+    "group": "🎨 ⋮ Colors"
+  },
+  "fontFamily": {
+    "type": "googleFont",
+    "label": "Font Family",
+    "value": "Roboto Condensed",
+    "group": "🔠 ⋮ Font"
+  },
+  "fontSize": {
+    "type": "slider",
+    "label": "Font Size",
+    "value": 14,
+    "min": 10,
+    "max": 24,
+    "step": 1,
+    "group": "🔠 ⋮ Font"
+  },
+  "apiEndpoint": {
+    "type": "text",
+    "label": "API Endpoint",
+    "value": "https://d2loadout-widget.onrender.com",
+    "group": "🔧 ⋮ Advanced"
+  },
+  "version": {
+    "type": "text",
+    "label": "💫 D2 Loadout Widget v1.0",
+    "value": "by martinricard",
+    "group": "ℹ️ ⋮ Info"
+  }
+}
