@@ -1,14 +1,14 @@
-# D2 Loadout Widget - Backend Service
+# D2 Loadout Widget
 
 A **StreamElements/Streamlabs widget** that displays your Destiny 2 character's current loadout in real-time on your stream!
 
 Inspired by [Guardian.report](https://guardian.report/)'s loadout display feature.
 
-## 🎮 What This Widget Does
+## 🎮 Features
 
 Shows your active Destiny 2 character's complete loadout:
-- ⚔️ **3 Equipped Weapons** (Kinetic, Energy, Heavy) with icons
-- 🛡️ **5 Armor Pieces** (Helmet, Arms, Chest, Legs, Class Item) with icons
+- ⚔️ **3 Equipped Weapons** with perks and mods
+- 🛡️ **5 Armor Pieces** with stats and mods
 - 📊 **Character Stats** (Mobility, Resilience, Recovery, Discipline, Intellect, Strength)
 - ✨ **Subclass & Super** currently equipped
 - 💎 **Exotic Items** highlighted
@@ -16,88 +16,66 @@ Shows your active Destiny 2 character's complete loadout:
 
 Perfect for viewers who want to know what build you're using!
 
-## Current Status: Phase 1 - Backend Deployment
+## 🚀 Quick Start
 
-This is a minimal Express backend deployed to Render.com to provide:
-- HTTPS endpoint for Bungie OAuth callback
-- Health check endpoints for monitoring
-- Foundation for full Bungie API integration
-- Data proxy to fetch loadout information
+**Live API URL**: https://d2loadout-widget.onrender.com
 
-## Deployment
-
-**Live URL**: https://d2loadout-widget.onrender.com ✅
-
-### API Endpoints
-- `GET /` - API status and available endpoints
-- `GET /health` - Health check
-- `GET /api/loadout/:platform/:membershipId` - Get loadout by membership ID
-- `GET /api/loadout/:bungieId` - Get loadout by Bungie name (e.g., Marty#2689)
-- `GET /api/search/:displayName` - Search player by Bungie name
-
-### Bungie Application Details
-- **Application Name**: StreamElement Loadout Widget
-- **API Key**: Configured (server-side only)
-- **OAuth**: Not required - uses public API access only ✅
-
-## API Endpoints
-
-### `GET /`
-Health check endpoint - Returns service status and timestamp.
-
-### `GET /health`
-Simple health check - Returns `{ status: 'healthy' }`.
-
-### `GET /auth/callback`
-OAuth callback endpoint for Bungie authentication (currently a placeholder).
-
-## Environment Variables
-
-Required environment variables (set in Render dashboard):
+### Get Your Loadout
 
 ```bash
-BUNGIE_API_KEY=baadf0eb52e14b6f9a6e79dbd1f824f4
-NODE_ENV=production
-PORT=<auto-set-by-render>
+# By Bungie name (easiest)
+https://d2loadout-widget.onrender.com/api/loadout/YourName#1234
+
+# Or by platform and membership ID
+https://d2loadout-widget.onrender.com/api/loadout/3/4611686018467484767
 ```
 
-**Note**: No OAuth credentials needed - we use public API access only!
+**Supported Platforms**: 
+- `1` = Xbox
+- `2` = PlayStation  
+- `3` = Steam
+- `5` = Stadia
 
-## Local Development
+## 📖 Documentation
 
-1. Clone the repository:
+- **[Project Specification](PROJECT_SPEC.md)** - Complete technical details
+- **[Visual Design](VISUAL_SPEC.md)** - UI/UX design reference
+- **[Project Status](STATUS.md)** - Current progress tracker
+- **[Full Documentation](docs/)** - Setup guides, API docs, and more
+
+## 🛠️ Local Development
+
 ```bash
-git clone https://github.com/martinricard/d2loadout-widget.git
-cd d2loadout-widget
-```
-
-2. Install dependencies:
-```bash
+# Install dependencies
 cd backend
 npm install
-```
 
-3. Create `.env` file from example:
-```bash
+# Create .env from example
 cp .env.example .env
-```
 
-4. Update `.env` with your credentials (if different from defaults)
-
-5. Run development server:
-```bash
+# Run development server
 npm run dev
 ```
 
-Server will start at `http://localhost:3000`
+Server starts at `http://localhost:3000`
 
-## Next Steps
+## 📝 Environment Variables
 
-- [x] Deploy minimal backend to Render
-- [ ] Update Bungie application with production redirect URL
-- [ ] Obtain and configure OAuth client secret
-- [ ] Implement full OAuth token exchange
-- [ ] Add Bungie API proxy endpoints
+```bash
+BUNGIE_API_KEY=your-api-key-here
+NODE_ENV=development
+PORT=3000
+```
+
+See [docs/BUNGIE_APP_SETUP.md](docs/BUNGIE_APP_SETUP.md) for Bungie API setup instructions.
+
+## 🎯 Current Status
+
+✅ **Phase 1 Complete**: Backend deployed with working API endpoints  
+🚧 **Phase 2 In Progress**: Data processing layer (converting hashes to readable names)  
+⏳ **Phase 3 Next**: Widget frontend with StreamElements integration
+
+See [STATUS.md](STATUS.md) for detailed progress.
 - [ ] Implement rate limiting and caching
 - [ ] Build StreamElements widget frontend
 - [ ] Implement license key validation system
@@ -120,10 +98,17 @@ Server will start at `http://localhost:3000`
 
 Commercial product - All rights reserved
 
-## Support
+## 📦 Technology Stack
 
-For issues or questions, contact: [Your contact info]
+- **Backend**: Node.js + Express (Render.com)
+- **API**: Bungie.net Platform API
+- **Frontend**: StreamElements Custom Widget (HTML/CSS/JS)
+- **Data**: Real-time character loadout from Bungie API
+
+## 📄 License
+
+Commercial product - All rights reserved.
 
 ---
 
-**Project Status**: Issue #4 - MVP Backend Deployment ✅
+Made with ❤️ for Destiny 2 streamers

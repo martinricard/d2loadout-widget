@@ -20,6 +20,37 @@ app.use(express.json());
 // Bungie API Base URL
 const BUNGIE_API_BASE = 'https://www.bungie.net/Platform';
 
+// In-memory cache for manifest data (to reduce API calls)
+const manifestCache = {
+  items: new Map(),
+  stats: new Map(),
+  lastUpdate: null,
+  TTL: 3600000 // 1 hour
+};
+
+// Bucket hashes for item slots
+const BUCKET_HASHES = {
+  KINETIC: 1498876634,
+  ENERGY: 2465295065,
+  POWER: 953998645,
+  HELMET: 3448274439,
+  ARMS: 3551918588,
+  CHEST: 14239492,
+  LEGS: 20886954,
+  CLASS_ITEM: 1585787867,
+  SUBCLASS: 3284755031
+};
+
+// Stat hashes for armor
+const STAT_HASHES = {
+  144602215: 'Intellect',
+  392767087: 'Strength',
+  1735777505: 'Mobility',
+  1943323491: 'Recovery',
+  2996146975: 'Resilience',
+  4244567218: 'Discipline'
+};
+
 // Health check endpoint (Render uses this to verify deployment)
 app.get('/', (req, res) => {
   res.json({
@@ -143,24 +174,71 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       }
     });
     
-    // TODO: Process the loadout data
-    // For now, return raw data
     const data = response.data.Response;
+    const characters = data.characters?.data || {};
+    const equipment = data.characterEquipment?.data || {};
+    const itemComponents = {
+      instances: data.itemComponents?.instances?.data || {},
+      stats: data.itemComponents?.stats?.data || {},
+      sockets: data.itemComponents?.sockets?.data || {}
+    };
+    
+    // Find the most recently played character
+    let mostRecentCharacterId = null;
+    let mostRecentDate = null;
+    
+    for (const [charId, charData] of Object.entries(characters)) {
+      const lastPlayed = new Date(charData.dateLastPlayed);
+      if (!mostRecentDate || lastPlayed > mostRecentDate) {
+        mostRecentDate = lastPlayed;
+        mostRecentCharacterId = charId;
+      }
+    }
+    
+    if (!mostRecentCharacterId) {
+      return res.status(404).json({
+        success: false,
+        error: 'No characters found',
+        message: 'This player has no Destiny 2 characters'
+      });
+    }
+    
+    // Get character info
+    const character = characters[mostRecentCharacterId];
+    const characterEquipment = equipment[mostRecentCharacterId];
+    
+    // Process the loadout
+    const loadout = await processLoadout(
+      mostRecentCharacterId,
+      characterEquipment,
+      itemComponents
+    );
+    
+    // Get class name
+    const classNames = {
+      0: 'Titan',
+      1: 'Hunter',
+      2: 'Warlock'
+    };
     
     res.json({
       success: true,
       displayName: data.profile?.data?.userInfo?.displayName || 'Guardian',
       membershipId: membershipId,
       platform: platform,
-      platformName: getPlatformName(platform),
-      characters: data.characters?.data || {},
-      equipment: data.characterEquipment?.data || {},
-      itemComponents: {
-        instances: data.itemComponents?.instances?.data || {},
-        stats: data.itemComponents?.stats?.data || {},
-        sockets: data.itemComponents?.sockets?.data || {}
+      platformName: getPlatformName(parseInt(platform)),
+      character: {
+        id: mostRecentCharacterId,
+        class: classNames[character.classType] || 'Unknown',
+        race: character.raceType,
+        light: character.light,
+        emblemPath: character.emblemPath 
+          ? `https://www.bungie.net${character.emblemPath}` 
+          : null,
+        lastPlayed: character.dateLastPlayed
       },
-      note: 'Raw data - processing will be implemented next'
+      loadout: loadout,
+      timestamp: new Date().toISOString()
     });
     
   } catch (error) {
@@ -187,6 +265,164 @@ function getPlatformName(membershipType) {
     254: 'BungieNext'
   };
   return platforms[membershipType] || 'Unknown';
+}
+
+// Fetch item definition from Bungie manifest
+async function fetchItemDefinition(itemHash) {
+  // Check cache first
+  if (manifestCache.items.has(itemHash)) {
+    return manifestCache.items.get(itemHash);
+  }
+  
+  try {
+    const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyInventoryItemDefinition/${itemHash}/`;
+    const response = await axios.get(url, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+    
+    const definition = response.data.Response;
+    
+    // Cache the result
+    manifestCache.items.set(itemHash, definition);
+    
+    return definition;
+  } catch (error) {
+    console.error(`Failed to fetch item definition for ${itemHash}:`, error.message);
+    return null;
+  }
+}
+
+// Process a single equipment item
+async function processEquipmentItem(itemData, itemComponents) {
+  const itemHash = itemData.itemHash;
+  const itemInstanceId = itemData.itemInstanceId;
+  
+  // Fetch item definition
+  const definition = await fetchItemDefinition(itemHash);
+  if (!definition) {
+    return {
+      name: 'Unknown Item',
+      hash: itemHash,
+      instanceId: itemInstanceId
+    };
+  }
+  
+  // Get item instance data
+  const instance = itemComponents.instances[itemInstanceId] || {};
+  const stats = itemComponents.stats[itemInstanceId] || {};
+  const sockets = itemComponents.sockets[itemInstanceId] || {};
+  
+  // Extract perks and mods from sockets
+  const perksAndMods = [];
+  if (sockets.sockets) {
+    for (const socket of sockets.sockets) {
+      if (socket.plugHash && socket.isEnabled && socket.isVisible) {
+        perksAndMods.push({
+          plugHash: socket.plugHash
+          // We'll fetch plug definitions in a batch later if needed
+        });
+      }
+    }
+  }
+  
+  return {
+    name: definition.displayProperties?.name || 'Unknown',
+    description: definition.displayProperties?.description || '',
+    icon: definition.displayProperties?.icon || '',
+    iconUrl: definition.displayProperties?.icon 
+      ? `https://www.bungie.net${definition.displayProperties.icon}` 
+      : null,
+    hash: itemHash,
+    instanceId: itemInstanceId,
+    itemType: definition.itemTypeDisplayName || '',
+    tierType: definition.inventory?.tierTypeName || 'Common',
+    isExotic: definition.inventory?.tierType === 6,
+    damageType: instance.damageType || 0,
+    primaryStat: instance.primaryStat || null,
+    stats: stats.stats || {},
+    perks: perksAndMods.slice(0, 5), // Limit to first 5 visible perks
+    energy: instance.energy || null
+  };
+}
+
+// Process character loadout
+async function processLoadout(characterId, equipment, itemComponents) {
+  const items = equipment.items || [];
+  
+  // Find items by bucket
+  const findItemByBucket = (bucketHash) => {
+    return items.find(item => item.bucketHash === bucketHash);
+  };
+  
+  // Process weapons
+  const kinetic = findItemByBucket(BUCKET_HASHES.KINETIC);
+  const energy = findItemByBucket(BUCKET_HASHES.ENERGY);
+  const power = findItemByBucket(BUCKET_HASHES.POWER);
+  
+  // Process armor
+  const helmet = findItemByBucket(BUCKET_HASHES.HELMET);
+  const arms = findItemByBucket(BUCKET_HASHES.ARMS);
+  const chest = findItemByBucket(BUCKET_HASHES.CHEST);
+  const legs = findItemByBucket(BUCKET_HASHES.LEGS);
+  const classItem = findItemByBucket(BUCKET_HASHES.CLASS_ITEM);
+  
+  // Process subclass
+  const subclass = findItemByBucket(BUCKET_HASHES.SUBCLASS);
+  
+  // Process each item (in parallel for speed)
+  const [
+    kineticData,
+    energyData,
+    powerData,
+    helmetData,
+    armsData,
+    chestData,
+    legsData,
+    classItemData,
+    subclassData
+  ] = await Promise.all([
+    kinetic ? processEquipmentItem(kinetic, itemComponents) : null,
+    energy ? processEquipmentItem(energy, itemComponents) : null,
+    power ? processEquipmentItem(power, itemComponents) : null,
+    helmet ? processEquipmentItem(helmet, itemComponents) : null,
+    arms ? processEquipmentItem(arms, itemComponents) : null,
+    chest ? processEquipmentItem(chest, itemComponents) : null,
+    legs ? processEquipmentItem(legs, itemComponents) : null,
+    classItem ? processEquipmentItem(classItem, itemComponents) : null,
+    subclass ? processEquipmentItem(subclass, itemComponents) : null
+  ]);
+  
+  // Calculate total armor stats
+  const totalStats = {};
+  const armorPieces = [helmetData, armsData, chestData, legsData, classItemData].filter(Boolean);
+  
+  for (const piece of armorPieces) {
+    if (piece.stats) {
+      for (const [statHash, statData] of Object.entries(piece.stats)) {
+        const statName = STAT_HASHES[statHash];
+        if (statName) {
+          totalStats[statName] = (totalStats[statName] || 0) + (statData.value || 0);
+        }
+      }
+    }
+  }
+  
+  return {
+    weapons: {
+      kinetic: kineticData,
+      energy: energyData,
+      power: powerData
+    },
+    armor: {
+      helmet: helmetData,
+      arms: armsData,
+      chest: chestData,
+      legs: legsData,
+      classItem: classItemData
+    },
+    subclass: subclassData,
+    stats: totalStats
+  };
 }
 
 // Start server
