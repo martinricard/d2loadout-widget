@@ -165,9 +165,9 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   
   try {
     // Fetch profile with character equipment and stats
-    // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 205=CharacterEquipment, 
-    //             300=ItemInstances, 304=ItemStats, 305=ItemSockets
-    const components = '?components=100,104,200,205,300,304,305';
+    // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 202=CharacterProgressions,
+    //             205=CharacterEquipment, 300=ItemInstances, 304=ItemStats, 305=ItemSockets
+    const components = '?components=100,104,200,202,205,300,304,305';
     const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
     
     const response = await axios.get(profileUrl, {
@@ -179,6 +179,7 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const data = response.data.Response;
     const characters = data.characters?.data || {};
     const equipment = data.characterEquipment?.data || {};
+    const characterProgressions = data.characterProgressions?.data || {};
     const profileProgression = data.profileProgression?.data || {};
     const itemComponents = {
       instances: data.itemComponents?.instances?.data || {},
@@ -186,7 +187,7 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       sockets: data.itemComponents?.sockets?.data || {}
     };
     
-    // Get seasonal artifact info
+    // Get seasonal artifact info from profile
     const seasonalArtifact = profileProgression.seasonalArtifact || null;
     let artifactInfo = null;
     
@@ -218,6 +219,9 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const character = characters[mostRecentCharacterId];
     const characterEquipment = equipment[mostRecentCharacterId];
     
+    // Get character progression data for artifact mods
+    const characterProgression = characterProgressions[mostRecentCharacterId];
+    
     // Process the loadout
     const loadout = await processLoadout(
       mostRecentCharacterId,
@@ -225,11 +229,8 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       itemComponents
     );
     
-    // Extract artifact mods from equipped armor
-    const artifactMods = await extractArtifactMods(loadout._armorPieces, artifactInfo);
-    
-    // Remove internal armor pieces data
-    delete loadout._armorPieces;
+    // Extract artifact mods from character progression (not armor sockets!)
+    const artifactMods = await extractArtifactMods(characterProgression);
     
     // Add artifact mods to loadout
     loadout.artifactMods = artifactMods;
@@ -539,48 +540,41 @@ async function processLoadout(characterId, equipment, itemComponents) {
       classItem: classItemData
     },
     subclass: subclassData,
-    stats: totalStats,
-    // Pass armor data for artifact mod extraction
-    _armorPieces: { helmet: helmetData, arms: armsData, chest: chestData, legs: legsData, classItem: classItemData }
+    stats: totalStats
   };
 }
 
-// Extract artifact mods from equipped armor
-async function extractArtifactMods(armorPieces, artifactInfo) {
-  if (!artifactInfo || !artifactInfo.modHashes || artifactInfo.modHashes.size === 0) {
+// Extract artifact mods from character progression data
+async function extractArtifactMods(characterProgressionData) {
+  if (!characterProgressionData || !characterProgressionData.seasonalArtifact) {
     return [];
   }
   
+  const seasonalArtifact = characterProgressionData.seasonalArtifact;
   const artifactMods = [];
-  const slotNames = {
-    helmet: 'Helmet',
-    arms: 'Arms',
-    chest: 'Chest',
-    legs: 'Legs',
-    classItem: 'Class Item'
-  };
   
-  // Check each armor piece for artifact mods
-  for (const [slotKey, armorData] of Object.entries(armorPieces)) {
-    if (!armorData || !armorData.sockets) continue;
-    
-    // Check all sockets for artifact mods
-    for (const socket of armorData.sockets) {
-      // If this socket's plugHash is in the artifact mod list
-      if (socket.isVisible && artifactInfo.modHashes.has(socket.plugHash)) {
-        // Fetch the mod's name from manifest
-        const plugDef = await fetchPlugDefinition(socket.plugHash);
-        
-        if (plugDef) {
-          artifactMods.push({
-            name: plugDef.name,
-            description: plugDef.description,
-            icon: plugDef.icon,
-            iconUrl: plugDef.iconUrl,
-            hash: socket.plugHash,
-            equippedOn: slotNames[slotKey] || slotKey,
-            equippedOnSlot: slotKey
-          });
+  // Iterate through all tiers
+  if (seasonalArtifact.tiers) {
+    for (const tier of seasonalArtifact.tiers) {
+      if (!tier.items) continue;
+      
+      // Find all active mods in this tier
+      for (const item of tier.items) {
+        if (item.isActive) {
+          // Fetch the mod's name and details from manifest
+          const plugDef = await fetchPlugDefinition(item.itemHash);
+          
+          if (plugDef) {
+            artifactMods.push({
+              name: plugDef.name,
+              description: plugDef.description,
+              icon: plugDef.icon,
+              iconUrl: plugDef.iconUrl,
+              hash: item.itemHash,
+              isVisible: item.isVisible || false,
+              tierHash: tier.tierHash
+            });
+          }
         }
       }
     }
