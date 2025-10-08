@@ -483,6 +483,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     
     // Extract exotic class item "Spirit of..." perks ONLY
     if (isClassItem && isExotic && definition.sockets?.socketEntries) {
+      console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking sockets...`);
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
         const socketDef = definition.sockets.socketEntries[i];
@@ -493,6 +494,7 @@ async function processEquipmentItem(itemData, itemComponents) {
         const isExoticPerkSocket = socketDef.randomizedPlugSetHash && i < 2;
         
         if (isExoticPerkSocket) {
+          console.log(`[Exotic Class Item] Found perk socket ${i}: plugHash ${socket.plugHash}`);
           exoticClassItemPerks.push({
             plugHash: socket.plugHash,
             socketIndex: i
@@ -536,15 +538,18 @@ async function processEquipmentItem(itemData, itemComponents) {
   // Fetch perk definitions for exotic class item perks
   const exoticPerkData = [];
   if (exoticClassItemPerks.length > 0) {
+    console.log(`[Exotic Class Item] Found ${exoticClassItemPerks.length} exotic perks`);
     for (const perk of exoticClassItemPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
+        console.log(`[Exotic Class Item] Perk: "${perkDef.name}" (hash: ${perk.plugHash})`);
         exoticPerkData.push({
           ...perkDef,
           socketIndex: perk.socketIndex
         });
       }
     }
+    console.log(`[Exotic Class Item] Total exotic perks processed: ${exoticPerkData.length}`);
   }
   
   // Determine the correct icon based on weapon tier (Edge of Fate tiered weapons)

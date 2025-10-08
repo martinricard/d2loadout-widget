@@ -262,17 +262,15 @@ function displayWeapon(slotId, weaponData, slotName) {
       existingTierBadge.remove();
     }
     
-    // Check if this is a tiered weapon (Tier 1-5 system from Edge of Fate)
-    const weaponTier = weaponData.weaponTier;
-    if (weaponTier !== null && weaponTier !== undefined && weaponTier >= 0) {
-      // Add tier badge for tiered weapons
-      iconElement.classList.add('tiered-weapon');
-      
-      const tierBadge = document.createElement('div');
-      tierBadge.className = `weapon-tier-badge tier-${weaponTier + 1}`;
-      tierBadge.textContent = `T${weaponTier + 1}`;
-      iconElement.appendChild(tierBadge);
-    }
+    // Tier badge display removed - using enhanced perk arrows instead
+    // const weaponTier = weaponData.weaponTier;
+    // if (weaponTier !== null && weaponTier !== undefined && weaponTier >= 0) {
+    //   iconElement.classList.add('tiered-weapon');
+    //   const tierBadge = document.createElement('div');
+    //   tierBadge.className = `weapon-tier-badge tier-${weaponTier + 1}`;
+    //   tierBadge.textContent = `T${weaponTier + 1}`;
+    //   iconElement.appendChild(tierBadge);
+    // }
     
     // Masterwork display removed - too much visual clutter
     

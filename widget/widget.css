@@ -334,7 +334,7 @@ body {
 /* Weapon Perks - Hidden by default, shown when enabled */
 .weapon-perks {
   display: none;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
   width: 100%;
   margin-left: 38px;
@@ -361,19 +361,21 @@ body {
   transform: scale(1.15);
 }
 
-/* Enhanced perk indicator - yellow arrow in top-left corner */
+/* Enhanced perk indicator - yellow arrow on left edge of icon */
 .weapon-perk-icon.enhanced::before {
   content: '';
   position: absolute;
-  top: -2px;
+  top: 50%;
   left: -2px;
+  transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20version='1.1'%20x='0px'%20y='0px'%20viewBox='0%200%20100%20100'%20enable-background='new%200%200%20100%20100'%20xml:space='preserve'%20height='100px'%20width='100px'%3E%3Cg%3E%3Cpath%20d='M10,50%20l-3,-24%20l-6,0%20l9,-16%20l9,16%20l-6,0%20l-3,24%20z'%20fill='%23fc0'%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2021.806%2058.593'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20fill='%23F3D656'%20d='M21.773,18.883h-6.032c-0.736,0-1.333,0.597-1.333,1.333v38.377h-7V20.217c0-0.736-0.597-1.333-1.333-1.333%20H0.032C0.018,18.858,0.014,18.852,0,18.827L10.876,0c0.029,0,0.036,0,0.065,0l10.866,18.827%20C21.791,18.852,21.788,18.858,21.773,18.883z'/%3E%3C/svg%3E");
   background-size: contain;
   background-repeat: no-repeat;
   z-index: 10;
   filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+  pointer-events: none;
 }
 
 .weapon-mod-icon {
@@ -410,6 +412,7 @@ body {
   border: 1px solid transparent;
   border-radius: var(--radius);
   transition: all 0.15s ease;
+  flex-wrap: wrap;
 }
 
 .armor-slot:hover {
@@ -472,6 +475,38 @@ body {
 .armor-power .power-icon {
   width: 9px;
   height: 9px;
+}
+
+/* Exotic armor perks (for exotic class items) */
+.exotic-perks {
+  display: none;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  margin-left: 32px;
+  margin-top: 2px;
+}
+
+.exotic-perks:not(:empty) {
+  display: flex;
+}
+
+.exotic-perk-icon {
+  width: 24px;
+  height: 24px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  cursor: help;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  position: relative;
+  border: 1px solid rgba(206, 174, 51, 0.3);
+}
+
+.exotic-perk-icon:hover {
+  transform: scale(1.15);
+  border-color: rgba(206, 174, 51, 0.6);
 }
 
 /* ========== STATS SECTION ========== */
