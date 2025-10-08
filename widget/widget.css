@@ -662,7 +662,7 @@ body {
   flex-shrink: 0;
   margin-right: 12px;
   position: relative;
-  margin-top: 16px;
+  margin-top: 26px;
 }
 
 .subclass-info {
@@ -674,6 +674,7 @@ body {
   width: 80px;
   text-align: left;
   gap: 5px;
+  margin-bottom: 12px;
 }
 
 .subclass-info::before {
@@ -704,7 +705,7 @@ body {
   gap: 4px;
   flex-direction: column;
   position: relative;
-  margin-top: 0;
+  margin-top: 22px;
   padding-top: 0;
 }
 
@@ -757,7 +758,7 @@ body {
   gap: 4px;
   flex-direction: column;
   position: relative;
-  margin-top: 0;
+  margin-top: 22px;
   padding-top: 0;
 }
 

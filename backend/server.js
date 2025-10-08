@@ -810,23 +810,31 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
 // Shorten URL using DIM's URL shortener API
 async function shortenDIMUrl(longUrl) {
   try {
-    const response = await axios.post('https://api.dim.gg/short_url', {
-      url: longUrl
+    const BITLY_TOKEN = process.env.BITLY_TOKEN;
+    
+    if (!BITLY_TOKEN) {
+      console.warn('BITLY_TOKEN not configured, returning long URL');
+      return longUrl;
+    }
+    
+    const response = await axios.post('https://api-ssl.bitly.com/v4/shorten', {
+      long_url: longUrl
     }, {
       headers: {
+        'Authorization': `Bearer ${BITLY_TOKEN}`,
         'Content-Type': 'application/json'
       },
       timeout: 5000 // 5 second timeout
     });
     
-    if (response.data && response.data.short_url) {
-      return response.data.short_url;
+    if (response.data && response.data.link) {
+      return response.data.link;
     }
     
-    return null;
+    return longUrl;
   } catch (error) {
     console.error('Error shortening DIM URL:', error.message);
-    return null; // Return null to fallback to long URL
+    return longUrl; // Fallback to long URL
   }
 }
 
