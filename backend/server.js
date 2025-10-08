@@ -500,19 +500,19 @@ async function processEquipmentItem(itemData, itemComponents) {
         if (isExoticPerkSocket && socket.plugHash) {
           // Use the CURRENTLY EQUIPPED plug (socket.plugHash) 
           // This is where the Spirit perk actually is
-          // Ignore "Empty Mod Socket" placeholders
           const plugDef = await fetchPlugDefinition(socket.plugHash);
           const plugName = plugDef?.name || '';
           
-          // Only add if it's NOT an empty socket or mod
-          if (plugName && !plugName.includes('Empty') && !plugName.includes('Mod Socket')) {
+          // Only add if it's a "Spirit of..." perk (not empty socket, not mod)
+          // Spirit perks ALWAYS start with "Spirit of"
+          if (plugName && plugName.startsWith('Spirit of')) {
             console.log(`[Exotic Class Item] ✅ Found Spirit perk in socket ${i}: "${plugName}" (hash: ${socket.plugHash})`);
             exoticClassItemPerks.push({
               plugHash: socket.plugHash,
               socketIndex: i
             });
           } else {
-            console.log(`[Exotic Class Item] Socket ${i} is empty or has placeholder: "${plugName}"`);
+            console.log(`[Exotic Class Item] Socket ${i} is NOT a Spirit perk: "${plugName}"`);
           }
         } else {
           console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2}, plugHash=${!!socket.plugHash})`);

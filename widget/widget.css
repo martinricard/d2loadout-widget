@@ -331,6 +331,17 @@ body {
   height: 10px;
 }
 
+/* Pinnacle power styling (over 200) */
+.weapon-power.pinnacle-power {
+  color: #5dade2; /* Light blue color */
+  font-weight: 900;
+}
+
+.armor-power.pinnacle-power {
+  color: #5dade2; /* Light blue color */
+  font-weight: 900;
+}
+
 /* Weapon Perks - Hidden by default, shown when enabled */
 .weapon-perks {
   display: none;
