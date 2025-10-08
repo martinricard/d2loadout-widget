@@ -220,7 +220,11 @@ body {
   grid-column: 3; /* Single column */
   grid-row: 2;
   border-bottom: 1px solid var(--border-color);
-  border-right: none; /* Last column, no right border */
+  padding-left: 8px;
+}
+
+.widget-container:not(.layout-standard):not(.layout-full) .stats-section .section-title {
+  padding-left: 12px;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
