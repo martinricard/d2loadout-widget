@@ -8,12 +8,9 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: [
-    'https://streamelements.com',
-    'https://overlay.streamelements.com',
-    'https://cdn.streamelements.com',
-    'http://localhost:3000' // For local testing
-  ]
+  origin: '*', // Allow all origins for StreamElements compatibility
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
