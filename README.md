@@ -6,15 +6,18 @@ Inspired by [Guardian.report](https://guardian.report/)'s loadout display featur
 
 ## 🎮 Features
 
-Shows your active Destiny 2 character's complete loadout:
-- ⚔️ **3 Equipped Weapons** with perks and mods
-- 🛡️ **5 Armor Pieces** with stats and mods
+Shows your active Destiny 2 character's complete loadout with **real images from Bungie**:
+- ⚔️ **3 Equipped Weapons** with icons, perks, and mods
+- 🛡️ **5 Armor Pieces** with icons, stats, and mods
 - 📊 **Character Stats** (Mobility, Resilience, Recovery, Discipline, Intellect, Strength)
-- ✨ **Subclass & Super** currently equipped
-- 💎 **Exotic Items** highlighted
-- 🔄 **Auto-updates** when you change your loadout in-game
+- ✨ **Subclass & Super** with icon and element
+- 🔱 **Seasonal Artifact** with power bonus and unlocked mods
+- 🎯 **24 Artifact Mods** with champion mods and perks (color-coded with icons!)
+- 💎 **Exotic Items** highlighted with golden borders
+- �️ **All item images** loaded directly from Bungie's CDN
+- �🔄 **Auto-updates** when you change your loadout in-game
 
-Perfect for viewers who want to know what build you're using!
+Perfect for viewers who want to see exactly what build you're using!
 
 ## 🚀 Quick Start
 
@@ -38,10 +41,18 @@ https://d2loadout-widget.onrender.com/api/loadout/3/4611686018467484767
 
 ## 📖 Documentation
 
-- **[Project Specification](PROJECT_SPEC.md)** - Complete technical details
-- **[Visual Design](VISUAL_SPEC.md)** - UI/UX design reference
-- **[Project Status](STATUS.md)** - Current progress tracker
-- **[Full Documentation](docs/)** - Setup guides, API docs, and more
+All documentation is organized in the [`docs/`](docs/) folder:
+
+- **[Documentation Index](docs/README.md)** - Complete guide navigation
+- **[Project Status](docs/STATUS.md)** - Current version and features (v0.1)
+- **[Project Specification](docs/PROJECT_SPEC.md)** - Technical details
+- **[Release Notes](docs/V0.1_RELEASE.md)** - v0.1 release summary
+
+### Quick Links
+- **[Setup Guide](docs/BUNGIE_APP_SETUP.md)** - Get your Bungie API key
+- **[User Guide](docs/USER_GUIDE.md)** - For streamers
+- **[Widget Installation](widget/README.md)** - StreamElements setup
+- **[Visual Design](docs/VISUAL_SPEC.md)** - UI/UX reference
 
 ## 🛠️ Local Development
 

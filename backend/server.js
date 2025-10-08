@@ -59,7 +59,7 @@ app.get('/', (req, res) => {
     status: 'ok',
     message: 'D2 Loadout Widget Backend is running',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '0.1.0',
     endpoints: [
       'GET /health - Health check',
       'GET /api/loadout/:platform/:membershipId - Get character loadout',

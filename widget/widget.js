@@ -63,6 +63,9 @@ function toggleSections() {
   if (!fieldData.showSubclass) {
     document.getElementById('subclassSection').classList.add('hidden');
   }
+  if (fieldData.showArtifact === false) {
+    document.getElementById('artifactSection').classList.add('hidden');
+  }
 }
 
 // Fetch loadout data from API
@@ -150,6 +153,11 @@ function displayLoadout(data) {
   // Subclass
   if (data.loadout?.subclass && fieldData.showSubclass) {
     displaySubclass(data.loadout.subclass);
+  }
+  
+  // Artifact and artifact mods
+  if (data.artifact && fieldData.showArtifact !== false) {
+    displayArtifact(data.artifact, data.loadout?.artifactMods);
   }
 }
 
@@ -254,6 +262,113 @@ function displaySubclass(subclassData) {
     document.getElementById('subclassIcon').style.backgroundImage = 
       `url('${subclassData.iconUrl}')`;
   }
+}
+
+// Display artifact and artifact mods
+function displayArtifact(artifactData, artifactMods) {
+  // Artifact header
+  if (!artifactData) {
+    document.getElementById('artifactName').textContent = '-';
+    document.getElementById('artifactProgress').textContent = '-';
+    document.getElementById('artifactBonus').textContent = '';
+    document.getElementById('artifactIcon').style.backgroundImage = '';
+    return;
+  }
+
+  document.getElementById('artifactName').textContent = artifactData.name || 'Seasonal Artifact';
+  document.getElementById('artifactProgress').textContent = 
+    `${artifactData.pointsUnlocked || 0} Points Unlocked`;
+  document.getElementById('artifactBonus').textContent = 
+    `+${artifactData.powerBonus || 0} Power`;
+  
+  if (artifactData.iconUrl) {
+    document.getElementById('artifactIcon').style.backgroundImage = 
+      `url('${artifactData.iconUrl}')`;
+  }
+
+  // Display artifact mods
+  if (!artifactMods || artifactMods.length === 0) {
+    document.getElementById('artifactModsContainer').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('artifactModsContainer').style.display = 'flex';
+
+  // Separate champion mods (hidden) from visible perks
+  const championMods = artifactMods.filter(mod => !mod.isVisible);
+  const visiblePerks = artifactMods.filter(mod => mod.isVisible);
+
+  // Display champion mods
+  const championGrid = document.getElementById('championModsGrid');
+  championGrid.innerHTML = '';
+  
+  if (championMods.length > 0) {
+    document.getElementById('championModsCategory').style.display = 'block';
+    championMods.forEach(mod => {
+      const modElement = createArtifactModElement(mod);
+      championGrid.appendChild(modElement);
+    });
+  } else {
+    document.getElementById('championModsCategory').style.display = 'none';
+  }
+
+  // Display visible perks
+  const perksGrid = document.getElementById('visiblePerksGrid');
+  perksGrid.innerHTML = '';
+  
+  if (visiblePerks.length > 0) {
+    document.getElementById('visiblePerksCategory').style.display = 'block';
+    visiblePerks.forEach(mod => {
+      const modElement = createArtifactModElement(mod);
+      perksGrid.appendChild(modElement);
+    });
+  } else {
+    document.getElementById('visiblePerksCategory').style.display = 'none';
+  }
+}
+
+// Create artifact mod element with icon
+function createArtifactModElement(mod) {
+  const modDiv = document.createElement('div');
+  modDiv.className = 'artifact-mod';
+  
+  // Add champion type class if applicable
+  const modNameLower = (mod.name || '').toLowerCase();
+  if (modNameLower.includes('anti-barrier')) {
+    modDiv.classList.add('anti-barrier');
+  } else if (modNameLower.includes('unstoppable')) {
+    modDiv.classList.add('unstoppable');
+  } else if (modNameLower.includes('overload')) {
+    modDiv.classList.add('overload');
+  }
+
+  // Icon
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'artifact-mod-icon';
+  if (mod.iconUrl) {
+    iconDiv.style.backgroundImage = `url('${mod.iconUrl}')`;
+  }
+  modDiv.appendChild(iconDiv);
+
+  // Tooltip
+  const tooltipDiv = document.createElement('div');
+  tooltipDiv.className = 'artifact-mod-tooltip';
+  
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'artifact-mod-tooltip-name';
+  nameDiv.textContent = mod.name || 'Unknown Mod';
+  tooltipDiv.appendChild(nameDiv);
+
+  if (mod.description) {
+    const descDiv = document.createElement('div');
+    descDiv.className = 'artifact-mod-tooltip-desc';
+    descDiv.textContent = mod.description;
+    tooltipDiv.appendChild(descDiv);
+  }
+
+  modDiv.appendChild(tooltipDiv);
+
+  return modDiv;
 }
 
 // Show error message

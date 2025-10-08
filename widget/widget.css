@@ -418,11 +418,173 @@ body {
   font-size: 1em;
 }
 
+/* Artifact Section */
+.artifact-section {
+  margin-top: 20px;
+}
+
+.artifact-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.artifact-icon {
+  width: 50px;
+  height: 50px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 6px;
+  border: 2px solid var(--exotic-color);
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(206, 174, 51, 0.3);
+}
+
+.artifact-info {
+  flex: 1;
+}
+
+.artifact-name {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--exotic-color);
+  margin-bottom: 4px;
+}
+
+.artifact-progress {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.artifact-bonus {
+  font-size: 0.9em;
+  color: #ffd700;
+  margin-left: 10px;
+  font-weight: 600;
+}
+
+.artifact-mods-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.artifact-category {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.category-title {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.artifact-mods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 8px;
+}
+
+.artifact-mod {
+  position: relative;
+  aspect-ratio: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.artifact-mod-icon {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  border-radius: 6px;
+  border: 2px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.artifact-mod:hover .artifact-mod-icon {
+  border-color: var(--exotic-color);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(206, 174, 51, 0.4);
+}
+
+.artifact-mod-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-5px);
+  background: rgba(16, 16, 20, 0.98);
+  border: 1px solid var(--exotic-color);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.artifact-mod:hover .artifact-mod-tooltip {
+  opacity: 1;
+}
+
+.artifact-mod-tooltip-name {
+  font-weight: 600;
+  color: var(--exotic-color);
+  margin-bottom: 4px;
+}
+
+.artifact-mod-tooltip-desc {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+  max-width: 250px;
+  white-space: normal;
+}
+
+/* Champion Mod Types */
+.artifact-mod.anti-barrier .artifact-mod-icon {
+  border-color: #ff6b6b;
+}
+
+.artifact-mod.anti-barrier:hover .artifact-mod-icon {
+  box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+}
+
+.artifact-mod.unstoppable .artifact-mod-icon {
+  border-color: #ffd93d;
+}
+
+.artifact-mod.unstoppable:hover .artifact-mod-icon {
+  box-shadow: 0 0 15px rgba(255, 217, 61, 0.5);
+}
+
+.artifact-mod.overload .artifact-mod-icon {
+  border-color: #6bcf7f;
+}
+
+.artifact-mod.overload:hover .artifact-mod-icon {
+  box-shadow: 0 0 15px rgba(107, 207, 127, 0.5);
+}
+
 /* Hidden Sections */
 .weapons-section.hidden,
 .armor-section.hidden,
 .stats-section.hidden,
-.subclass-section.hidden {
+.subclass-section.hidden,
+.artifact-section.hidden {
   display: none;
 }
 

@@ -61,6 +61,12 @@
     "value": true,
     "group": "🎨 ⋮ Display"
   },
+  "showArtifact": {
+    "type": "checkbox",
+    "label": "Show Artifact & Mods",
+    "value": true,
+    "group": "🎨 ⋮ Display"
+  },
   "showPerks": {
     "type": "checkbox",
     "label": "Show Weapon Perks",
@@ -114,7 +120,7 @@
   },
   "version": {
     "type": "text",
-    "label": "💫 D2 Loadout Widget v1.0",
+    "label": "💫 D2 Loadout Widget v0.1",
     "value": "by martinricard",
     "group": "ℹ️ ⋮ Info"
   }
