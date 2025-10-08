@@ -238,9 +238,9 @@ function displayWeapon(slotId, weaponData, slotName) {
     const powerNum = parseInt(powerValue);
     
     if (powerNum > 200) {
-      // Show blue "+X" for pinnacle power (over 200)
+      // Show cyan "X+" for pinnacle power (over 200)
       const plusValue = powerNum - 200;
-      powerElement.textContent = `+${plusValue}`;
+      powerElement.textContent = `${plusValue}+`;
       powerElement.classList.add('pinnacle-power');
     } else {
       // Show normal power with diamond icon
@@ -369,9 +369,9 @@ function displayArmor(slotId, armorData, slotName) {
     const powerNum = parseInt(powerValue);
     
     if (powerNum > 200) {
-      // Show blue "+X" for pinnacle power (over 200)
+      // Show cyan "X+" for pinnacle power (over 200)
       const plusValue = powerNum - 200;
-      powerElement.textContent = `+${plusValue}`;
+      powerElement.textContent = `${plusValue}+`;
       powerElement.classList.add('pinnacle-power');
     } else {
       // Show normal power with diamond icon

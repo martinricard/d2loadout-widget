@@ -333,12 +333,12 @@ body {
 
 /* Pinnacle power styling (over 200) */
 .weapon-power.pinnacle-power {
-  color: #5dade2; /* Light blue color */
+  color: #00e8d3; /* Cyan color */
   font-weight: 900;
 }
 
 .armor-power.pinnacle-power {
-  color: #5dade2; /* Light blue color */
+  color: #00e8d3; /* Cyan color */
   font-weight: 900;
 }
 

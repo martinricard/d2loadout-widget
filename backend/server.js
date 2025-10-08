@@ -486,36 +486,31 @@ async function processEquipmentItem(itemData, itemComponents) {
       console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking ${definition.sockets.socketEntries.length} sockets...`);
       console.log(`[Exotic Class Item] Instance sockets count: ${sockets.sockets.length}`);
       
+      // Spirit perks are intrinsic perks, not in mod sockets
+      // Check ALL sockets and filter by "Spirit of" name
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
         const socketDef = definition.sockets.socketEntries[i];
         
-        console.log(`[Exotic Class Item] Socket ${i}: plugHash=${socket.plugHash}, isEnabled=${socket.isEnabled}, randomizedPlugSetHash=${socketDef.randomizedPlugSetHash}, reusablePlugSetHash=${socketDef.reusablePlugSetHash}, singleInitialItemHash=${socketDef.singleInitialItemHash}`);
+        // Skip empty sockets
+        if (!socket.plugHash) {
+          continue;
+        }
         
-        // Exotic class item "Spirit of..." perks are in the first 2 sockets
-        // Check if this socket can have perks (has a plug set)
-        const hasPlugSet = socketDef.randomizedPlugSetHash || socketDef.reusablePlugSetHash;
-        const isExoticPerkSocket = hasPlugSet && i < 2;
+        // Fetch the plug definition to check the name
+        const plugDef = await fetchPlugDefinition(socket.plugHash);
+        const plugName = plugDef?.name || '';
         
-        if (isExoticPerkSocket && socket.plugHash) {
-          // Use the CURRENTLY EQUIPPED plug (socket.plugHash) 
-          // This is where the Spirit perk actually is
-          const plugDef = await fetchPlugDefinition(socket.plugHash);
-          const plugName = plugDef?.name || '';
-          
-          // Only add if it's a "Spirit of..." perk (not empty socket, not mod)
-          // Spirit perks ALWAYS start with "Spirit of"
-          if (plugName && plugName.startsWith('Spirit of')) {
-            console.log(`[Exotic Class Item] ✅ Found Spirit perk in socket ${i}: "${plugName}" (hash: ${socket.plugHash})`);
-            exoticClassItemPerks.push({
-              plugHash: socket.plugHash,
-              socketIndex: i
-            });
-          } else {
-            console.log(`[Exotic Class Item] Socket ${i} is NOT a Spirit perk: "${plugName}"`);
-          }
-        } else {
-          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2}, plugHash=${!!socket.plugHash})`);
+        console.log(`[Exotic Class Item] Socket ${i}: plugHash=${socket.plugHash}, name="${plugName}"`);
+        
+        // Only add if it's a "Spirit of..." perk
+        // Spirit perks are intrinsic perks bound to exotic class items
+        if (plugName && plugName.startsWith('Spirit of')) {
+          console.log(`[Exotic Class Item] ✅ Found Spirit perk in socket ${i}: "${plugName}" (hash: ${socket.plugHash})`);
+          exoticClassItemPerks.push({
+            plugHash: socket.plugHash,
+            socketIndex: i
+          });
         }
       }
       
