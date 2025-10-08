@@ -23,16 +23,6 @@
     "min": 30,
     "max": 300
   },
-  "widgetSize": {
-    "type": "dropdown",
-    "label": "Widget Size",
-    "value": "compact",
-    "options": {
-      "compact": "Compact (Recommended)",
-      "standard": "Standard",
-      "full": "Full Details"
-    }
-  },
   "showWeapons": {
     "type": "dropdown",
     "label": "Show Weapons",

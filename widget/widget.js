@@ -129,13 +129,14 @@ function displayLoadout(data) {
     const emblemUrl = data.character.emblemPath;
     document.getElementById('characterEmblem').style.backgroundImage = 
       `url('${emblemUrl}')`;
-    // Also set as header background
+    // Use higher quality emblemBackgroundPath for header background
+    const backgroundUrl = data.character.emblemBackgroundPath || emblemUrl;
     const header = document.querySelector('.character-header');
     if (header) {
-      header.style.setProperty('--emblem-bg', `url('${emblemUrl}')`);
+      header.style.setProperty('--emblem-bg', `url('${backgroundUrl}')`);
       // Apply emblem as ::before background
       const style = document.createElement('style');
-      style.textContent = `.character-header::before { background-image: url('${emblemUrl}'); }`;
+      style.textContent = `.character-header::before { background-image: url('${backgroundUrl}'); }`;
       document.head.appendChild(style);
     }
   }
@@ -334,7 +335,7 @@ function displaySubclass(subclassData) {
       
       aspectsGrid.appendChild(aspectDiv);
     });
-    aspectsContainer.style.display = 'block';
+    aspectsContainer.style.display = 'flex';
   } else {
     aspectsContainer.style.display = 'none';
   }
@@ -363,7 +364,7 @@ function displaySubclass(subclassData) {
       
       fragmentsGrid.appendChild(fragmentDiv);
     });
-    fragmentsContainer.style.display = 'block';
+    fragmentsContainer.style.display = 'flex';
   } else {
     fragmentsContainer.style.display = 'none';
   }

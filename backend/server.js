@@ -253,6 +253,9 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
         emblemPath: character.emblemPath 
           ? `https://www.bungie.net${character.emblemPath}` 
           : null,
+        emblemBackgroundPath: character.emblemBackgroundPath
+          ? `https://www.bungie.net${character.emblemBackgroundPath}`
+          : null,
         lastPlayed: character.dateLastPlayed
       },
       artifact: seasonalArtifact ? {

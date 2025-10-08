@@ -28,8 +28,8 @@ body {
 }
 
 #d2-loadout-widget {
-  width: 1250px;
-  max-width: 1250px;
+  width: 1300px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
@@ -144,10 +144,10 @@ body {
 /* Default to compact layout if no class is specified */
 .widget-container:not(.layout-standard):not(.layout-full) {
   display: grid;
-  grid-template-columns: 230px 300px 1fr; /* 3 columns: weapons, armor (wider), stats */
+  grid-template-columns: 340px 400px 1fr; /* 3 columns: weapons (wider), armor (wider), stats */
   grid-template-rows: auto auto auto;
-  width: 1250px;
-  max-width: 1250px;
+  width: 1300px;
+  max-width: 1300px;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .character-header {
@@ -178,8 +178,8 @@ body {
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .armor-section .armor-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 3px;
 }
 
@@ -191,21 +191,28 @@ body {
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns x 2 rows for stats */
-  gap: 4px;
+  grid-template-columns: repeat(2, 1fr); /* 2 columns x 3 rows for stats */
+  gap: 6px;
+  column-gap: 8px;
+  max-width: 340px;
 }
 
-/* Bottom row: Subclass + Artifacts */
+/* Bottom row: Subclass + Artifacts COMBINED on left, Stats on right */
 .widget-container:not(.layout-standard):not(.layout-full) .subclass-section {
   grid-column: 1 / 3; /* Span weapons + armor columns */
   grid-row: 3;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 8px 12px;
   border-right: 1px solid var(--border-color);
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .artifact-section {
-  grid-column: 3; /* Stats column */
-  grid-row: 3;
-  display: block;
+  display: flex !important; /* Show artifacts inside subclass section */
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 /* ========== SECTION STYLING ========== */
@@ -214,9 +221,11 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: var(--text-muted);
-  opacity: 0.6;
+  opacity: 0.7;
+  display: block;
+  text-align: left;
 }
 
 /* ========== WEAPONS SECTION ========== */
@@ -247,8 +256,8 @@ body {
 }
 
 .weapon-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -262,7 +271,7 @@ body {
 }
 
 .weapon-name {
-  font-size: 0.85em;
+  font-size: 0.95em;
   font-weight: 600;
   margin-bottom: 0px;
   white-space: nowrap;
@@ -275,7 +284,7 @@ body {
 }
 
 .weapon-type {
-  font-size: 0.65em;
+  font-size: 0.75em;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -291,8 +300,8 @@ body {
 
 /* ========== ARMOR SECTION ========== */
 .armor-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 3px;
 }
 
@@ -317,8 +326,8 @@ body {
 }
 
 .armor-icon {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -332,7 +341,7 @@ body {
 }
 
 .armor-name {
-  font-size: 0.75em;
+  font-size: 0.8em;
   font-weight: 600;
   margin-bottom: 0px;
   white-space: nowrap;
@@ -345,7 +354,7 @@ body {
 }
 
 .armor-type {
-  font-size: 0.6em;
+  font-size: 0.7em;
   color: var(--text-muted);
   text-transform: uppercase;
 }
@@ -361,8 +370,10 @@ body {
 /* ========== STATS SECTION ========== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  column-gap: 8px;
+  max-width: 340px;
 }
 
 .stat-row {
@@ -436,45 +447,77 @@ body {
 
 /* ========== SUBCLASS & ARTIFACT (Hidden for compact view) ========== */
 .subclass-section {
-  display: block;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.subclass-section .section-title {
+  display: none; /* Hide the floating section title */
 }
 
 /* Single horizontal row containing EVERYTHING */
 .subclass-display {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: var(--bg-color);
-  border-radius: var(--radius);
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
   margin-bottom: 0;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  position: relative;
+  padding-top: 0;
+  margin-top: 14px;
 }
 
 .subclass-icon {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   background-size: cover;
   background-position: center;
-  background-color: #000;
+  background-color: transparent;
   border-radius: var(--radius);
   flex-shrink: 0;
+  margin-right: 16px;
+  position: relative;
+  margin-top: 0;
 }
 
 .subclass-info {
-  display: none; /* Hide the text label */
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 80px;
+  text-align: left;
+  gap: 5px;
+}
+
+.subclass-info::before {
+  content: 'SUBCLASS';
+  font-size: 0.6em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  opacity: 0.7;
+  display: block;
 }
 
 .subclass-name {
-  font-size: 1em;
+  font-size: 0.55em;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #fff;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  opacity: 0.7;
 }
 
 .subclass-type {
@@ -483,31 +526,37 @@ body {
 
 /* Aspects Grid - Inline in same row */
 .aspects-container {
-  display: contents; /* Makes children part of parent flex */
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-direction: column;
+  position: relative;
 }
 
 .aspects-label {
-  font-size: 0.55em;
+  font-size: 0.6em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
   opacity: 0.7;
   margin: 0;
-  min-width: 42px;
+  margin-bottom: 2px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .aspects-grid {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   flex-wrap: nowrap;
+  align-items: center;
 }
 
 .aspect-item {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -527,31 +576,37 @@ body {
 
 /* Fragments Grid - Inline in same row */
 .fragments-container {
-  display: contents; /* Makes children part of parent flex */
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-direction: column;
+  position: relative;
 }
 
 .fragments-label {
-  font-size: 0.55em;
+  font-size: 0.6em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--text-muted);
   opacity: 0.7;
   margin: 0;
-  min-width: 50px;
+  margin-bottom: 2px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .fragments-grid {
   display: flex;
-  gap: 3px;
+  gap: 4px;
   flex-wrap: nowrap;
+  align-items: center;
 }
 
 .fragment-item {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -601,7 +656,18 @@ body {
 }
 
 .artifact-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 auto;
+}
+
+.artifact-section .section-title {
   display: block;
+  text-align: left;
+  margin-bottom: 8px;
+  font-size: 0.65em;
+  opacity: 0.7;
 }
 
 /* ========== ARTIFACT STYLING ========== */
@@ -609,24 +675,25 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding: 2px 0;
 }
 
 .artifact-mods-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
-  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 280px;
+  justify-content: flex-start;
 }
 
 .artifact-mod {
   position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 100%;
-  max-width: 32px;
-  max-height: 32px;
+  width: 38px;
+  height: 38px;
   cursor: pointer;
   transition: transform 0.15s ease;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .artifact-mod:hover {
@@ -635,9 +702,6 @@ body {
 }
 
 .artifact-mod-icon {
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
   background-size: cover;
@@ -681,12 +745,7 @@ body {
   white-space: normal;
 }
 
-.subclass-info,
-.subclass-display,
-.subclass-icon,
-.subclass-name {
-  display: block;
-}
+/* Remove the display:block override - it breaks flex layout */
 
 /* ========== ERROR MESSAGE ========== */
 .error-message,
