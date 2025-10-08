@@ -713,46 +713,57 @@ async function processSubclassDetails(itemData, itemComponents) {
   };
 }
 
-// Generate DIM loadout link
+// Generate DIM loadout link (minimal version to stay under URL length limits)
 async function generateDIMLink(displayName, classType, equipment, itemComponents, artifactMods, characterProgression) {
   try {
     const equipped = [];
     const modHashes = [];
     
-    // Process each equipped item
+    // Process each equipped item - ONLY include essential data
     for (const item of equipment.items || []) {
       const itemData = {
         id: item.itemInstanceId,
         hash: item.itemHash
       };
       
-      // Get socket overrides (selected perks/mods)
-      const sockets = itemComponents.sockets?.[item.itemInstanceId];
-      if (sockets && sockets.sockets) {
-        const socketOverrides = {};
-        
-        for (let i = 0; i < sockets.sockets.length; i++) {
-          const socket = sockets.sockets[i];
-          if (socket.plugHash && socket.plugHash !== 0) {
-            socketOverrides[i.toString()] = socket.plugHash;
+      // Only include socketOverrides for subclass (most important for build identity)
+      // Skip weapons and armor sockets to reduce URL length significantly
+      const isSubclass = item.bucketHash === BUCKET_HASHES.SUBCLASS;
+      
+      if (isSubclass) {
+        const sockets = itemComponents.sockets?.[item.itemInstanceId];
+        if (sockets && sockets.sockets) {
+          const socketOverrides = {};
+          
+          for (let i = 0; i < sockets.sockets.length; i++) {
+            const socket = sockets.sockets[i];
+            if (socket.plugHash && socket.plugHash !== 0) {
+              socketOverrides[i.toString()] = socket.plugHash;
+            }
+          }
+          
+          if (Object.keys(socketOverrides).length > 0) {
+            itemData.socketOverrides = socketOverrides;
           }
         }
+      }
+      
+      // Collect armor mod hashes for parameters.mods array
+      if (item.bucketHash === BUCKET_HASHES.HELMET ||
+          item.bucketHash === BUCKET_HASHES.ARMS ||
+          item.bucketHash === BUCKET_HASHES.CHEST ||
+          item.bucketHash === BUCKET_HASHES.LEGS ||
+          item.bucketHash === BUCKET_HASHES.CLASS_ITEM) {
         
-        if (Object.keys(socketOverrides).length > 0) {
-          itemData.socketOverrides = socketOverrides;
-        }
-        
-        // Extract armor mods for parameters.mods array
-        if (item.bucketHash === BUCKET_HASHES.HELMET ||
-            item.bucketHash === BUCKET_HASHES.ARMS ||
-            item.bucketHash === BUCKET_HASHES.CHEST ||
-            item.bucketHash === BUCKET_HASHES.LEGS ||
-            item.bucketHash === BUCKET_HASHES.CLASS_ITEM) {
-          
-          for (const socket of sockets.sockets) {
-            if (socket.plugHash && socket.plugHash !== 0) {
-              // Filter for actual mods (not perks or stats)
-              // This is a simplified check - you might need to refine this
+        const sockets = itemComponents.sockets?.[item.itemInstanceId];
+        if (sockets && sockets.sockets) {
+          // Only get actual mods (socket category 4 typically = mods)
+          // Skip intrinsic perks, stats, shaders, etc.
+          for (let i = 0; i < sockets.sockets.length; i++) {
+            const socket = sockets.sockets[i];
+            // Simple heuristic: mods are usually in later socket indices (after perks/stats)
+            // And are typically not default plugs
+            if (socket.plugHash && socket.plugHash !== 0 && i >= 6) {
               modHashes.push(socket.plugHash);
             }
           }
@@ -807,43 +818,60 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
   }
 }
 
-// Shorten URL using Bitly API
+// Shorten URL using TinyURL API (supports longer URLs than Bitly)
 async function shortenDIMUrl(longUrl) {
   try {
-    const BITLY_TOKEN = process.env.BITLY_TOKEN;
+    console.log('[TinyURL] Attempting to shorten URL (length:', longUrl.length, 'chars)');
     
-    if (!BITLY_TOKEN) {
-      console.warn('[Bitly] BITLY_TOKEN not configured in environment variables, returning long URL');
-      console.warn('[Bitly] Long URL was:', longUrl);
+    const TINYURL_TOKEN = process.env.TINYURL_TOKEN;
+    
+    if (!TINYURL_TOKEN) {
+      console.warn('[TinyURL] TINYURL_TOKEN not configured, using free API');
+      // Fall back to free API without authentication
+      const response = await axios.get('https://tinyurl.com/api-create.php', {
+        params: {
+          url: longUrl
+        },
+        timeout: 5000
+      });
+      
+      if (response.data && typeof response.data === 'string' && response.data.startsWith('http')) {
+        console.log('[TinyURL] Successfully shortened to:', response.data);
+        return response.data;
+      }
+      
+      console.warn('[TinyURL] Invalid response, returning long URL');
       return longUrl;
     }
     
-    console.log('[Bitly] Attempting to shorten URL:', longUrl);
-    
-    const response = await axios.post('https://api-ssl.bitly.com/v4/shorten', {
-      long_url: longUrl
+    // Use authenticated API v2 for better rate limits
+    console.log('[TinyURL] Using authenticated API');
+    const response = await axios.post('https://api.tinyurl.com/create', {
+      url: longUrl,
+      domain: 'tinyurl.com'
     }, {
       headers: {
-        'Authorization': `Bearer ${BITLY_TOKEN}`,
+        'Authorization': `Bearer ${TINYURL_TOKEN}`,
         'Content-Type': 'application/json'
       },
-      timeout: 5000 // 5 second timeout
+      timeout: 5000
     });
     
-    if (response.data && response.data.link) {
-      console.log('[Bitly] Successfully shortened to:', response.data.link);
-      return response.data.link;
+    if (response.data && response.data.data && response.data.data.tiny_url) {
+      console.log('[TinyURL] Successfully shortened to:', response.data.data.tiny_url);
+      return response.data.data.tiny_url;
     }
     
-    console.warn('[Bitly] No link in response, returning long URL');
+    console.warn('[TinyURL] Invalid response, returning long URL');
     return longUrl;
   } catch (error) {
-    console.error('[Bitly] Error shortening DIM URL:', error.message);
+    console.error('[TinyURL] Error shortening DIM URL:', error.message);
     if (error.response) {
-      console.error('[Bitly] Response status:', error.response.status);
-      console.error('[Bitly] Response data:', JSON.stringify(error.response.data));
+      console.error('[TinyURL] Response status:', error.response.status);
+      console.error('[TinyURL] Response data:', JSON.stringify(error.response.data));
     }
-    return longUrl; // Fallback to long URL
+    // Fallback: Return long URL - frontend will display as "DIM Loadout"
+    return longUrl;
   }
 }
 

@@ -732,8 +732,15 @@ function updateDIMLink(dimLinkUrl) {
     // Display shortened URLs properly
     let displayText = dimLinkUrl; // Default to showing full URL
     
+    // Check for TinyURL shortened URLs
+    if (dimLinkUrl.includes('tinyurl.com/')) {
+      const tinyMatch = dimLinkUrl.match(/tinyurl\.com\/([^/?]+)/);
+      if (tinyMatch) {
+        displayText = `tinyurl.com/${tinyMatch[1]}`;
+      }
+    }
     // Check for bit.ly shortened URLs
-    if (dimLinkUrl.includes('bit.ly/')) {
+    else if (dimLinkUrl.includes('bit.ly/')) {
       const bitlyMatch = dimLinkUrl.match(/bit\.ly\/([^/?]+)/);
       if (bitlyMatch) {
         displayText = `bit.ly/${bitlyMatch[1]}`;
