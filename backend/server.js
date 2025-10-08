@@ -486,10 +486,6 @@ async function processEquipmentItem(itemData, itemComponents) {
       console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking ${definition.sockets.socketEntries.length} sockets...`);
       console.log(`[Exotic Class Item] Instance sockets count: ${sockets.sockets.length}`);
       
-      // Get socket overrides (where Spirit perks are stored for exotic class items)
-      const socketOverridesData = itemComponents.sockets?.[itemInstanceId]?.socketOverrides || {};
-      console.log(`[Exotic Class Item] Socket overrides:`, socketOverridesData);
-      
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
         const socketDef = definition.sockets.socketEntries[i];
@@ -497,25 +493,29 @@ async function processEquipmentItem(itemData, itemComponents) {
         console.log(`[Exotic Class Item] Socket ${i}: plugHash=${socket.plugHash}, isEnabled=${socket.isEnabled}, randomizedPlugSetHash=${socketDef.randomizedPlugSetHash}, reusablePlugSetHash=${socketDef.reusablePlugSetHash}, singleInitialItemHash=${socketDef.singleInitialItemHash}`);
         
         // Exotic class item "Spirit of..." perks are in the first 2 sockets
-        // They are stored in socketOverrides (not plugHash which shows the equipped mod)
+        // Check if this socket can have perks (has a plug set)
         const hasPlugSet = socketDef.randomizedPlugSetHash || socketDef.reusablePlugSetHash;
         const isExoticPerkSocket = hasPlugSet && i < 2;
         
-        if (isExoticPerkSocket) {
-          // Check for socket override first (Spirit perks are stored here)
-          const perkHash = socketOverridesData[i] || socketDef.singleInitialItemHash;
+        if (isExoticPerkSocket && socket.plugHash) {
+          // Use the CURRENTLY EQUIPPED plug (socket.plugHash) 
+          // This is where the Spirit perk actually is
+          // Ignore "Empty Mod Socket" placeholders
+          const plugDef = await fetchPlugDefinition(socket.plugHash);
+          const plugName = plugDef?.name || '';
           
-          if (perkHash) {
-            console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: perkHash ${perkHash} ${socketOverridesData[i] ? '(from socketOverride)' : '(from singleInitialItemHash)'}`);
+          // Only add if it's NOT an empty socket or mod
+          if (plugName && !plugName.includes('Empty') && !plugName.includes('Mod Socket')) {
+            console.log(`[Exotic Class Item] ✅ Found Spirit perk in socket ${i}: "${plugName}" (hash: ${socket.plugHash})`);
             exoticClassItemPerks.push({
-              plugHash: perkHash,
+              plugHash: socket.plugHash,
               socketIndex: i
             });
           } else {
-            console.log(`[Exotic Class Item] Socket ${i} has no perkHash available`);
+            console.log(`[Exotic Class Item] Socket ${i} is empty or has placeholder: "${plugName}"`);
           }
         } else {
-          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2})`);
+          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2}, plugHash=${!!socket.plugHash})`);
         }
       }
       
