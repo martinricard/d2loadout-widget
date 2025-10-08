@@ -960,6 +960,31 @@ body {
   font-size: 0.7em;
   color: var(--text-muted);
   opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.footer-separator {
+  opacity: 0.3;
+}
+
+.dim-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+  pointer-events: none; /* Since viewers can't click on overlay */
+}
+
+.dim-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
 }
 
 .footer-separator {
