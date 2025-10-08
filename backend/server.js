@@ -485,7 +485,10 @@ async function processEquipmentItem(itemData, itemComponents) {
     if (isClassItem && isExotic && definition.sockets?.socketEntries) {
       console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking ${definition.sockets.socketEntries.length} sockets...`);
       console.log(`[Exotic Class Item] Instance sockets count: ${sockets.sockets.length}`);
-      console.log(`[Exotic Class Item] Socket overrides:`, itemInstance.data.sockets.data.socketOverrides);
+      
+      // Get socket overrides (where Spirit perks are stored for exotic class items)
+      const socketOverridesData = itemComponents.sockets?.[itemInstanceId]?.socketOverrides || {};
+      console.log(`[Exotic Class Item] Socket overrides:`, socketOverridesData);
       
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
@@ -500,11 +503,10 @@ async function processEquipmentItem(itemData, itemComponents) {
         
         if (isExoticPerkSocket) {
           // Check for socket override first (Spirit perks are stored here)
-          const socketOverrides = itemInstance.data.sockets.data.socketOverrides || {};
-          const perkHash = socketOverrides[i.toString()] || socketDef.singleInitialItemHash;
+          const perkHash = socketOverridesData[i] || socketDef.singleInitialItemHash;
           
           if (perkHash) {
-            console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: perkHash ${perkHash} ${socketOverrides[i.toString()] ? '(from socketOverride)' : '(from singleInitialItemHash)'}`);
+            console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: perkHash ${perkHash} ${socketOverridesData[i] ? '(from socketOverride)' : '(from singleInitialItemHash)'}`);
             exoticClassItemPerks.push({
               plugHash: perkHash,
               socketIndex: i
