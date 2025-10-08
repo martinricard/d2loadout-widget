@@ -497,8 +497,10 @@ async function processEquipmentItem(itemData, itemComponents) {
           continue;
         }
         
-        // Exotic class item "Spirit of..." perks are in the first 2 sockets with randomized plugs
-        const isExoticPerkSocket = socketDef.randomizedPlugSetHash && i < 2;
+        // Exotic class item "Spirit of..." perks are in the first 2 sockets
+        // They use reusablePlugSetHash, not randomizedPlugSetHash
+        const hasPlugSet = socketDef.randomizedPlugSetHash || socketDef.reusablePlugSetHash;
+        const isExoticPerkSocket = hasPlugSet && i < 2;
         
         if (isExoticPerkSocket) {
           console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: plugHash ${socket.plugHash}`);
@@ -507,7 +509,7 @@ async function processEquipmentItem(itemData, itemComponents) {
             socketIndex: i
           });
         } else {
-          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (randomized=${!!socketDef.randomizedPlugSetHash}, index<2=${i < 2})`);
+          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2})`);
         }
       }
       
