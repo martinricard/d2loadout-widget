@@ -596,7 +596,8 @@ async function processEquipmentItem(itemData, itemComponents) {
     state: itemData.state || 0,
     overrideStyleItemHash: itemData.overrideStyleItemHash || null,
     quality: definition.quality || null,
-    weaponTier: definition.quality?.currentVersion || null, // Tier 1-5 for tiered weapons
+    // Weapon tier: Check if ANY weapon perk is enhanced (indicates T2+ weapon)
+    weaponTier: weaponPerkData.some(perk => perk.isEnhanced) ? 1 : null,
     iconWatermark: definition.iconWatermark || null,
     iconWatermarkShelved: definition.iconWatermarkShelved || null
   };
