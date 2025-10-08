@@ -239,10 +239,6 @@ function displayWeapon(slotId, weaponData, slotName) {
       existingTierBadge.remove();
     }
     
-    // Check if weapon is masterworked (state & 4 means masterworked)
-    // State flags: 0 = None, 1 = Locked, 2 = Tracked, 4 = Masterwork
-    const isMasterworked = weaponData.state && (weaponData.state & 4) !== 0;
-    
     // Check if this is a tiered weapon (Tier 1-5 system from Edge of Fate)
     const weaponTier = weaponData.weaponTier;
     if (weaponTier !== null && weaponTier !== undefined && weaponTier >= 0) {
@@ -255,18 +251,7 @@ function displayWeapon(slotId, weaponData, slotName) {
       iconElement.appendChild(tierBadge);
     }
     
-    if (isMasterworked) {
-      // Add masterwork overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'masterwork-overlay';
-      iconElement.appendChild(overlay);
-      
-      if (weaponData.isExotic) {
-        iconElement.classList.add('masterwork-exotic');
-      } else {
-        iconElement.classList.add('masterwork');
-      }
-    }
+    // Masterwork display removed - too much visual clutter
     
     // Check for watermark (seasonal/event variants)
     if (weaponData.iconWatermark) {
@@ -350,21 +335,7 @@ function displayArmor(slotId, armorData, slotName) {
       existingOverlay.remove();
     }
     
-    // Check if armor is masterworked (state & 4 means masterworked)
-    const isMasterworked = armorData.state && (armorData.state & 4) !== 0;
-    
-    if (isMasterworked) {
-      // Add masterwork overlay
-      const overlay = document.createElement('div');
-      overlay.className = 'masterwork-overlay';
-      iconElement.appendChild(overlay);
-      
-      if (armorData.isExotic) {
-        iconElement.classList.add('masterwork-exotic');
-      } else {
-        iconElement.classList.add('masterwork');
-      }
-    }
+    // Masterwork display removed - too much visual clutter
     
     // Check for watermark (seasonal/event variants)
     if (armorData.iconWatermark) {

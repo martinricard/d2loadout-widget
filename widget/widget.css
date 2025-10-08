@@ -25,6 +25,10 @@ body {
   color: var(--text-color);
   font-size: var(--font-size);
   line-height: 1.3;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 #d2-loadout-widget {
@@ -84,6 +88,9 @@ body {
   position: relative;
   z-index: 1;
   border: 2px solid rgba(255,255,255,0.2);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .character-info {
@@ -100,6 +107,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.3px;
   text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .character-name.loading {
@@ -203,11 +213,6 @@ body {
   grid-column: 3; /* Single column */
   grid-row: 2;
   border-bottom: 1px solid var(--border-color);
-  padding-left: 8px;
-}
-
-.widget-container:not(.layout-standard):not(.layout-full) .stats-section .section-title {
-  padding-left: 0;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
@@ -287,37 +292,13 @@ body {
   flex-shrink: 0;
   position: relative;
   overflow: visible;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
-/* Masterwork overlay - golden border */
-.weapon-icon.masterwork::after,
-.armor-icon.masterwork::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border: 2px solid #f1d770;
-  border-radius: var(--radius);
-  pointer-events: none;
-  box-shadow: 0 0 8px rgba(241, 215, 112, 0.5);
-}
-
-/* Exotic masterwork - more intense glow */
-.weapon-icon.masterwork-exotic::after,
-.armor-icon.masterwork-exotic::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border: 2px solid #f1d770;
-  border-radius: var(--radius);
-  pointer-events: none;
-  box-shadow: 0 0 12px rgba(241, 215, 112, 0.7), 0 0 6px rgba(241, 215, 112, 0.5);
-}
+/* Masterwork overlay - removed (too much visual clutter) */
+/* No longer displaying masterwork glow */
 
 /* Watermark overlay (seasonal/event variants) */
 .item-watermark {
@@ -393,6 +374,9 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .weapon-slot.exotic .weapon-name {
@@ -442,6 +426,9 @@ body {
   cursor: help;
   flex-shrink: 0;
   transition: transform 0.15s ease;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .weapon-perk-icon:hover {
@@ -504,6 +491,9 @@ body {
   flex-shrink: 0;
   position: relative;
   overflow: visible;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .armor-info {
@@ -518,6 +508,9 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .armor-slot.exotic .armor-name {
@@ -567,6 +560,9 @@ body {
   flex-shrink: 0;
   transition: transform 0.15s ease;
   border: 1px solid rgba(206, 174, 51, 0.3);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .exotic-perk-icon:hover {
@@ -617,6 +613,9 @@ body {
   background-repeat: no-repeat;
   opacity: 0.9;
   flex-shrink: 0;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 /* Remove emoji fallbacks - using real Bungie icons now */
@@ -692,6 +691,9 @@ body {
   margin-right: 12px;
   position: relative;
   margin-top: 16px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .subclass-info {
@@ -770,6 +772,9 @@ body {
   transition: all 0.15s ease;
   cursor: pointer;
   flex-shrink: 0;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .aspect-item:hover {
@@ -823,6 +828,9 @@ body {
   transition: all 0.15s ease;
   cursor: pointer;
   flex-shrink: 0;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .fragment-item:hover {
@@ -920,6 +928,9 @@ body {
   background-color: #000;
   border-radius: 2px;
   border: 1px solid rgba(255,255,255,0.1);
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .artifact-mod-tooltip {

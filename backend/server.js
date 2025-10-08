@@ -449,40 +449,34 @@ async function processEquipmentItem(itemData, itemComponents) {
     const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
     const isExotic = definition.inventory?.tierType === 6;
     
-    // Extract weapon perks - Only major perks (columns 3-4) + equipped mod
+    // Extract weapon perks - Only the first TWO main perks (columns 3-4 only, socket indexes 2-3)
     if (isWeapon && definition.sockets?.socketEntries) {
+      let perkCount = 0;
+      const maxPerks = 2; // Only show 2 main perks
+      
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
         const socketDef = definition.sockets.socketEntries[i];
         
         if (!socket.plugHash || !socket.isEnabled) continue;
         
-        // Socket type hashes for weapon perk columns
-        const PERK_SOCKET_TYPES = [
-          3956125808, // Weapon Perk Socket (Column 3)
-          2218962841, // Weapon Perk Socket (Column 4)  
-          // Add more if needed
-        ];
-        
         // Socket type hash for weapon mod
         const MOD_SOCKET_TYPE = 3851138800; // Weapon Mod Socket
         
-        // Check if this is a major perk socket (columns 3-4)
+        // Check if this is a major perk socket (columns 3-4 only, indexes 2-3)
         const isMajorPerk = socketDef.socketTypeHash && (
           socketDef.reusablePlugSetHash || 
           socketDef.randomizedPlugSetHash
-        ) && i >= 2 && i <= 5 && socket.isVisible;
+        ) && i >= 2 && i <= 3 && socket.isVisible;
         
-        // Check if this is the mod socket (last socket, usually index 7-9)
-        const isMod = socketDef.socketTypeHash === MOD_SOCKET_TYPE || 
-          (i >= 7 && socketDef.singleInitialItemHash && socket.isVisible);
-        
-        if (isMajorPerk || isMod) {
+        // Only add the first 2 perks found
+        if (isMajorPerk && perkCount < maxPerks) {
           weaponPerks.push({
             plugHash: socket.plugHash,
             socketIndex: i,
-            isMod: isMod
+            isMod: false
           });
+          perkCount++;
         }
       }
     }
