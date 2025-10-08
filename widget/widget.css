@@ -28,8 +28,8 @@ body {
 }
 
 #d2-loadout-widget {
-  width: 1000px;
-  max-width: 1000px;
+  width: 1250px;
+  max-width: 1250px;
   margin: 0 auto;
 }
 
@@ -144,10 +144,10 @@ body {
 /* Default to compact layout if no class is specified */
 .widget-container:not(.layout-standard):not(.layout-full) {
   display: grid;
-  grid-template-columns: 240px 230px 1fr; /* 3 columns: weapons, armor, stats - increased armor width */
+  grid-template-columns: 230px 300px 1fr; /* 3 columns: weapons, armor (wider), stats */
   grid-template-rows: auto auto auto;
-  width: 1000px;
-  max-width: 1000px;
+  width: 1250px;
+  max-width: 1250px;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .character-header {
@@ -439,20 +439,22 @@ body {
   display: block;
 }
 
+/* Single horizontal row containing EVERYTHING */
 .subclass-display {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 6px;
+  gap: 6px;
+  padding: 6px 8px;
   background: var(--bg-color);
   border-radius: var(--radius);
-  margin-bottom: 4px;
+  margin-bottom: 0;
   flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .subclass-icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -461,15 +463,11 @@ body {
 }
 
 .subclass-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: none; /* Hide the text label */
 }
 
 .subclass-name {
-  font-size: 0.85em;
+  font-size: 1em;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -483,15 +481,9 @@ body {
   display: none;
 }
 
-/* Aspects Grid - Horizontal layout */
+/* Aspects Grid - Inline in same row */
 .aspects-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  background: var(--bg-color);
-  border-radius: var(--radius);
-  margin-bottom: 3px;
+  display: contents; /* Makes children part of parent flex */
 }
 
 .aspects-label {
@@ -502,27 +494,28 @@ body {
   color: var(--text-muted);
   opacity: 0.7;
   margin: 0;
-  min-width: 48px;
+  min-width: 42px;
+  flex-shrink: 0;
 }
 
 .aspects-grid {
   display: flex;
   gap: 3px;
   flex-wrap: nowrap;
-  flex: 1;
 }
 
 .aspect-item {
   position: relative;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   background-size: cover;
   background-position: center;
   background-color: #000;
-  border-radius: 2px;
+  border-radius: 3px;
   border: 1px solid rgba(255,255,255,0.1);
   transition: all 0.15s ease;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .aspect-item:hover {
@@ -532,15 +525,9 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* Fragments Grid - Horizontal layout */
+/* Fragments Grid - Inline in same row */
 .fragments-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  background: var(--bg-color);
-  border-radius: var(--radius);
-  margin-bottom: 0;
+  display: contents; /* Makes children part of parent flex */
 }
 
 .fragments-label {
@@ -551,27 +538,28 @@ body {
   color: var(--text-muted);
   opacity: 0.7;
   margin: 0;
-  min-width: 48px;
+  min-width: 50px;
+  flex-shrink: 0;
 }
 
 .fragments-grid {
   display: flex;
   gap: 3px;
   flex-wrap: nowrap;
-  flex: 1;
 }
 
 .fragment-item {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   background-size: cover;
   background-position: center;
   background-color: #000;
-  border-radius: 2px;
+  border-radius: 3px;
   border: 1px solid rgba(255,255,255,0.1);
   transition: all 0.15s ease;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .fragment-item:hover {
@@ -626,13 +614,17 @@ body {
 .artifact-mods-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 3px;
+  gap: 2px;
+  max-width: 100%;
 }
 
 .artifact-mod {
   position: relative;
   width: 100%;
+  height: 0;
   padding-bottom: 100%;
+  max-width: 32px;
+  max-height: 32px;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
