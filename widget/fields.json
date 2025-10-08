@@ -66,6 +66,15 @@
       "false": "No"
     }
   },
+  "exoticPerksDisplay": {
+    "type": "dropdown",
+    "label": "Exotic Class Item Perks Display",
+    "value": "text",
+    "options": {
+      "text": "Text Names",
+      "icons": "Icons"
+    }
+  },
   "backgroundColor": {
     "type": "colorpicker",
     "label": "Background Color",

@@ -238,9 +238,9 @@ function displayWeapon(slotId, weaponData, slotName) {
     const powerNum = parseInt(powerValue);
     
     if (powerNum > 200) {
-      // Show cyan "X+" for pinnacle power (over 200)
+      // Show cyan "X +" for pinnacle power (over 200) - with space between number and +
       const plusValue = powerNum - 200;
-      powerElement.textContent = `${plusValue}+`;
+      powerElement.textContent = `${plusValue} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
       // Show normal power with diamond icon
@@ -369,9 +369,9 @@ function displayArmor(slotId, armorData, slotName) {
     const powerNum = parseInt(powerValue);
     
     if (powerNum > 200) {
-      // Show cyan "X+" for pinnacle power (over 200)
+      // Show cyan "X +" for pinnacle power (over 200) - with space between number and +
       const plusValue = powerNum - 200;
-      powerElement.textContent = `${plusValue}+`;
+      powerElement.textContent = `${plusValue} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
       // Show normal power with diamond icon
@@ -425,18 +425,45 @@ function displayArmor(slotId, armorData, slotName) {
     
     if (armorData.exoticPerks && armorData.exoticPerks.length > 0) {
       console.log(`[${slotName}] Found ${armorData.exoticPerks.length} exotic perks:`, armorData.exoticPerks);
-      armorData.exoticPerks.forEach(perk => {
-        if (perk.iconUrl) {
-          console.log(`[${slotName}] Adding exotic perk: "${perk.name}" with icon: ${perk.iconUrl}`);
-          const perkIcon = document.createElement('div');
-          perkIcon.className = 'exotic-perk-icon';
-          perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
-          perkIcon.title = `${perk.name}\n${perk.description}`;
-          exoticPerksContainer.appendChild(perkIcon);
-        } else {
-          console.warn(`[${slotName}] Exotic perk "${perk.name}" has no icon URL`);
-        }
-      });
+      
+      // Check if user wants text or icon display
+      const displayMode = fieldData.exoticPerksDisplay || 'text';
+      
+      if (displayMode === 'text') {
+        // Display as text names
+        armorData.exoticPerks.forEach((perk, index) => {
+          console.log(`[${slotName}] Adding exotic perk text: "${perk.name}"`);
+          const perkText = document.createElement('span');
+          perkText.className = 'exotic-perk-text';
+          // Remove "Spirit of " prefix for cleaner display
+          const cleanName = perk.name.replace(/^Spirit of\s+/i, '');
+          perkText.textContent = cleanName;
+          perkText.title = `${perk.name}\n${perk.description}`;
+          exoticPerksContainer.appendChild(perkText);
+          
+          // Add separator between perks (except for last one)
+          if (index < armorData.exoticPerks.length - 1) {
+            const separator = document.createElement('span');
+            separator.className = 'exotic-perk-separator';
+            separator.textContent = '•';
+            exoticPerksContainer.appendChild(separator);
+          }
+        });
+      } else {
+        // Display as icons (original behavior)
+        armorData.exoticPerks.forEach(perk => {
+          if (perk.iconUrl) {
+            console.log(`[${slotName}] Adding exotic perk icon: "${perk.name}" with icon: ${perk.iconUrl}`);
+            const perkIcon = document.createElement('div');
+            perkIcon.className = 'exotic-perk-icon';
+            perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
+            perkIcon.title = `${perk.name}\n${perk.description}`;
+            exoticPerksContainer.appendChild(perkIcon);
+          } else {
+            console.warn(`[${slotName}] Exotic perk "${perk.name}" has no icon URL`);
+          }
+        });
+      }
     } else {
       console.log(`[${slotName}] No exotic perks found`);
     }
