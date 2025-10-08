@@ -26,9 +26,9 @@
   "widgetSize": {
     "type": "dropdown",
     "label": "Widget Size",
-    "value": "standard",
+    "value": "compact",
     "options": {
-      "compact": "Compact",
+      "compact": "Compact (Recommended)",
       "standard": "Standard",
       "full": "Full Details"
     }
@@ -119,10 +119,5 @@
     "min": 10,
     "max": 24,
     "step": 1
-  },
-  "apiEndpoint": {
-    "type": "textfield",
-    "label": "API Endpoint",
-    "value": "https://d2loadout-widget.onrender.com"
   }
 }

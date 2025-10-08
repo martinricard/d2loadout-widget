@@ -3,12 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D2 Loadout Widget</title>
+  <title>D2 Loadout Widget Test</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="widget/widget.css">
+  <style>
+    body {
+      margin: 20px;
+      background: #0a0a0c;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+  </style>
 </head>
 <body>
+  <!-- Widget HTML content -->
   <div id="d2-loadout-widget" class="loadout-widget">
     <div class="widget-container">
       <!-- Character Header -->
@@ -55,53 +67,6 @@
         </div>
       </div>
 
-      <!-- Armor Section -->
-      <div class="armor-section" id="armorSection">
-        <div class="section-title">Armor</div>
-        <div class="armor-grid">
-          <div class="armor-slot" id="helmetSlot">
-            <div class="armor-icon"></div>
-            <div class="armor-info">
-              <div class="armor-name">-</div>
-              <div class="armor-type">Helmet</div>
-            </div>
-            <div class="armor-power"></div>
-          </div>
-          <div class="armor-slot" id="armsSlot">
-            <div class="armor-icon"></div>
-            <div class="armor-info">
-              <div class="armor-name">-</div>
-              <div class="armor-type">Arms</div>
-            </div>
-            <div class="armor-power"></div>
-          </div>
-          <div class="armor-slot" id="chestSlot">
-            <div class="armor-icon"></div>
-            <div class="armor-info">
-              <div class="armor-name">-</div>
-              <div class="armor-type">Chest</div>
-            </div>
-            <div class="armor-power"></div>
-          </div>
-          <div class="armor-slot" id="legsSlot">
-            <div class="armor-icon"></div>
-            <div class="armor-info">
-              <div class="armor-name">-</div>
-              <div class="armor-type">Legs</div>
-            </div>
-            <div class="armor-power"></div>
-          </div>
-          <div class="armor-slot" id="classItemSlot">
-            <div class="armor-icon"></div>
-            <div class="armor-info">
-              <div class="armor-name">-</div>
-              <div class="armor-type">Class Item</div>
-            </div>
-            <div class="armor-power"></div>
-          </div>
-        </div>
-      </div>
-
       <!-- Stats Section -->
       <div class="stats-section" id="statsSection">
         <div class="section-title">Stats</div>
@@ -111,9 +76,6 @@
               <span class="stat-icon mobility"></span>
               <span class="stat-name" data-stat="Mobility">Weapons</span>
             </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Mobility"></div>
-            </div>
             <div class="stat-value" data-stat="Mobility">0</div>
             <div class="stat-tier" data-stat="Mobility">T0</div>
           </div>
@@ -121,9 +83,6 @@
             <div class="stat-label">
               <span class="stat-icon resilience"></span>
               <span class="stat-name" data-stat="Resilience">Health</span>
-            </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Resilience"></div>
             </div>
             <div class="stat-value" data-stat="Resilience">0</div>
             <div class="stat-tier" data-stat="Resilience">T0</div>
@@ -133,9 +92,6 @@
               <span class="stat-icon recovery"></span>
               <span class="stat-name" data-stat="Recovery">Class</span>
             </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Recovery"></div>
-            </div>
             <div class="stat-value" data-stat="Recovery">0</div>
             <div class="stat-tier" data-stat="Recovery">T0</div>
           </div>
@@ -143,9 +99,6 @@
             <div class="stat-label">
               <span class="stat-icon discipline"></span>
               <span class="stat-name" data-stat="Discipline">Grenade</span>
-            </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Discipline"></div>
             </div>
             <div class="stat-value" data-stat="Discipline">0</div>
             <div class="stat-tier" data-stat="Discipline">T0</div>
@@ -155,9 +108,6 @@
               <span class="stat-icon intellect"></span>
               <span class="stat-name" data-stat="Intellect">Super</span>
             </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Intellect"></div>
-            </div>
             <div class="stat-value" data-stat="Intellect">0</div>
             <div class="stat-tier" data-stat="Intellect">T0</div>
           </div>
@@ -165,9 +115,6 @@
             <div class="stat-label">
               <span class="stat-icon strength"></span>
               <span class="stat-name" data-stat="Strength">Melee</span>
-            </div>
-            <div class="stat-bar">
-              <div class="stat-fill" data-stat="Strength"></div>
             </div>
             <div class="stat-value" data-stat="Strength">0</div>
             <div class="stat-tier" data-stat="Strength">T0</div>
@@ -182,7 +129,6 @@
           <div class="subclass-icon" id="subclassIcon"></div>
           <div class="subclass-info">
             <div class="subclass-name" id="subclassName">-</div>
-            <div class="subclass-type" id="subclassType">-</div>
           </div>
         </div>
         
@@ -203,20 +149,33 @@
       <div class="artifact-section" id="artifactSection">
         <div class="section-title">Artifacts Equipped</div>
         <div class="artifact-mods-container" id="artifactModsContainer">
-          <!-- Only Artifact Mods (no champion mods) -->
           <div class="artifact-mods-grid" id="artifactModsGrid"></div>
         </div>
       </div>
 
-      <!-- Error Message -->
-      <div class="error-message" id="errorMessage" style="display:none;">
-        <div class="error-icon">⚠️</div>
-        <div class="error-text" id="errorText"></div>
-      </div>
-
       <!-- Last Updated -->
-      <div class="last-updated" id="lastUpdated">v1.0</div>
+      <div class="last-updated" id="lastUpdated">Test Mode</div>
     </div>
   </div>
+
+  <script>
+    // Simulate StreamElements widget load
+    const fieldData = {
+      bungieInput: 'Marty#2689',
+      widgetSize: 'compact',
+      showWeapons: 'true',
+      showArmor: 'true',
+      showStats: 'true',
+      showSubclass: 'true',
+      showArtifact: 'true',
+      refreshRate: 60
+    };
+
+    // Trigger widget load
+    window.dispatchEvent(new CustomEvent('onWidgetLoad', {
+      detail: { fieldData }
+    }));
+  </script>
+  <script src="widget/widget.js"></script>
 </body>
 </html>

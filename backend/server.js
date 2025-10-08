@@ -461,6 +461,73 @@ async function processEquipmentItem(itemData, itemComponents) {
   };
 }
 
+// Process subclass to extract aspects and fragments
+async function processSubclassDetails(itemData, itemComponents) {
+  const itemHash = itemData.itemHash;
+  const itemInstanceId = itemData.itemInstanceId;
+  
+  // Get basic item data
+  const basicData = await processEquipmentItem(itemData, itemComponents);
+  
+  // Get sockets
+  const sockets = itemComponents.sockets[itemInstanceId] || {};
+  
+  const aspects = [];
+  const fragments = [];
+  
+  if (sockets.sockets) {
+    // Fetch plug definitions to categorize them
+    const plugPromises = sockets.sockets
+      .filter(s => s.plugHash && s.isEnabled && s.isVisible)
+      .map(async (socket) => {
+        const plugDef = await fetchItemDefinition(socket.plugHash);
+        if (!plugDef) return null;
+        
+        const plugCategory = plugDef.plug?.plugCategoryIdentifier || '';
+        const itemTypeDisplay = plugDef.itemTypeDisplayName || '';
+        
+        const plugData = {
+          name: plugDef.displayProperties?.name || 'Unknown',
+          description: plugDef.displayProperties?.description || '',
+          icon: plugDef.displayProperties?.icon || '',
+          iconUrl: plugDef.displayProperties?.icon 
+            ? `https://www.bungie.net${plugDef.displayProperties.icon}` 
+            : null,
+          plugHash: socket.plugHash,
+          itemType: itemTypeDisplay,
+          category: plugCategory
+        };
+        
+        // Categorize by plug category or item type
+        if (plugCategory.includes('aspects') || itemTypeDisplay.includes('Aspect')) {
+          return { type: 'aspect', data: plugData };
+        } else if (plugCategory.includes('fragments') || itemTypeDisplay.includes('Fragment')) {
+          return { type: 'fragment', data: plugData };
+        }
+        
+        return null;
+      });
+    
+    const results = await Promise.all(plugPromises);
+    
+    for (const result of results) {
+      if (result) {
+        if (result.type === 'aspect') {
+          aspects.push(result.data);
+        } else if (result.type === 'fragment') {
+          fragments.push(result.data);
+        }
+      }
+    }
+  }
+  
+  return {
+    ...basicData,
+    aspects,
+    fragments
+  };
+}
+
 // Process character loadout
 async function processLoadout(characterId, equipment, itemComponents) {
   const items = equipment.items || [];
@@ -505,7 +572,7 @@ async function processLoadout(characterId, equipment, itemComponents) {
     chest ? processEquipmentItem(chest, itemComponents) : null,
     legs ? processEquipmentItem(legs, itemComponents) : null,
     classItem ? processEquipmentItem(classItem, itemComponents) : null,
-    subclass ? processEquipmentItem(subclass, itemComponents) : null
+    subclass ? processSubclassDetails(subclass, itemComponents) : null
   ]);
   
   // Calculate total armor stats

@@ -18,16 +18,7 @@ window.addEventListener('onWidgetLoad', function (obj) {
   toggleSections();
   
   // Fetch initial data
-  if (fieldData.bungieInput && fieldData.bungieInput.trim() !== '') {
-    fetchLoadout();
-    
-    // Setup refresh interval
-    const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(() => fetchLoadout(), refreshRate);
-  } else {
-    showError('Please enter your Bungie name in widget settings (e.g., Marty#2689)');
-  }
+  fetchLoadout();
 });
 
 // Apply custom styles from field data
@@ -41,11 +32,17 @@ function applyCustomStyles() {
   if (fieldData.fontFamily) root.style.setProperty('--font-family', fieldData.fontFamily);
   if (fieldData.fontSize) root.style.setProperty('--font-size', fieldData.fontSize + 'px');
   
-  // Add size class
-  const widget = document.getElementById('d2-loadout-widget');
-  if (fieldData.widgetSize) {
-    widget.classList.add(`widget-size-${fieldData.widgetSize}`);
-  }
+  // Apply layout based on widgetSize
+  const container = document.querySelector('.widget-container');
+  const widgetSize = fieldData.widgetSize || 'compact';  // Default to compact (your mockup)
+  
+  // Remove all size classes first
+  container.classList.remove('layout-compact', 'layout-standard', 'layout-full');
+  
+  // Add the correct layout class
+  container.classList.add(`layout-${widgetSize}`);
+  
+  console.log(`[D2 Loadout Widget] Applied layout: ${widgetSize}`);
 }
 
 // Toggle sections based on settings
@@ -69,11 +66,10 @@ function toggleSections() {
 
 // Fetch loadout data from API
 async function fetchLoadout() {
-  const apiEndpoint = fieldData.apiEndpoint || 'https://d2loadout-widget.onrender.com';
-  const bungieId = fieldData.bungieInput.trim();
+  const bungieId = (fieldData.bungieInput || '').trim();
   
-  if (!bungieId) {
-    showError('Please enter your Bungie name');
+  if (!bungieId || bungieId === '') {
+    showError('Please enter your Bungie name in widget settings (e.g., Marty#2689)');
     return;
   }
   
@@ -84,7 +80,8 @@ async function fetchLoadout() {
     document.getElementById('characterName').textContent = 'Loading...';
     document.getElementById('characterName').classList.add('loading');
     
-    const response = await fetch(`${apiEndpoint}/api/loadout/${encodeURIComponent(bungieId)}`);
+    const apiUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}`;
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -112,6 +109,11 @@ async function fetchLoadout() {
     console.error('[D2 Loadout Widget] Error fetching loadout:', error);
     showError(error.message || 'Failed to fetch loadout data');
   }
+  
+  // Setup refresh interval (moved to end like comp widget)
+  const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(fetchLoadout, refreshRate);
 }
 
 // Display loadout data
@@ -124,8 +126,18 @@ function displayLoadout(data) {
   
   // Character emblem
   if (data.character?.emblemPath) {
+    const emblemUrl = data.character.emblemPath;
     document.getElementById('characterEmblem').style.backgroundImage = 
-      `url('${data.character.emblemPath}')`;
+      `url('${emblemUrl}')`;
+    // Also set as header background
+    const header = document.querySelector('.character-header');
+    if (header) {
+      header.style.setProperty('--emblem-bg', `url('${emblemUrl}')`);
+      // Apply emblem as ::before background
+      const style = document.createElement('style');
+      style.textContent = `.character-header::before { background-image: url('${emblemUrl}'); }`;
+      document.head.appendChild(style);
+    }
   }
   
   // Weapons
@@ -220,12 +232,34 @@ function displayArmor(slotId, armorData, slotName) {
 
 // Display character stats
 function displayStats(stats) {
+  // New stat names after The Final Shape expansion
   const statNames = ['Mobility', 'Resilience', 'Recovery', 'Discipline', 'Intellect', 'Strength'];
+  
+  // Map old stat names to new display names
+  const statDisplayNames = {
+    'Mobility': 'Weapons',
+    'Resilience': 'Health',
+    'Recovery': 'Class',
+    'Discipline': 'Grenade',
+    'Intellect': 'Super',
+    'Strength': 'Melee'
+  };
+  
+  // New stat icon URLs from Bungie CDN (The Final Shape)
+  const statIconUrls = {
+    'Mobility': 'https://www.bungie.net/common/destiny2_content/icons/bc69675acdae9e6b9a68a02fb4d62e07.png',    // Weapons
+    'Resilience': 'https://www.bungie.net/common/destiny2_content/icons/717b8b218cc14325a54869bef21d2964.png',  // Health
+    'Recovery': 'https://www.bungie.net/common/destiny2_content/icons/7eb845acb5b3a4a9b7e0b2f05f5c43f1.png',    // Class
+    'Discipline': 'https://www.bungie.net/common/destiny2_content/icons/065cdaabef560e5808e821cefaeaa22c.png',  // Grenade
+    'Intellect': 'https://www.bungie.net/common/destiny2_content/icons/585ae4ede9c3da96b34086fccccdc8cd.png',   // Super
+    'Strength': 'https://www.bungie.net/common/destiny2_content/icons/fa534aca76d7f2d7e7b4ba4df4271b42.png'     // Melee
+  };
   
   statNames.forEach(statName => {
     const value = stats[statName] || 0;
     const tier = Math.floor(value / 10);
     const percentage = Math.min((value / 100) * 100, 100);
+    const displayName = statDisplayNames[statName] || statName;
     
     // Update value
     const valueElement = document.querySelector(`.stat-value[data-stat="${statName}"]`);
@@ -237,6 +271,20 @@ function displayStats(stats) {
     const tierElement = document.querySelector(`.stat-tier[data-stat="${statName}"]`);
     if (tierElement) {
       tierElement.textContent = `T${tier}`;
+    }
+    
+    // Update display name (new stat names)
+    const nameElement = document.querySelector(`.stat-name[data-stat="${statName}"]`);
+    if (nameElement) {
+      nameElement.textContent = displayName;
+    }
+    
+    // Update icon with new Bungie icons
+    const iconElement = document.querySelector(`.stat-icon.${statName.toLowerCase()}`);
+    if (iconElement && statIconUrls[statName]) {
+      iconElement.style.backgroundImage = `url('${statIconUrls[statName]}')`;
+      // Clear the ::before content when we have a real icon
+      iconElement.textContent = '';
     }
     
     // Update bar
@@ -261,85 +309,100 @@ function displaySubclass(subclassData) {
     document.getElementById('subclassIcon').style.backgroundImage = 
       `url('${subclassData.iconUrl}')`;
   }
+  
+  // Display aspects
+  const aspectsContainer = document.getElementById('aspectsContainer');
+  const aspectsGrid = document.getElementById('aspectsGrid');
+  if (subclassData.aspects && subclassData.aspects.length > 0) {
+    aspectsGrid.innerHTML = '';
+    subclassData.aspects.forEach(aspect => {
+      const aspectDiv = document.createElement('div');
+      aspectDiv.className = 'aspect-item';
+      if (aspect.iconUrl) {
+        aspectDiv.style.backgroundImage = `url('${aspect.iconUrl}')`;
+      }
+      aspectDiv.title = aspect.name;
+      
+      // Add tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'aspect-tooltip';
+      const tooltipName = document.createElement('div');
+      tooltipName.className = 'aspect-tooltip-name';
+      tooltipName.textContent = aspect.name;
+      tooltip.appendChild(tooltipName);
+      aspectDiv.appendChild(tooltip);
+      
+      aspectsGrid.appendChild(aspectDiv);
+    });
+    aspectsContainer.style.display = 'block';
+  } else {
+    aspectsContainer.style.display = 'none';
+  }
+  
+  // Display fragments
+  const fragmentsContainer = document.getElementById('fragmentsContainer');
+  const fragmentsGrid = document.getElementById('fragmentsGrid');
+  if (subclassData.fragments && subclassData.fragments.length > 0) {
+    fragmentsGrid.innerHTML = '';
+    subclassData.fragments.forEach(fragment => {
+      const fragmentDiv = document.createElement('div');
+      fragmentDiv.className = 'fragment-item';
+      if (fragment.iconUrl) {
+        fragmentDiv.style.backgroundImage = `url('${fragment.iconUrl}')`;
+      }
+      fragmentDiv.title = fragment.name;
+      
+      // Add tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'fragment-tooltip';
+      const tooltipName = document.createElement('div');
+      tooltipName.className = 'fragment-tooltip-name';
+      tooltipName.textContent = fragment.name;
+      tooltip.appendChild(tooltipName);
+      fragmentDiv.appendChild(tooltip);
+      
+      fragmentsGrid.appendChild(fragmentDiv);
+    });
+    fragmentsContainer.style.display = 'block';
+  } else {
+    fragmentsContainer.style.display = 'none';
+  }
 }
 
 // Display artifact and artifact mods
 function displayArtifact(artifactData, artifactMods) {
-  // Artifact header
-  if (!artifactData) {
-    document.getElementById('artifactName').textContent = '-';
-    document.getElementById('artifactProgress').textContent = '-';
-    document.getElementById('artifactBonus').textContent = '';
-    document.getElementById('artifactIcon').style.backgroundImage = '';
-    return;
-  }
-
-  document.getElementById('artifactName').textContent = artifactData.name || 'Seasonal Artifact';
-  document.getElementById('artifactProgress').textContent = 
-    `${artifactData.pointsUnlocked || 0} Points Unlocked`;
-  document.getElementById('artifactBonus').textContent = 
-    `+${artifactData.powerBonus || 0} Power`;
+  const artifactSection = document.getElementById('artifactSection');
   
-  if (artifactData.iconUrl) {
-    document.getElementById('artifactIcon').style.backgroundImage = 
-      `url('${artifactData.iconUrl}')`;
-  }
-
-  // Display artifact mods
+  // Hide section if no mods
   if (!artifactMods || artifactMods.length === 0) {
-    document.getElementById('artifactModsContainer').style.display = 'none';
+    artifactSection.style.display = 'none';
     return;
   }
 
-  document.getElementById('artifactModsContainer').style.display = 'flex';
+  // Only show visible artifact mods (exclude champion mods which are hidden)
+  const visibleMods = artifactMods.filter(mod => mod.isVisible);
 
-  // Separate champion mods (hidden) from visible perks
-  const championMods = artifactMods.filter(mod => !mod.isVisible);
-  const visiblePerks = artifactMods.filter(mod => mod.isVisible);
-
-  // Display champion mods
-  const championGrid = document.getElementById('championModsGrid');
-  championGrid.innerHTML = '';
-  
-  if (championMods.length > 0) {
-    document.getElementById('championModsCategory').style.display = 'block';
-    championMods.forEach(mod => {
-      const modElement = createArtifactModElement(mod);
-      championGrid.appendChild(modElement);
-    });
-  } else {
-    document.getElementById('championModsCategory').style.display = 'none';
+  if (visibleMods.length === 0) {
+    artifactSection.style.display = 'none';
+    return;
   }
 
-  // Display visible perks
-  const perksGrid = document.getElementById('visiblePerksGrid');
-  perksGrid.innerHTML = '';
+  artifactSection.style.display = 'block';
+
+  // Display only visible artifact mods
+  const modsGrid = document.getElementById('artifactModsGrid');
+  modsGrid.innerHTML = '';
   
-  if (visiblePerks.length > 0) {
-    document.getElementById('visiblePerksCategory').style.display = 'block';
-    visiblePerks.forEach(mod => {
-      const modElement = createArtifactModElement(mod);
-      perksGrid.appendChild(modElement);
-    });
-  } else {
-    document.getElementById('visiblePerksCategory').style.display = 'none';
-  }
+  visibleMods.forEach(mod => {
+    const modElement = createArtifactModElement(mod);
+    modsGrid.appendChild(modElement);
+  });
 }
 
 // Create artifact mod element with icon
 function createArtifactModElement(mod) {
   const modDiv = document.createElement('div');
   modDiv.className = 'artifact-mod';
-  
-  // Add champion type class if applicable
-  const modNameLower = (mod.name || '').toLowerCase();
-  if (modNameLower.includes('anti-barrier')) {
-    modDiv.classList.add('anti-barrier');
-  } else if (modNameLower.includes('unstoppable')) {
-    modDiv.classList.add('unstoppable');
-  } else if (modNameLower.includes('overload')) {
-    modDiv.classList.add('overload');
-  }
 
   // Icon
   const iconDiv = document.createElement('div');
