@@ -28,8 +28,8 @@ body {
 }
 
 #d2-loadout-widget {
-  width: 100%;
-  max-width: 1200px;
+  width: 1000px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -138,15 +138,16 @@ body {
 .stats-section,
 .subclass-section,
 .artifact-section {
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 /* Default to compact layout if no class is specified */
 .widget-container:not(.layout-standard):not(.layout-full) {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr; /* 3 equal columns */
-  grid-template-rows: auto auto auto auto;
-  max-width: 1100px;
+  grid-template-columns: 240px 230px 1fr; /* 3 columns: weapons, armor, stats - increased armor width */
+  grid-template-rows: auto auto auto;
+  width: 1000px;
+  max-width: 1000px;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .character-header {
@@ -154,53 +155,66 @@ body {
   grid-row: 1;
 }
 
+/* Middle row: Weapons | Armor | Stats | Stats (4 columns) */
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section {
-  grid-column: 1 / 4; /* Span all 3 columns */
+  grid-column: 1;
   grid-row: 2;
+  border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section .weapon-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.widget-container:not(.layout-standard):not(.layout-full) .armor-section {
+  grid-column: 2;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  display: block;
+}
+
+.widget-container:not(.layout-standard):not(.layout-full) .armor-section .armor-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr; /* 3 columns side by side */
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section {
-  grid-column: 1 / 4; /* Span all 3 columns */
-  grid-row: 3;
+  grid-column: 3; /* Single column */
+  grid-row: 2;
   border-bottom: 1px solid var(--border-color);
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; /* 6 columns for stats */
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns x 2 rows for stats */
+  gap: 4px;
 }
 
+/* Bottom row: Subclass + Artifacts */
 .widget-container:not(.layout-standard):not(.layout-full) .subclass-section {
-  grid-column: 1 / 3;
-  grid-row: 4;
+  grid-column: 1 / 3; /* Span weapons + armor columns */
+  grid-row: 3;
   border-right: 1px solid var(--border-color);
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .artifact-section {
-  grid-column: 3;
-  grid-row: 4;
+  grid-column: 3; /* Stats column */
+  grid-row: 3;
   display: block;
-}
-
-.widget-container:not(.layout-standard):not(.layout-full) .armor-section {
-  display: none;
 }
 
 /* ========== SECTION STYLING ========== */
 .section-title {
-  font-size: 0.65em;
+  font-size: 0.6em;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 6px;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
   color: var(--text-muted);
   opacity: 0.6;
 }
@@ -209,15 +223,14 @@ body {
 .weapon-grid {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 280px;
+  gap: 3px;
 }
 
 .weapon-slot {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: 6px;
+  padding: 4px 6px;
   background: var(--bg-color);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -234,8 +247,8 @@ body {
 }
 
 .weapon-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -249,7 +262,7 @@ body {
 }
 
 .weapon-name {
-  font-size: 0.9em;
+  font-size: 0.85em;
   font-weight: 600;
   margin-bottom: 0px;
   white-space: nowrap;
@@ -280,15 +293,14 @@ body {
 .armor-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  min-width: 240px;
+  gap: 3px;
 }
 
 .armor-slot {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 4px;
+  padding: 3px 5px;
   background: var(--bg-color);
   border: 1px solid transparent;
   border-radius: var(--radius);
@@ -305,8 +317,8 @@ body {
 }
 
 .armor-icon {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -320,7 +332,7 @@ body {
 }
 
 .armor-name {
-  font-size: 0.8em;
+  font-size: 0.75em;
   font-weight: 600;
   margin-bottom: 0px;
   white-space: nowrap;
@@ -348,11 +360,9 @@ body {
 
 /* ========== STATS SECTION ========== */
 .stats-grid {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  min-width: auto;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
 }
 
 .stat-row {
@@ -360,13 +370,11 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 6px 8px;
+  gap: 2px;
+  padding: 5px 6px;
   background: var(--bg-color);
   border-radius: var(--radius);
   transition: all 0.15s ease;
-  flex: 1;
-  min-width: 55px;
 }
 
 .stat-row:hover {
@@ -377,15 +385,15 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   font-weight: 600;
   font-size: 0.75em;
   text-align: center;
 }
 
 .stat-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -397,8 +405,10 @@ body {
 
 .stat-name {
   white-space: nowrap;
-  font-size: 0.7em;
-  opacity: 0.7;
+  font-size: 0.65em;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .stat-bar-container {
@@ -417,16 +427,11 @@ body {
   font-weight: 700;
   font-size: 1.1em;
   text-align: center;
-  min-width: auto;
   order: -1;
 }
 
 .stat-tier {
-  font-size: 0.65em;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-align: center;
-  min-width: auto;
+  display: none;
 }
 
 /* ========== SUBCLASS & ARTIFACT (Hidden for compact view) ========== */
@@ -437,16 +442,17 @@ body {
 .subclass-display {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px;
+  gap: 8px;
+  padding: 5px 6px;
   background: var(--bg-color);
   border-radius: var(--radius);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  flex-wrap: nowrap;
 }
 
 .subclass-icon {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   background-size: cover;
   background-position: center;
   background-color: #000;
@@ -457,26 +463,35 @@ body {
 .subclass-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .subclass-name {
-  font-size: 0.75em;
-  font-weight: 600;
-  margin-bottom: 0px;
+  font-size: 0.85em;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .subclass-type {
-  font-size: 0.6em;
-  color: var(--text-muted);
-  text-transform: uppercase;
+  display: none;
 }
 
-/* Aspects Grid - Very compact like Guardian.report */
+/* Aspects Grid - Horizontal layout */
 .aspects-container {
-  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--bg-color);
+  border-radius: var(--radius);
+  margin-bottom: 3px;
 }
 
 .aspects-label {
@@ -484,26 +499,28 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 3px;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.7;
+  margin: 0;
+  min-width: 48px;
 }
 
 .aspects-grid {
   display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
+  gap: 3px;
+  flex-wrap: nowrap;
+  flex: 1;
 }
 
 .aspect-item {
   position: relative;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   background-size: cover;
   background-position: center;
   background-color: #000;
   border-radius: 2px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   transition: all 0.15s ease;
   cursor: pointer;
 }
@@ -515,9 +532,15 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* Fragments Grid - Very compact like Guardian.report */
+/* Fragments Grid - Horizontal layout */
 .fragments-container {
-  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--bg-color);
+  border-radius: var(--radius);
+  margin-bottom: 0;
 }
 
 .fragments-label {
@@ -525,26 +548,28 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 3px;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.7;
+  margin: 0;
+  min-width: 48px;
 }
 
 .fragments-grid {
   display: flex;
-  gap: 2px;
-  flex-wrap: wrap;
+  gap: 3px;
+  flex-wrap: nowrap;
+  flex: 1;
 }
 
 .fragment-item {
   position: relative;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   background-size: cover;
   background-position: center;
   background-color: #000;
   border-radius: 2px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
   transition: all 0.15s ease;
   cursor: pointer;
 }
@@ -588,42 +613,46 @@ body {
 }
 
 .artifact-section {
-  display: none; /* Hide artifact for compactness by default */
+  display: block;
 }
 
 /* ========== ARTIFACT STYLING ========== */
 .artifact-mods-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
 }
 
 .artifact-mods-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
 }
 
 .artifact-mod {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  padding-bottom: 100%;
   cursor: pointer;
   transition: transform 0.15s ease;
 }
 
 .artifact-mod:hover {
-  transform: scale(1.1);
+  transform: scale(1.05);
+  z-index: 10;
 }
 
 .artifact-mod-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   background-size: cover;
   background-position: center;
   background-color: #000;
   border-radius: 2px;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .artifact-mod-tooltip {
@@ -713,9 +742,9 @@ body {
 /* COMPACT LAYOUT - Your mockup style */
 .widget-container.layout-compact {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr; /* 3 equal columns */
-  grid-template-rows: auto auto auto auto;
-  max-width: 1100px;
+  grid-template-columns: minmax(280px, auto) minmax(280px, auto) 1fr 1fr; /* 4 columns: weapons, armor, stats, stats */
+  grid-template-rows: auto auto auto;
+  max-width: 1400px;
 }
 
 .layout-compact .character-header {
@@ -723,47 +752,57 @@ body {
   grid-row: 1;
 }
 
-/* Row 2: Weapons spanning all 3 columns */
+/* Middle row: Weapons | Armor | Stats | Stats */
 .layout-compact .weapons-section {
-  grid-column: 1 / 4; /* Span all 3 columns */
+  grid-column: 1;
   grid-row: 2;
+  border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
 }
 
 .layout-compact .weapons-section .weapon-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr; /* 3 columns side by side */
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-/* Row 3: Stats spanning all 3 columns */
+.layout-compact .armor-section {
+  grid-column: 2;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  display: block;
+}
+
+.layout-compact .armor-section .armor-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .layout-compact .stats-section {
-  grid-column: 1 / 4; /* Span all 3 columns */
-  grid-row: 3;
+  grid-column: 3 / 5; /* Span 2 columns */
+  grid-row: 2;
   border-bottom: 1px solid var(--border-color);
 }
 
 .layout-compact .stats-section .stats-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr; /* 6 columns for stats */
-  gap: 6px;
+  grid-template-columns: 1fr 1fr 1fr; /* 3 columns x 2 rows */
+  gap: 8px;
 }
 
-/* Row 4: Subclass + Artifacts */
+/* Bottom row: Subclass + Artifacts */
 .layout-compact .subclass-section {
-  grid-column: 1 / 3;
-  grid-row: 4;
+  grid-column: 1 / 4;
+  grid-row: 3;
   border-right: 1px solid var(--border-color);
 }
 
 .layout-compact .artifact-section {
-  grid-column: 3;
-  grid-row: 4;
+  grid-column: 4;
+  grid-row: 3;
   display: block;
-}
-
-.layout-compact .armor-section {
-  display: none; /* Hide armor in compact */
 }
 
 /* STANDARD LAYOUT - Current wide horizontal */
@@ -873,56 +912,4 @@ body {
 }
 
 /* ========== RESPONSIVE ========== */
-@media (max-width: 1400px) {
-  .widget-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto auto;
-  }
-  
-  .weapons-section {
-    grid-column: 1;
-    grid-row: 2;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .stats-section {
-    grid-column: 1;
-    grid-row: 3;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .subclass-section {
-    grid-column: 1;
-    grid-row: 4;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .armor-section {
-    grid-column: 1;
-    grid-row: 5;
-  }
-  
-  .weapon-grid,
-  .stats-grid,
-  .armor-grid {
-    min-width: auto;
-  }
-  
-  .stats-grid {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .widget-container {
-    border-radius: 0;
-  }
-  
-  .armor-grid,
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Disabled - Widget is web-only, no responsive breakpoints needed */
