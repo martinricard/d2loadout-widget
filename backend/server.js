@@ -508,8 +508,21 @@ async function processEquipmentItem(itemData, itemComponents) {
     for (const perk of weaponPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
-        // Check if this is an enhanced perk (name contains "Enhanced")
-        const isEnhanced = perkDef.name && perkDef.name.includes('Enhanced');
+        // Check if this is an enhanced perk:
+        // 1. Name contains "Enhanced"
+        // 2. OR description contains enhanced indicators like "additional", "increased", "longer lasting", "more powerful"
+        const nameHasEnhanced = perkDef.name && perkDef.name.includes('Enhanced');
+        const descHasEnhanced = perkDef.description && (
+          perkDef.description.includes('additional') ||
+          perkDef.description.includes('Additional') ||
+          perkDef.description.includes('longer lasting') ||
+          perkDef.description.includes('Longer lasting') ||
+          perkDef.description.includes('more powerful') ||
+          perkDef.description.includes('More powerful') ||
+          perkDef.description.includes('increased') ||
+          perkDef.description.includes('Increased')
+        );
+        const isEnhanced = nameHasEnhanced || descHasEnhanced;
         
         weaponPerkData.push({
           ...perkDef,
