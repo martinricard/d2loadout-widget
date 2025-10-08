@@ -485,6 +485,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     if (isClassItem && isExotic && definition.sockets?.socketEntries) {
       console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking ${definition.sockets.socketEntries.length} sockets...`);
       console.log(`[Exotic Class Item] Instance sockets count: ${sockets.sockets.length}`);
+      console.log(`[Exotic Class Item] Socket overrides:`, itemInstance.data.sockets.data.socketOverrides);
       
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
@@ -492,22 +493,25 @@ async function processEquipmentItem(itemData, itemComponents) {
         
         console.log(`[Exotic Class Item] Socket ${i}: plugHash=${socket.plugHash}, isEnabled=${socket.isEnabled}, randomizedPlugSetHash=${socketDef.randomizedPlugSetHash}, reusablePlugSetHash=${socketDef.reusablePlugSetHash}, singleInitialItemHash=${socketDef.singleInitialItemHash}`);
         
-        if (!socket.plugHash || !socket.isEnabled) {
-          console.log(`[Exotic Class Item] Socket ${i} skipped: ${!socket.plugHash ? 'no plugHash' : 'not enabled'}`);
-          continue;
-        }
-        
         // Exotic class item "Spirit of..." perks are in the first 2 sockets
-        // They use reusablePlugSetHash, not randomizedPlugSetHash
+        // They are stored in socketOverrides (not plugHash which shows the equipped mod)
         const hasPlugSet = socketDef.randomizedPlugSetHash || socketDef.reusablePlugSetHash;
         const isExoticPerkSocket = hasPlugSet && i < 2;
         
         if (isExoticPerkSocket) {
-          console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: plugHash ${socket.plugHash}`);
-          exoticClassItemPerks.push({
-            plugHash: socket.plugHash,
-            socketIndex: i
-          });
+          // Check for socket override first (Spirit perks are stored here)
+          const socketOverrides = itemInstance.data.sockets.data.socketOverrides || {};
+          const perkHash = socketOverrides[i.toString()] || socketDef.singleInitialItemHash;
+          
+          if (perkHash) {
+            console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: perkHash ${perkHash} ${socketOverrides[i.toString()] ? '(from socketOverride)' : '(from singleInitialItemHash)'}`);
+            exoticClassItemPerks.push({
+              plugHash: perkHash,
+              socketIndex: i
+            });
+          } else {
+            console.log(`[Exotic Class Item] Socket ${i} has no perkHash available`);
+          }
         } else {
           console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (hasPlugSet=${!!hasPlugSet}, index<2=${i < 2})`);
         }
