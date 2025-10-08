@@ -508,9 +508,13 @@ async function processEquipmentItem(itemData, itemComponents) {
     for (const perk of weaponPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
+        // Check if this is an enhanced perk (name contains "Enhanced")
+        const isEnhanced = perkDef.name && perkDef.name.includes('Enhanced');
+        
         weaponPerkData.push({
           ...perkDef,
-          socketIndex: perk.socketIndex
+          socketIndex: perk.socketIndex,
+          isEnhanced: isEnhanced
         });
       }
     }

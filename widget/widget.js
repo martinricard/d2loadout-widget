@@ -47,20 +47,67 @@ function applyCustomStyles() {
 
 // Toggle sections based on settings
 function toggleSections() {
-  if (fieldData.showWeapons === 'false') {
+  const container = document.querySelector('.widget-container');
+  const widgetWrapper = document.getElementById('d2-loadout-widget');
+  let visibleColumns = 0;
+  let totalWidth = 0;
+  
+  // Column widths: weapons=280px, armor=320px, stats=160px
+  const columnWidths = {
+    weapons: 280,
+    armor: 320,
+    stats: 160
+  };
+  
+  // Check which sections are visible and calculate width
+  const showWeapons = fieldData.showWeapons !== 'false';
+  const showArmor = fieldData.showArmor !== 'false';
+  const showStats = fieldData.showStats !== 'false';
+  
+  if (showWeapons) {
+    visibleColumns++;
+    totalWidth += columnWidths.weapons;
+  } else {
     document.getElementById('weaponsSection').classList.add('hidden');
   }
-  if (fieldData.showArmor === 'false') {
+  
+  if (showArmor) {
+    visibleColumns++;
+    totalWidth += columnWidths.armor;
+  } else {
     document.getElementById('armorSection').classList.add('hidden');
   }
-  if (fieldData.showStats === 'false') {
+  
+  if (showStats) {
+    visibleColumns++;
+    totalWidth += columnWidths.stats;
+  } else {
     document.getElementById('statsSection').classList.add('hidden');
   }
+  
   if (fieldData.showSubclass === 'false') {
     document.getElementById('subclassSection').classList.add('hidden');
   }
   if (fieldData.showArtifact === 'false') {
     document.getElementById('artifactSection').classList.add('hidden');
+  }
+  
+  // Update widget width dynamically based on visible columns
+  if (totalWidth > 0) {
+    widgetWrapper.style.width = `${totalWidth}px`;
+    widgetWrapper.style.maxWidth = `${totalWidth}px`;
+    container.style.width = `${totalWidth}px`;
+    container.style.maxWidth = `${totalWidth}px`;
+    
+    // Update grid template columns based on visible sections
+    let gridColumns = [];
+    if (showWeapons) gridColumns.push(`${columnWidths.weapons}px`);
+    if (showArmor) gridColumns.push(`${columnWidths.armor}px`);
+    if (showStats) gridColumns.push(`${columnWidths.stats}px`);
+    
+    container.style.gridTemplateColumns = gridColumns.join(' ');
+    
+    console.log(`[D2 Loadout Widget] Dynamic width: ${totalWidth}px (${visibleColumns} columns)`);
   }
 }
 
@@ -202,6 +249,11 @@ function displayWeapon(slotId, weaponData, slotName) {
     return;
   }
   
+  // Debug logging for exotic weapons
+  if (weaponData.isExotic) {
+    console.log(`[${slotName} Exotic] Name: "${weaponData.name}", isExotic: ${weaponData.isExotic}, tierType: ${weaponData.tierType}`);
+  }
+  
   slot.querySelector('.weapon-name').textContent = weaponData.name || 'Unknown';
   slot.querySelector('.weapon-type').textContent = weaponData.itemType || slotName;
   const powerValue = weaponData.primaryStat?.value || '';
@@ -273,12 +325,21 @@ function displayWeapon(slotId, weaponData, slotName) {
   perksContainer.innerHTML = '';
   
   if (fieldData.showPerks !== 'false' && weaponData.weaponPerks && weaponData.weaponPerks.length > 0) {
+    // Check if this is a Tier 5 weapon for enhanced perk display
+    const isTier5 = weaponData.weaponTier === 4; // weaponTier is 0-indexed (0-4 = T1-T5)
+    
     weaponData.weaponPerks.forEach(perk => {
       if (perk.iconUrl) {
         const perkIcon = document.createElement('div');
         perkIcon.className = perk.isMod ? 'weapon-mod-icon' : 'weapon-perk-icon';
+        
+        // Add enhanced class if it's an enhanced perk OR if it's a T5 weapon
+        if ((perk.isEnhanced || isTier5) && !perk.isMod) {
+          perkIcon.classList.add('enhanced');
+        }
+        
         perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
-        perkIcon.title = `${perk.name}\n${perk.description}`;
+        perkIcon.title = `${perk.name}${perk.isEnhanced || isTier5 ? ' (Enhanced)' : ''}\n${perk.description}`;
         perksContainer.appendChild(perkIcon);
       }
     });

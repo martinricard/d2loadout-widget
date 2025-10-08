@@ -174,6 +174,7 @@ body {
   grid-template-rows: auto auto auto;
   width: 760px;
   max-width: 760px;
+  /* Width will be overridden by JS when sections are hidden */
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .character-header {
@@ -181,12 +182,18 @@ body {
   grid-row: 1;
 }
 
-/* Middle row: Weapons | Armor | Stats | Stats (4 columns) */
+/* Middle row: Weapons | Armor | Stats */
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section {
   grid-column: 1;
   grid-row: 2;
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
+}
+
+/* When weapons are hidden, armor becomes column 1 */
+.widget-container:not(.layout-standard):not(.layout-full) .weapons-section.hidden ~ .armor-section {
+  grid-column: 1;
+  border-left: none;
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section .weapon-grid {
@@ -213,6 +220,7 @@ body {
   grid-column: 3; /* Single column */
   grid-row: 2;
   border-bottom: 1px solid var(--border-color);
+  border-right: none; /* Last column, no right border */
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
@@ -429,10 +437,26 @@ body {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+  position: relative;
 }
 
 .weapon-perk-icon:hover {
   transform: scale(1.15);
+}
+
+/* Enhanced perk indicator - yellow arrow in top-left corner */
+.weapon-perk-icon.enhanced::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 12px;
+  height: 12px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 100 100" enable-background="new 0 0 100 100" xml:space="preserve" height="100px" width="100px"><g><path d="M10,50 l-3,-24 l-6,0 l9,-16 l9,16 l-6,0 l-3,24 z" fill="%23fc0"></path></g></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 10;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
 }
 
 .weapon-mod-icon {
