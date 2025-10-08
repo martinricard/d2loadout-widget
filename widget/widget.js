@@ -122,7 +122,21 @@ function displayLoadout(data) {
   document.getElementById('characterName').textContent = data.displayName || 'Guardian';
   document.getElementById('characterName').classList.remove('loading');
   document.getElementById('characterClass').textContent = data.character?.class || '';
-  document.getElementById('characterLight').textContent = `${data.character?.light || 0} ⚡`;
+  
+  // Create power icon SVG element
+  const lightElement = document.getElementById('characterLight');
+  lightElement.textContent = `${data.character?.light || 0} `;
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'power-icon');
+  svg.setAttribute('viewBox', '0 0 32 32');
+  
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
+  path.setAttribute('fill', '#f1d770');
+  
+  svg.appendChild(path);
+  lightElement.appendChild(svg);
   
   // Character emblem
   if (data.character?.emblemPath) {
@@ -183,22 +197,106 @@ function displayWeapon(slotId, weaponData, slotName) {
     slot.querySelector('.weapon-type').textContent = slotName;
     slot.querySelector('.weapon-power').textContent = '';
     slot.querySelector('.weapon-icon').style.backgroundImage = '';
+    slot.querySelector('.weapon-perks').innerHTML = '';
     slot.classList.remove('exotic');
     return;
   }
   
   slot.querySelector('.weapon-name').textContent = weaponData.name || 'Unknown';
   slot.querySelector('.weapon-type').textContent = weaponData.itemType || slotName;
-  slot.querySelector('.weapon-power').textContent = weaponData.primaryStat?.value || '';
+  const powerValue = weaponData.primaryStat?.value || '';
+  
+  const powerElement = slot.querySelector('.weapon-power');
+  powerElement.textContent = '';
+  
+  if (powerValue) {
+    // Create SVG icon
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'power-icon');
+    svg.setAttribute('viewBox', '0 0 32 32');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
+    path.setAttribute('fill', '#f1d770');
+    
+    svg.appendChild(path);
+    powerElement.appendChild(svg);
+    powerElement.appendChild(document.createTextNode(powerValue));
+  }
   
   if (weaponData.iconUrl) {
-    slot.querySelector('.weapon-icon').style.backgroundImage = `url('${weaponData.iconUrl}')`;
+    const iconElement = slot.querySelector('.weapon-icon');
+    iconElement.style.backgroundImage = `url('${weaponData.iconUrl}')`;
+    
+    // Remove any existing overlays
+    iconElement.classList.remove('masterwork', 'masterwork-exotic', 'tiered-weapon');
+    const existingOverlay = iconElement.querySelector('.masterwork-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    const existingTierBadge = iconElement.querySelector('.weapon-tier-badge');
+    if (existingTierBadge) {
+      existingTierBadge.remove();
+    }
+    
+    // Check if weapon is masterworked (state & 4 means masterworked)
+    // State flags: 0 = None, 1 = Locked, 2 = Tracked, 4 = Masterwork
+    const isMasterworked = weaponData.state && (weaponData.state & 4) !== 0;
+    
+    // Check if this is a tiered weapon (Tier 1-5 system from Edge of Fate)
+    const weaponTier = weaponData.weaponTier;
+    if (weaponTier !== null && weaponTier !== undefined && weaponTier >= 0) {
+      // Add tier badge for tiered weapons
+      iconElement.classList.add('tiered-weapon');
+      
+      const tierBadge = document.createElement('div');
+      tierBadge.className = `weapon-tier-badge tier-${weaponTier + 1}`;
+      tierBadge.textContent = `T${weaponTier + 1}`;
+      iconElement.appendChild(tierBadge);
+    }
+    
+    if (isMasterworked) {
+      // Add masterwork overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'masterwork-overlay';
+      iconElement.appendChild(overlay);
+      
+      if (weaponData.isExotic) {
+        iconElement.classList.add('masterwork-exotic');
+      } else {
+        iconElement.classList.add('masterwork');
+      }
+    }
+    
+    // Check for watermark (seasonal/event variants)
+    if (weaponData.iconWatermark) {
+      const watermark = document.createElement('div');
+      watermark.className = 'item-watermark';
+      watermark.style.backgroundImage = `url('https://www.bungie.net${weaponData.iconWatermark}')`;
+      iconElement.appendChild(watermark);
+    }
   }
   
   if (weaponData.isExotic) {
     slot.classList.add('exotic');
   } else {
     slot.classList.remove('exotic');
+  }
+  
+  // Display weapon perks (if enabled)
+  const perksContainer = slot.querySelector('.weapon-perks');
+  perksContainer.innerHTML = '';
+  
+  if (fieldData.showPerks !== 'false' && weaponData.weaponPerks && weaponData.weaponPerks.length > 0) {
+    weaponData.weaponPerks.forEach(perk => {
+      if (perk.iconUrl) {
+        const perkIcon = document.createElement('div');
+        perkIcon.className = perk.isMod ? 'weapon-mod-icon' : 'weapon-perk-icon';
+        perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
+        perkIcon.title = `${perk.name}\n${perk.description}`;
+        perksContainer.appendChild(perkIcon);
+      }
+    });
   }
 }
 
@@ -212,22 +310,93 @@ function displayArmor(slotId, armorData, slotName) {
     slot.querySelector('.armor-type').textContent = slotName;
     slot.querySelector('.armor-power').textContent = '';
     slot.querySelector('.armor-icon').style.backgroundImage = '';
+    if (slot.querySelector('.exotic-perks')) {
+      slot.querySelector('.exotic-perks').innerHTML = '';
+    }
     slot.classList.remove('exotic');
     return;
   }
   
   slot.querySelector('.armor-name').textContent = armorData.name || 'Unknown';
   slot.querySelector('.armor-type').textContent = armorData.itemType || slotName;
-  slot.querySelector('.armor-power').textContent = armorData.primaryStat?.value || '';
+  const powerValue = armorData.primaryStat?.value || '';
+  
+  const powerElement = slot.querySelector('.armor-power');
+  powerElement.textContent = '';
+  
+  if (powerValue) {
+    // Create SVG icon
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'power-icon');
+    svg.setAttribute('viewBox', '0 0 32 32');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
+    path.setAttribute('fill', '#f1d770');
+    
+    svg.appendChild(path);
+    powerElement.appendChild(svg);
+    powerElement.appendChild(document.createTextNode(powerValue));
+  }
   
   if (armorData.iconUrl) {
-    slot.querySelector('.armor-icon').style.backgroundImage = `url('${armorData.iconUrl}')`;
+    const iconElement = slot.querySelector('.armor-icon');
+    iconElement.style.backgroundImage = `url('${armorData.iconUrl}')`;
+    
+    // Remove any existing overlays
+    iconElement.classList.remove('masterwork', 'masterwork-exotic');
+    const existingOverlay = iconElement.querySelector('.masterwork-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    
+    // Check if armor is masterworked (state & 4 means masterworked)
+    const isMasterworked = armorData.state && (armorData.state & 4) !== 0;
+    
+    if (isMasterworked) {
+      // Add masterwork overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'masterwork-overlay';
+      iconElement.appendChild(overlay);
+      
+      if (armorData.isExotic) {
+        iconElement.classList.add('masterwork-exotic');
+      } else {
+        iconElement.classList.add('masterwork');
+      }
+    }
+    
+    // Check for watermark (seasonal/event variants)
+    if (armorData.iconWatermark) {
+      const watermark = document.createElement('div');
+      watermark.className = 'item-watermark';
+      watermark.style.backgroundImage = `url('https://www.bungie.net${armorData.iconWatermark}')`;
+      iconElement.appendChild(watermark);
+    }
   }
   
   if (armorData.isExotic) {
     slot.classList.add('exotic');
   } else {
     slot.classList.remove('exotic');
+  }
+  
+  // Display exotic class item perks (if this is the class item slot)
+  const exoticPerksContainer = slot.querySelector('.exotic-perks');
+  if (exoticPerksContainer) {
+    exoticPerksContainer.innerHTML = '';
+    
+    if (armorData.exoticPerks && armorData.exoticPerks.length > 0) {
+      armorData.exoticPerks.forEach(perk => {
+        if (perk.iconUrl) {
+          const perkIcon = document.createElement('div');
+          perkIcon.className = 'exotic-perk-icon';
+          perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
+          perkIcon.title = `${perk.name}\n${perk.description}`;
+          exoticPerksContainer.appendChild(perkIcon);
+        }
+      });
+    }
   }
 }
 
@@ -304,7 +473,10 @@ function displaySubclass(subclassData) {
     return;
   }
   
-  document.getElementById('subclassName').textContent = subclassData.name || 'Unknown';
+  // Remove class name (Warlock/Titan/Hunter) from subclass name
+  let subclassName = subclassData.name || 'Unknown';
+  subclassName = subclassName.replace(/\s+(Warlock|Titan|Hunter)$/i, '');
+  document.getElementById('subclassName').textContent = subclassName;
   
   if (subclassData.iconUrl) {
     document.getElementById('subclassIcon').style.backgroundImage = 

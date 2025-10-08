@@ -422,8 +422,12 @@ async function processEquipmentItem(itemData, itemComponents) {
   // Extract perks and mods from sockets
   const perksAndMods = [];
   const allSockets = [];
+  const weaponPerks = [];
+  const exoticClassItemPerks = [];
+  
   if (sockets.sockets) {
-    for (const socket of sockets.sockets) {
+    for (let i = 0; i < sockets.sockets.length; i++) {
+      const socket = sockets.sockets[i];
       if (socket.plugHash && socket.isEnabled) {
         // Store all sockets for artifact mod detection
         allSockets.push({
@@ -436,20 +440,147 @@ async function processEquipmentItem(itemData, itemComponents) {
         if (socket.isVisible) {
           perksAndMods.push({
             plugHash: socket.plugHash
-            // We'll fetch plug definitions in a batch later if needed
+          });
+        }
+      }
+    }
+    
+    const isWeapon = definition.itemType === 3; // DestinyItemType.Weapon = 3
+    const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
+    const isExotic = definition.inventory?.tierType === 6;
+    
+    // Extract weapon perks - Only major perks (columns 3-4) + equipped mod
+    if (isWeapon && definition.sockets?.socketEntries) {
+      for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
+        const socket = sockets.sockets[i];
+        const socketDef = definition.sockets.socketEntries[i];
+        
+        if (!socket.plugHash || !socket.isEnabled) continue;
+        
+        // Socket type hashes for weapon perk columns
+        const PERK_SOCKET_TYPES = [
+          3956125808, // Weapon Perk Socket (Column 3)
+          2218962841, // Weapon Perk Socket (Column 4)  
+          // Add more if needed
+        ];
+        
+        // Socket type hash for weapon mod
+        const MOD_SOCKET_TYPE = 3851138800; // Weapon Mod Socket
+        
+        // Check if this is a major perk socket (columns 3-4)
+        const isMajorPerk = socketDef.socketTypeHash && (
+          socketDef.reusablePlugSetHash || 
+          socketDef.randomizedPlugSetHash
+        ) && i >= 2 && i <= 5 && socket.isVisible;
+        
+        // Check if this is the mod socket (last socket, usually index 7-9)
+        const isMod = socketDef.socketTypeHash === MOD_SOCKET_TYPE || 
+          (i >= 7 && socketDef.singleInitialItemHash && socket.isVisible);
+        
+        if (isMajorPerk || isMod) {
+          weaponPerks.push({
+            plugHash: socket.plugHash,
+            socketIndex: i,
+            isMod: isMod
+          });
+        }
+      }
+    }
+    
+    // Extract exotic class item "Spirit of..." perks ONLY
+    if (isClassItem && isExotic && definition.sockets?.socketEntries) {
+      for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
+        const socket = sockets.sockets[i];
+        const socketDef = definition.sockets.socketEntries[i];
+        
+        if (!socket.plugHash || !socket.isEnabled) continue;
+        
+        // Exotic class item "Spirit of..." perks are in the first 2 sockets with randomized plugs
+        const isExoticPerkSocket = socketDef.randomizedPlugSetHash && i < 2;
+        
+        if (isExoticPerkSocket) {
+          exoticClassItemPerks.push({
+            plugHash: socket.plugHash,
+            socketIndex: i
           });
         }
       }
     }
   }
   
+  // Fetch perk definitions for weapon perks
+  const weaponPerkData = [];
+  if (weaponPerks.length > 0) {
+    for (const perk of weaponPerks) {
+      const perkDef = await fetchPlugDefinition(perk.plugHash);
+      if (perkDef) {
+        weaponPerkData.push({
+          ...perkDef,
+          socketIndex: perk.socketIndex
+        });
+      }
+    }
+  }
+  
+  // Fetch perk definitions for exotic class item perks
+  const exoticPerkData = [];
+  if (exoticClassItemPerks.length > 0) {
+    for (const perk of exoticClassItemPerks) {
+      const perkDef = await fetchPlugDefinition(perk.plugHash);
+      if (perkDef) {
+        exoticPerkData.push({
+          ...perkDef,
+          socketIndex: perk.socketIndex
+        });
+      }
+    }
+  }
+  
+  // Determine the correct icon based on weapon tier (Edge of Fate tiered weapons)
+  let displayIcon = definition.displayProperties?.icon || '';
+  let displayIconUrl = displayIcon ? `https://www.bungie.net${displayIcon}` : null;
+  let displayName = definition.displayProperties?.name || 'Unknown';
+  
+  // Check if this is a tiered weapon with quality versions
+  if (definition.quality?.versions && definition.quality.versions.length > 0) {
+    const currentVersion = definition.quality.currentVersion || 0;
+    
+    // Quality versions array contains different properties for each tier
+    // Tier 5 (version 4) often has a special "Achronal" ornament applied automatically
+    if (definition.quality.versions[currentVersion]) {
+      const tierData = definition.quality.versions[currentVersion];
+      
+      // Use tier-specific icon if available
+      if (tierData.displayProperties?.icon) {
+        displayIcon = tierData.displayProperties.icon;
+        displayIconUrl = `https://www.bungie.net${displayIcon}`;
+      }
+      
+      // Use tier-specific name if available (e.g., "Achronal Yeartide Apex" for Tier 5)
+      if (tierData.displayProperties?.name) {
+        displayName = tierData.displayProperties.name;
+      }
+    }
+  }
+  
+  // Check for override style (ornaments, including holofoil variants)
+  if (itemData.overrideStyleItemHash) {
+    try {
+      const ornamentDef = await fetchItemDefinition(itemData.overrideStyleItemHash);
+      if (ornamentDef?.displayProperties?.icon) {
+        displayIcon = ornamentDef.displayProperties.icon;
+        displayIconUrl = `https://www.bungie.net${displayIcon}`;
+      }
+    } catch (error) {
+      console.error(`Failed to fetch ornament ${itemData.overrideStyleItemHash}:`, error.message);
+    }
+  }
+  
   return {
-    name: definition.displayProperties?.name || 'Unknown',
+    name: displayName,
     description: definition.displayProperties?.description || '',
-    icon: definition.displayProperties?.icon || '',
-    iconUrl: definition.displayProperties?.icon 
-      ? `https://www.bungie.net${definition.displayProperties.icon}` 
-      : null,
+    icon: displayIcon,
+    iconUrl: displayIconUrl,
     hash: itemHash,
     instanceId: itemInstanceId,
     itemType: definition.itemTypeDisplayName || '',
@@ -458,9 +589,18 @@ async function processEquipmentItem(itemData, itemComponents) {
     damageType: instance.damageType || 0,
     primaryStat: instance.primaryStat || null,
     stats: stats.stats || {},
-    perks: perksAndMods.slice(0, 5), // Limit to first 5 visible perks
+    perks: perksAndMods.slice(0, 5), // Legacy perks list
+    weaponPerks: weaponPerkData, // New: properly filtered weapon perks
+    exoticPerks: exoticPerkData, // New: exotic class item perks
     sockets: allSockets, // Store ALL sockets for artifact mod detection
-    energy: instance.energy || null
+    energy: instance.energy || null,
+    // Add item state and quality for masterwork/holofoil overlays
+    state: itemData.state || 0,
+    overrideStyleItemHash: itemData.overrideStyleItemHash || null,
+    quality: definition.quality || null,
+    weaponTier: definition.quality?.currentVersion || null, // Tier 1-5 for tiered weapons
+    iconWatermark: definition.iconWatermark || null,
+    iconWatermarkShelved: definition.iconWatermarkShelved || null
   };
 }
 

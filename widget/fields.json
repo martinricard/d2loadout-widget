@@ -5,17 +5,6 @@
     "value": "",
     "placeholder": "Marty#2689"
   },
-  "characterSelect": {
-    "type": "dropdown",
-    "label": "Character",
-    "value": "last-played",
-    "options": {
-      "last-played": "Last Played",
-      "hunter": "Hunter",
-      "titan": "Titan",
-      "warlock": "Warlock"
-    }
-  },
   "refreshRate": {
     "type": "number",
     "label": "Refresh Rate (seconds)",
@@ -71,10 +60,10 @@
   "showPerks": {
     "type": "dropdown",
     "label": "Show Weapon Perks",
-    "value": "false",
+    "value": "true",
     "options": {
       "true": "Yes",
-      "false": "No (Future Feature)"
+      "false": "No"
     }
   },
   "backgroundColor": {
