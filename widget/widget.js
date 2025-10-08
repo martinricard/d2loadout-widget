@@ -204,6 +204,11 @@ function displayLoadout(data) {
   
   // Weapons
   if (data.loadout?.weapons && fieldData.showWeapons !== 'false') {
+    console.log('[D2 Widget] Weapons data:', {
+      kinetic: data.loadout.weapons.kinetic?.name,
+      energy: data.loadout.weapons.energy?.name,
+      power: data.loadout.weapons.power?.name
+    });
     displayWeapon('kineticSlot', data.loadout.weapons.kinetic, 'Kinetic');
     displayWeapon('energySlot', data.loadout.weapons.energy, 'Energy');
     displayWeapon('powerSlot', data.loadout.weapons.power, 'Power');
@@ -361,6 +366,11 @@ function displayArmor(slotId, armorData, slotName) {
     }
     slot.classList.remove('exotic');
     return;
+  }
+  
+  // Debug logging for exotic armor
+  if (armorData.isExotic) {
+    console.log(`[${slotName} Exotic] Name: "${armorData.name}", isExotic: ${armorData.isExotic}, tierType: ${armorData.tierType}, exoticPerks count: ${armorData.exoticPerks?.length || 0}`);
   }
   
   slot.querySelector('.armor-name').textContent = armorData.name || 'Unknown';
