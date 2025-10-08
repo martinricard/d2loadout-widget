@@ -649,7 +649,7 @@ body {
   position: relative;
   padding-top: 0;
   margin-top: 0;
-  padding-left: 4px;
+  padding-left: 0;
 }
 
 .subclass-icon {
@@ -662,7 +662,8 @@ body {
   flex-shrink: 0;
   margin-right: 12px;
   position: relative;
-  margin-top: 26px;
+  margin-top: 16px;
+  margin-left: 23px;
 }
 
 .subclass-info {
@@ -671,10 +672,9 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 80px;
-  text-align: left;
+  width: 85px;
+  text-align: center;
   gap: 5px;
-  margin-bottom: 12px;
 }
 
 .subclass-info::before {
@@ -705,8 +705,9 @@ body {
   gap: 4px;
   flex-direction: column;
   position: relative;
-  margin-top: 22px;
+  margin-top: 0;
   padding-top: 0;
+  margin-left: 25px;
 }
 
 .aspects-label {
@@ -758,8 +759,9 @@ body {
   gap: 4px;
   flex-direction: column;
   position: relative;
-  margin-top: 22px;
+  margin-top: 0;
   padding-top: 0;
+  margin-left: 25px;
 }
 
 .fragments-label {
@@ -841,6 +843,7 @@ body {
   align-items: flex-start;
   flex: 0 0 auto;
   padding-top: 0;
+  margin-left: 25px;
 }
 
 .artifact-section .section-title {
@@ -971,23 +974,6 @@ body {
   opacity: 0.3;
 }
 
-.dim-link {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-family: 'Courier New', monospace;
-  font-size: 0.95em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.05);
-  transition: all 0.2s ease;
-  pointer-events: none; /* Since viewers can't click on overlay */
-}
-
-.dim-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-color);
-}
-
 .footer-separator {
   margin: 0 8px;
   opacity: 0.3;
@@ -996,15 +982,12 @@ body {
 .dim-link {
   color: var(--text-muted);
   text-decoration: none;
-  transition: color 0.2s, opacity 0.2s;
-  cursor: pointer;
   font-family: 'Courier New', monospace;
-  font-weight: 600;
-}
-
-.dim-link:hover {
-  color: var(--text-color);
-  opacity: 1;
+  font-size: 0.85em;
+  font-weight: 500;
+  pointer-events: none; /* Since viewers can't click on overlay */
+  cursor: default;
+  opacity: 0.8;
 }
 
 /* ========== UTILITY CLASSES ========== */

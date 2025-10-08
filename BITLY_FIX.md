@@ -59,14 +59,15 @@ You must add this in Render dashboard:
 
 ### 3. Subclass Spacing Fix (`widget/widget.css`)
 
-**Fixed "Threadrunner" overlapping "Aspects" label:**
+**Fixed "Threadrunner" overlapping "Aspects" label by pushing content to the right:**
 
-- `.subclass-icon` → `margin-top: 26px` (was 16px)
-- `.subclass-info` → added `margin-bottom: 12px`
-- `.aspects-container` → `margin-top: 22px` (was 0px)
-- `.fragments-container` → `margin-top: 22px` (was 0px)
+- `.subclass-icon` → `margin-top: 16px` (back to original)
+- `.subclass-info` → `width: 120px` (was 80px) to accommodate longer names
+- `.aspects-container` → `margin-left: 120px` (pushes to the right)
+- `.fragments-container` → `margin-left: 120px` (pushes to the right)
+- `.artifact-section` → `margin-left: 120px` (pushes to the right)
 
-This creates proper vertical spacing so subclass names don't overlap with aspect/fragment labels.
+This uses the empty horizontal space on the right instead of adding vertical spacing, keeping the layout compact while preventing text overlap.
 
 ## Deployment Steps
 

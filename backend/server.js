@@ -807,15 +807,18 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
   }
 }
 
-// Shorten URL using DIM's URL shortener API
+// Shorten URL using Bitly API
 async function shortenDIMUrl(longUrl) {
   try {
     const BITLY_TOKEN = process.env.BITLY_TOKEN;
     
     if (!BITLY_TOKEN) {
-      console.warn('BITLY_TOKEN not configured, returning long URL');
+      console.warn('[Bitly] BITLY_TOKEN not configured in environment variables, returning long URL');
+      console.warn('[Bitly] Long URL was:', longUrl);
       return longUrl;
     }
+    
+    console.log('[Bitly] Attempting to shorten URL:', longUrl);
     
     const response = await axios.post('https://api-ssl.bitly.com/v4/shorten', {
       long_url: longUrl
@@ -828,12 +831,18 @@ async function shortenDIMUrl(longUrl) {
     });
     
     if (response.data && response.data.link) {
+      console.log('[Bitly] Successfully shortened to:', response.data.link);
       return response.data.link;
     }
     
+    console.warn('[Bitly] No link in response, returning long URL');
     return longUrl;
   } catch (error) {
-    console.error('Error shortening DIM URL:', error.message);
+    console.error('[Bitly] Error shortening DIM URL:', error.message);
+    if (error.response) {
+      console.error('[Bitly] Response status:', error.response.status);
+      console.error('[Bitly] Response data:', JSON.stringify(error.response.data));
+    }
     return longUrl; // Fallback to long URL
   }
 }

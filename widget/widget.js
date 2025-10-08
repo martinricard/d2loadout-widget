@@ -726,14 +726,33 @@ function updateDIMLink(dimLinkUrl) {
     dimLinkElement.href = dimLinkUrl;
     dimLinkElement.style.display = 'inline';
     
-    // Extract short code from dim.gg URL for display
-    // e.g., https://dim.gg/5o4745a/Equipped -> dim.gg/5o4745a
-    let displayText = dimLinkUrl;
-    const dimGgMatch = dimLinkUrl.match(/dim\.gg\/([^/]+)/);
-    if (dimGgMatch) {
-      displayText = `dim.gg/${dimGgMatch[1]}`;
+    // Log the URL we received for debugging
+    console.log('[DIM Link] Received URL:', dimLinkUrl);
+    
+    // Display shortened URLs properly
+    let displayText = dimLinkUrl; // Default to showing full URL
+    
+    // Check for bit.ly shortened URLs
+    if (dimLinkUrl.includes('bit.ly/')) {
+      const bitlyMatch = dimLinkUrl.match(/bit\.ly\/([^/?]+)/);
+      if (bitlyMatch) {
+        displayText = `bit.ly/${bitlyMatch[1]}`;
+      }
+    }
+    // Check for dim.gg shortened URLs
+    else if (dimLinkUrl.includes('dim.gg/')) {
+      const dimGgMatch = dimLinkUrl.match(/dim\.gg\/([^/]+)/);
+      if (dimGgMatch) {
+        displayText = `dim.gg/${dimGgMatch[1]}`;
+      }
+    }
+    // For long app.destinyitemmanager.com URLs, extract just the important part
+    else if (dimLinkUrl.includes('app.destinyitemmanager.com')) {
+      // Just show "DIM Loadout" for very long URLs
+      displayText = 'DIM Loadout';
     }
     
+    console.log('[DIM Link] Displaying as:', displayText);
     dimLinkElement.textContent = displayText;
   }
   
