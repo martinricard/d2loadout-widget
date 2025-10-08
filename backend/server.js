@@ -239,6 +239,16 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       2: 'Warlock'
     };
     
+    // Generate DIM loadout link
+    const dimLink = await generateDIMLink(
+      data.profile?.data?.userInfo?.displayName || 'Guardian',
+      character.classType,
+      characterEquipment,
+      itemComponents,
+      artifactMods,
+      characterProgression
+    );
+    
     res.json({
       success: true,
       displayName: data.profile?.data?.userInfo?.displayName || 'Guardian',
@@ -266,6 +276,7 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
         pointsUnlocked: seasonalArtifact.pointsAcquired || 0
       } : null,
       loadout: loadout,
+      dimLink: dimLink, // Add DIM link to response
       timestamp: new Date().toISOString()
     });
     
@@ -700,6 +711,123 @@ async function processSubclassDetails(itemData, itemComponents) {
     aspects,
     fragments
   };
+}
+
+// Generate DIM loadout link
+async function generateDIMLink(displayName, classType, equipment, itemComponents, artifactMods, characterProgression) {
+  try {
+    const equipped = [];
+    const modHashes = [];
+    
+    // Process each equipped item
+    for (const item of equipment.items || []) {
+      const itemData = {
+        id: item.itemInstanceId,
+        hash: item.itemHash
+      };
+      
+      // Get socket overrides (selected perks/mods)
+      const sockets = itemComponents.sockets?.[item.itemInstanceId];
+      if (sockets && sockets.sockets) {
+        const socketOverrides = {};
+        
+        for (let i = 0; i < sockets.sockets.length; i++) {
+          const socket = sockets.sockets[i];
+          if (socket.plugHash && socket.plugHash !== 0) {
+            socketOverrides[i.toString()] = socket.plugHash;
+          }
+        }
+        
+        if (Object.keys(socketOverrides).length > 0) {
+          itemData.socketOverrides = socketOverrides;
+        }
+        
+        // Extract armor mods for parameters.mods array
+        if (item.bucketHash === BUCKET_HASHES.HELMET ||
+            item.bucketHash === BUCKET_HASHES.ARMS ||
+            item.bucketHash === BUCKET_HASHES.CHEST ||
+            item.bucketHash === BUCKET_HASHES.LEGS ||
+            item.bucketHash === BUCKET_HASHES.CLASS_ITEM) {
+          
+          for (const socket of sockets.sockets) {
+            if (socket.plugHash && socket.plugHash !== 0) {
+              // Filter for actual mods (not perks or stats)
+              // This is a simplified check - you might need to refine this
+              modHashes.push(socket.plugHash);
+            }
+          }
+        }
+      }
+      
+      equipped.push(itemData);
+    }
+    
+    // Get artifact unlocks
+    const artifactUnlocks = {
+      unlockedItemHashes: [],
+      seasonNumber: 22 // You might want to make this dynamic based on current season
+    };
+    
+    if (characterProgression?.seasonalArtifact?.tiers) {
+      for (const tier of characterProgression.seasonalArtifact.tiers) {
+        if (tier.items) {
+          for (const item of tier.items) {
+            if (item.isActive) {
+              artifactUnlocks.unlockedItemHashes.push(item.itemHash);
+            }
+          }
+        }
+      }
+    }
+    
+    // Build the loadout object
+    const loadoutObj = {
+      name: `${displayName}'s Loadout`,
+      classType: classType,
+      equipped: equipped,
+      parameters: {
+        mods: modHashes,
+        artifactUnlocks: artifactUnlocks
+      }
+    };
+    
+    // Create the long DIM URL
+    const loadoutJson = JSON.stringify(loadoutObj);
+    const encodedLoadout = encodeURIComponent(loadoutJson);
+    const longUrl = `https://app.destinyitemmanager.com/loadouts?loadout=${encodedLoadout}`;
+    
+    // Shorten the URL using DIM's URL shortener
+    const shortUrl = await shortenDIMUrl(longUrl);
+    
+    return shortUrl || longUrl; // Fallback to long URL if shortening fails
+    
+  } catch (error) {
+    console.error('Error generating DIM link:', error.message);
+    return null;
+  }
+}
+
+// Shorten URL using DIM's URL shortener API
+async function shortenDIMUrl(longUrl) {
+  try {
+    const response = await axios.post('https://api.dim.gg/short_url', {
+      url: longUrl
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 5000 // 5 second timeout
+    });
+    
+    if (response.data && response.data.short_url) {
+      return response.data.short_url;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error shortening DIM URL:', error.message);
+    return null; // Return null to fallback to long URL
+  }
 }
 
 // Process character loadout

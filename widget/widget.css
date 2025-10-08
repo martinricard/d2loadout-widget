@@ -496,7 +496,7 @@ body {
 /* Exotic armor perks (for exotic class items) */
 .exotic-perks {
   display: none;
-  gap: 4px;
+  gap: 2px;
   align-items: center;
   width: 100%;
   margin-left: 30px;
@@ -544,7 +544,7 @@ body {
   font-size: 0.6em;
   color: var(--text-muted);
   opacity: 0.4;
-  margin: 0 1px;
+  margin: 0 2px;
 }
 
 /* ========== STATS SECTION ========== */
@@ -628,7 +628,7 @@ body {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 20px;
+  gap: 40px;
 }
 
 .subclass-section .section-title {
@@ -640,7 +640,7 @@ body {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 12px;
+  gap: 20px;
   padding: 0;
   background: transparent;
   border-radius: 0;
@@ -960,6 +960,25 @@ body {
   font-size: 0.7em;
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+.footer-separator {
+  margin: 0 8px;
+  opacity: 0.3;
+}
+
+.dim-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.dim-link:hover {
+  color: var(--text-color);
+  opacity: 1;
 }
 
 /* ========== UTILITY CLASSES ========== */

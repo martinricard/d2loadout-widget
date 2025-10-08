@@ -3,6 +3,7 @@
 
 let fieldData = {};
 let refreshInterval = null;
+let isFirstLoad = true; // Track if this is the initial load
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -89,9 +90,11 @@ async function fetchLoadout() {
   try {
     console.log(`[D2 Loadout Widget] Fetching loadout for: ${bungieId}`);
     
-    // Show loading state
-    document.getElementById('characterName').textContent = 'Loading...';
-    document.getElementById('characterName').classList.add('loading');
+    // Only show loading state on first load
+    if (isFirstLoad) {
+      document.getElementById('characterName').textContent = 'Loading...';
+      document.getElementById('characterName').classList.add('loading');
+    }
     
     const apiUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}`;
     const response = await fetch(apiUrl);
@@ -113,10 +116,16 @@ async function fetchLoadout() {
     hideError();
     displayLoadout(data);
     
+    // Mark first load as complete
+    isFirstLoad = false;
+    
     // Update last updated time
     const now = new Date();
     document.getElementById('lastUpdated').textContent = 
       `Last updated: ${now.toLocaleTimeString()}`;
+    
+    // Update DIM link if available and enabled
+    updateDIMLink(data.dimLink);
     
   } catch (error) {
     console.error('[D2 Loadout Widget] Error fetching loadout:', error);
@@ -694,6 +703,42 @@ function hideError() {
   const errorElement = document.getElementById('errorMessage');
   if (errorElement) {
     errorElement.style.display = 'none';
+  }
+}
+
+// Update DIM link display
+function updateDIMLink(dimLinkUrl) {
+  const dimLinkElement = document.getElementById('dimLink');
+  const footerSeparator = document.querySelector('.footer-separator');
+  
+  // Check if DIM link feature is enabled
+  const showDIMLink = fieldData.showDIMLink !== 'false';
+  
+  if (!showDIMLink || !dimLinkUrl) {
+    // Hide the DIM link and separator
+    if (dimLinkElement) dimLinkElement.style.display = 'none';
+    if (footerSeparator) footerSeparator.style.display = 'none';
+    return;
+  }
+  
+  // Show and update the DIM link
+  if (dimLinkElement) {
+    dimLinkElement.href = dimLinkUrl;
+    dimLinkElement.style.display = 'inline';
+    
+    // Extract short code from dim.gg URL for display
+    // e.g., https://dim.gg/5o4745a/Equipped -> dim.gg/5o4745a
+    let displayText = dimLinkUrl;
+    const dimGgMatch = dimLinkUrl.match(/dim\.gg\/([^/]+)/);
+    if (dimGgMatch) {
+      displayText = `dim.gg/${dimGgMatch[1]}`;
+    }
+    
+    dimLinkElement.textContent = displayText;
+  }
+  
+  if (footerSeparator) {
+    footerSeparator.style.display = 'inline';
   }
 }
 

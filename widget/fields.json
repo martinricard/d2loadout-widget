@@ -1,16 +1,30 @@
 {
+  "separe0.1": {
+    "type": "hidden",
+    "label": "🎮 ⋮ Destiny 2 Connection",
+    "value": "",
+    "group": "🔗 Connection"
+  },
   "bungieInput": {
     "type": "textfield",
     "label": "Your Bungie ID",
     "value": "",
-    "placeholder": "Marty#2689"
+    "placeholder": "Marty#2689",
+    "group": "🔗 Connection"
   },
   "refreshRate": {
     "type": "number",
     "label": "Refresh Rate (seconds)",
     "value": 60,
     "min": 30,
-    "max": 300
+    "max": 300,
+    "group": "🔗 Connection"
+  },
+  "separe1": {
+    "type": "hidden",
+    "label": "👁️ ⋮ Display Options",
+    "value": "",
+    "group": "📊 Display Settings"
   },
   "showWeapons": {
     "type": "dropdown",
@@ -19,7 +33,8 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "📊 Display Settings"
   },
   "showArmor": {
     "type": "dropdown",
@@ -28,7 +43,8 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "📊 Display Settings"
   },
   "showStats": {
     "type": "dropdown",
@@ -37,7 +53,8 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "📊 Display Settings"
   },
   "showSubclass": {
     "type": "dropdown",
@@ -46,7 +63,8 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "📊 Display Settings"
   },
   "showArtifact": {
     "type": "dropdown",
@@ -55,7 +73,24 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "📊 Display Settings"
+  },
+  "showDIMLink": {
+    "type": "dropdown",
+    "label": "Show DIM Link",
+    "value": "true",
+    "options": {
+      "true": "Yes",
+      "false": "No"
+    },
+    "group": "📊 Display Settings"
+  },
+  "separe2": {
+    "type": "hidden",
+    "label": "⚔️ ⋮ Weapon & Armor Options",
+    "value": "",
+    "group": "🎯 Equipment Settings"
   },
   "showPerks": {
     "type": "dropdown",
@@ -64,7 +99,8 @@
     "options": {
       "true": "Yes",
       "false": "No"
-    }
+    },
+    "group": "🎯 Equipment Settings"
   },
   "exoticPerksDisplay": {
     "type": "dropdown",
@@ -73,32 +109,50 @@
     "options": {
       "text": "Text Names",
       "icons": "Icons"
-    }
+    },
+    "group": "🎯 Equipment Settings"
+  },
+  "separe3": {
+    "type": "hidden",
+    "label": "🎨 ⋮ Color Customization",
+    "value": "",
+    "group": "🎨 Styling"
   },
   "backgroundColor": {
     "type": "colorpicker",
     "label": "Background Color",
-    "value": "#101014"
+    "value": "#101014",
+    "group": "🎨 Styling"
   },
   "borderColor": {
     "type": "colorpicker",
     "label": "Border Color",
-    "value": "#2c2c2f"
+    "value": "#2c2c2f",
+    "group": "🎨 Styling"
   },
   "textColor": {
     "type": "colorpicker",
     "label": "Text Color",
-    "value": "#ffffff"
+    "value": "#ffffff",
+    "group": "🎨 Styling"
   },
   "exoticColor": {
     "type": "colorpicker",
     "label": "Exotic Highlight",
-    "value": "#CEAE33"
+    "value": "#CEAE33",
+    "group": "🎨 Styling"
+  },
+  "separe4": {
+    "type": "hidden",
+    "label": "🔤 ⋮ Font Options",
+    "value": "",
+    "group": "🎨 Styling"
   },
   "fontFamily": {
     "type": "googleFont",
     "label": "Font Family",
-    "value": "Roboto Condensed"
+    "value": "Roboto Condensed",
+    "group": "🎨 Styling"
   },
   "fontSize": {
     "type": "slider",
@@ -106,6 +160,13 @@
     "value": 14,
     "min": 10,
     "max": 24,
-    "step": 1
+    "step": 1,
+    "group": "🎨 Styling"
+  },
+  "version": {
+    "type": "hidden",
+    "label": "D2 Loadout Widget v1.0",
+    "value": "",
+    "group": "ℹ️ ⋮ Info"
   }
 }
