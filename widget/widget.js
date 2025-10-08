@@ -402,15 +402,21 @@ function displayArmor(slotId, armorData, slotName) {
     exoticPerksContainer.innerHTML = '';
     
     if (armorData.exoticPerks && armorData.exoticPerks.length > 0) {
+      console.log(`[${slotName}] Found ${armorData.exoticPerks.length} exotic perks:`, armorData.exoticPerks);
       armorData.exoticPerks.forEach(perk => {
         if (perk.iconUrl) {
+          console.log(`[${slotName}] Adding exotic perk: "${perk.name}" with icon: ${perk.iconUrl}`);
           const perkIcon = document.createElement('div');
           perkIcon.className = 'exotic-perk-icon';
           perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
           perkIcon.title = `${perk.name}\n${perk.description}`;
           exoticPerksContainer.appendChild(perkIcon);
+        } else {
+          console.warn(`[${slotName}] Exotic perk "${perk.name}" has no icon URL`);
         }
       });
+    } else {
+      console.log(`[${slotName}] No exotic perks found`);
     }
   }
 }

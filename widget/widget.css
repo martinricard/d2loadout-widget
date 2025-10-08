@@ -334,7 +334,7 @@ body {
 /* Weapon Perks - Hidden by default, shown when enabled */
 .weapon-perks {
   display: none;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   width: 100%;
   margin-left: 38px;
@@ -361,15 +361,20 @@ body {
   transform: scale(1.15);
 }
 
+/* Enhanced perks get extra spacing but stay aligned with weapon text */
+.weapon-perk-icon.enhanced {
+  margin-right: 4px;
+}
+
 /* Enhanced perk indicator - yellow arrow on left edge of icon */
 .weapon-perk-icon.enhanced::before {
   content: '';
   position: absolute;
   top: 50%;
-  left: -2px;
+  left: 0px;
   transform: translateY(-50%);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background-image: url("data:image/svg+xml,%3Csvg%20viewBox='0%200%2021.806%2058.593'%20xmlns='http://www.w3.org/2000/svg'%3E%3Cpath%20fill='%23F3D656'%20d='M21.773,18.883h-6.032c-0.736,0-1.333,0.597-1.333,1.333v38.377h-7V20.217c0-0.736-0.597-1.333-1.333-1.333%20H0.032C0.018,18.858,0.014,18.852,0,18.827L10.876,0c0.029,0,0.036,0,0.065,0l10.866,18.827%20C21.791,18.852,21.788,18.858,21.773,18.883z'/%3E%3C/svg%3E");
   background-size: contain;
   background-repeat: no-repeat;
@@ -480,7 +485,7 @@ body {
 /* Exotic armor perks (for exotic class items) */
 .exotic-perks {
   display: none;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   width: 100%;
   margin-left: 32px;

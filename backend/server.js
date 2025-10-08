@@ -483,24 +483,35 @@ async function processEquipmentItem(itemData, itemComponents) {
     
     // Extract exotic class item "Spirit of..." perks ONLY
     if (isClassItem && isExotic && definition.sockets?.socketEntries) {
-      console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking sockets...`);
+      console.log(`[Exotic Class Item] Detected: ${definition.displayProperties?.name}, checking ${definition.sockets.socketEntries.length} sockets...`);
+      console.log(`[Exotic Class Item] Instance sockets count: ${sockets.sockets.length}`);
+      
       for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
         const socket = sockets.sockets[i];
         const socketDef = definition.sockets.socketEntries[i];
         
-        if (!socket.plugHash || !socket.isEnabled) continue;
+        console.log(`[Exotic Class Item] Socket ${i}: plugHash=${socket.plugHash}, isEnabled=${socket.isEnabled}, randomizedPlugSetHash=${socketDef.randomizedPlugSetHash}, reusablePlugSetHash=${socketDef.reusablePlugSetHash}, singleInitialItemHash=${socketDef.singleInitialItemHash}`);
+        
+        if (!socket.plugHash || !socket.isEnabled) {
+          console.log(`[Exotic Class Item] Socket ${i} skipped: ${!socket.plugHash ? 'no plugHash' : 'not enabled'}`);
+          continue;
+        }
         
         // Exotic class item "Spirit of..." perks are in the first 2 sockets with randomized plugs
         const isExoticPerkSocket = socketDef.randomizedPlugSetHash && i < 2;
         
         if (isExoticPerkSocket) {
-          console.log(`[Exotic Class Item] Found perk socket ${i}: plugHash ${socket.plugHash}`);
+          console.log(`[Exotic Class Item] ✅ Found perk socket ${i}: plugHash ${socket.plugHash}`);
           exoticClassItemPerks.push({
             plugHash: socket.plugHash,
             socketIndex: i
           });
+        } else {
+          console.log(`[Exotic Class Item] Socket ${i} not an exotic perk socket (randomized=${!!socketDef.randomizedPlugSetHash}, index<2=${i < 2})`);
         }
       }
+      
+      console.log(`[Exotic Class Item] Total exotic perks found: ${exoticClassItemPerks.length}`);
     }
   }
   
