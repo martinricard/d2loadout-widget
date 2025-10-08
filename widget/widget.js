@@ -2,13 +2,11 @@
 // StreamElements Custom Widget
 
 let fieldData = {};
-let widgetConfig = {};
 let refreshInterval = null;
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
   fieldData = obj.detail.fieldData;
-  widgetConfig = obj.detail;
   
   console.log('[D2 Loadout Widget] Initializing...');
   console.log('Bungie ID:', fieldData.bungieInput);
@@ -25,6 +23,7 @@ window.addEventListener('onWidgetLoad', function (obj) {
     
     // Setup refresh interval
     const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
+    if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(() => fetchLoadout(), refreshRate);
   } else {
     showError('Please enter your Bungie name in widget settings (e.g., Marty#2689)');
@@ -51,19 +50,19 @@ function applyCustomStyles() {
 
 // Toggle sections based on settings
 function toggleSections() {
-  if (!fieldData.showWeapons) {
+  if (fieldData.showWeapons === 'false') {
     document.getElementById('weaponsSection').classList.add('hidden');
   }
-  if (!fieldData.showArmor) {
+  if (fieldData.showArmor === 'false') {
     document.getElementById('armorSection').classList.add('hidden');
   }
-  if (!fieldData.showStats) {
+  if (fieldData.showStats === 'false') {
     document.getElementById('statsSection').classList.add('hidden');
   }
-  if (!fieldData.showSubclass) {
+  if (fieldData.showSubclass === 'false') {
     document.getElementById('subclassSection').classList.add('hidden');
   }
-  if (fieldData.showArtifact === false) {
+  if (fieldData.showArtifact === 'false') {
     document.getElementById('artifactSection').classList.add('hidden');
   }
 }
@@ -130,14 +129,14 @@ function displayLoadout(data) {
   }
   
   // Weapons
-  if (data.loadout?.weapons && fieldData.showWeapons) {
+  if (data.loadout?.weapons && fieldData.showWeapons !== 'false') {
     displayWeapon('kineticSlot', data.loadout.weapons.kinetic, 'Kinetic');
     displayWeapon('energySlot', data.loadout.weapons.energy, 'Energy');
     displayWeapon('powerSlot', data.loadout.weapons.power, 'Power');
   }
   
   // Armor
-  if (data.loadout?.armor && fieldData.showArmor) {
+  if (data.loadout?.armor && fieldData.showArmor !== 'false') {
     displayArmor('helmetSlot', data.loadout.armor.helmet, 'Helmet');
     displayArmor('armsSlot', data.loadout.armor.arms, 'Arms');
     displayArmor('chestSlot', data.loadout.armor.chest, 'Chest');
@@ -146,17 +145,17 @@ function displayLoadout(data) {
   }
   
   // Stats
-  if (data.loadout?.stats && fieldData.showStats) {
+  if (data.loadout?.stats && fieldData.showStats !== 'false') {
     displayStats(data.loadout.stats);
   }
   
   // Subclass
-  if (data.loadout?.subclass && fieldData.showSubclass) {
+  if (data.loadout?.subclass && fieldData.showSubclass !== 'false') {
     displaySubclass(data.loadout.subclass);
   }
   
   // Artifact and artifact mods
-  if (data.artifact && fieldData.showArtifact !== false) {
+  if (data.artifact && fieldData.showArtifact !== 'false') {
     displayArtifact(data.artifact, data.loadout?.artifactMods);
   }
 }
