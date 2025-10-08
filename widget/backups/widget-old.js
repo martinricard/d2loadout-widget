@@ -296,30 +296,24 @@ function displayWeapon(slotId, weaponData, slotName) {
   perksContainer.innerHTML = '';
   
   if (fieldData.showPerks !== 'false' && weaponData.weaponPerks && weaponData.weaponPerks.length > 0) {
-    // Enhanced perks start appearing at Tier 2+ (weaponTier >= 1)
-    // Tier 1 (weaponTier=0): No enhanced perks
-    // Tier 2 (weaponTier=1): Enhanced perks start (column 3)
-    // Tier 3+ (weaponTier>=2): More enhanced perks
-    const weaponTier = weaponData.weaponTier;
-    const hasEnhancedPerks = weaponTier !== null && weaponTier !== undefined && weaponTier >= 1;
+    // Check if this is a Tier 5 weapon for enhanced perk display
+    const isTier5 = weaponData.weaponTier === 4; // weaponTier is 0-indexed (0-4 = T1-T5)
     
-    console.log(`[${slotName}] Weapon: "${weaponData.name}", Tier: ${weaponTier}, Has Enhanced: ${hasEnhancedPerks}, Perks: ${weaponData.weaponPerks.length}`);
+    console.log(`[${slotName}] Weapon tier: ${weaponData.weaponTier}, isTier5: ${isTier5}, perks: ${weaponData.weaponPerks.length}`);
     
     weaponData.weaponPerks.forEach(perk => {
       if (perk.iconUrl) {
         const perkIcon = document.createElement('div');
         perkIcon.className = perk.isMod ? 'weapon-mod-icon' : 'weapon-perk-icon';
         
-        // Add enhanced class if:
-        // 1. Perk is marked as enhanced by API (perk.isEnhanced)
-        // 2. OR weapon is Tier 2+ (hasEnhancedPerks) and this is NOT a mod
-        if ((perk.isEnhanced || hasEnhancedPerks) && !perk.isMod) {
+        // Add enhanced class if it's an enhanced perk OR if it's a T5 weapon
+        if ((perk.isEnhanced || isTier5) && !perk.isMod) {
           perkIcon.classList.add('enhanced');
-          console.log(`[${slotName}] ✨ Enhanced perk: "${perk.name}" (API isEnhanced: ${perk.isEnhanced}, Weapon Tier: ${weaponTier}, Has Enhanced: ${hasEnhancedPerks})`);
+          console.log(`[${slotName}] Enhanced perk: "${perk.name}" (isEnhanced: ${perk.isEnhanced}, isTier5: ${isTier5})`);
         }
         
         perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
-        perkIcon.title = `${perk.name}${perk.isEnhanced || hasEnhancedPerks ? ' (Enhanced)' : ''}\n${perk.description}`;
+        perkIcon.title = `${perk.name}${perk.isEnhanced || isTier5 ? ' (Enhanced)' : ''}\n${perk.description}`;
         perksContainer.appendChild(perkIcon);
       }
     });

@@ -1,4 +1,4 @@
-/* D2 Loadout Widget - Compact Wide Layout - CLEAN VERSION */
+/* D2 Loadout Widget - Compact Wide Layout */
 
 :root {
   --bg-color: #1a1a1f;
@@ -70,8 +70,6 @@ body {
   background-repeat: no-repeat;
   opacity: 0.3;
   z-index: 0;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
 }
 
 .character-emblem {
@@ -179,6 +177,12 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 
+/* When weapons are hidden, armor becomes column 1 */
+.widget-container:not(.layout-standard):not(.layout-full) .weapons-section.hidden ~ .armor-section {
+  grid-column: 1;
+  border-left: none;
+}
+
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section .weapon-grid {
   display: flex;
   flex-direction: column;
@@ -265,7 +269,6 @@ body {
   border: 1px solid transparent;
   border-radius: var(--radius);
   transition: all 0.15s ease;
-  flex-wrap: wrap;
 }
 
 .weapon-slot:hover {
@@ -285,6 +288,73 @@ body {
   background-color: #000;
   border-radius: var(--radius);
   flex-shrink: 0;
+  position: relative;
+  overflow: visible;
+}
+
+/* Masterwork overlay - removed (too much visual clutter) */
+/* No longer displaying masterwork glow */
+
+/* Watermark overlay (seasonal/event variants) */
+.item-watermark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* Weapon Tier Badge (Tier 1-5 from Edge of Fate) */
+.weapon-tier-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #000;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+/* Tier colors */
+.weapon-tier-badge.tier-1 {
+  background: linear-gradient(135deg, #8b8b8b, #a8a8a8);
+  color: #fff;
+}
+
+.weapon-tier-badge.tier-2 {
+  background: linear-gradient(135deg, #5e8a3a, #7fb350);
+  color: #fff;
+}
+
+.weapon-tier-badge.tier-3 {
+  background: linear-gradient(135deg, #4a7ba7, #6ba3d4);
+  color: #fff;
+}
+
+.weapon-tier-badge.tier-4 {
+  background: linear-gradient(135deg, #8b4a9e, #b76bcf);
+  color: #fff;
+}
+
+.weapon-tier-badge.tier-5 {
+  background: linear-gradient(135deg, #d4a017, #f1d770);
+  color: #000;
+  box-shadow: 0 0 6px rgba(241, 215, 112, 0.8);
+  border-color: #c49000;
 }
 
 .weapon-info {
@@ -331,18 +401,17 @@ body {
   height: 10px;
 }
 
-/* Weapon Perks - Hidden by default, shown when enabled */
 .weapon-perks {
-  display: none;
+  display: none !important;
+}
+
+.weapon-perks:not(:empty) {
+  display: none !important;
   gap: 3px;
   align-items: center;
   width: 100%;
   margin-left: 38px;
   margin-top: 2px;
-}
-
-.weapon-perks:not(:empty) {
-  display: flex;
 }
 
 .weapon-perk-icon {
@@ -367,9 +436,9 @@ body {
   position: absolute;
   top: -2px;
   left: -2px;
-  width: 14px;
-  height: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20version='1.1'%20x='0px'%20y='0px'%20viewBox='0%200%20100%20100'%20enable-background='new%200%200%20100%20100'%20xml:space='preserve'%20height='100px'%20width='100px'%3E%3Cg%3E%3Cpath%20d='M10,50%20l-3,-24%20l-6,0%20l9,-16%20l9,16%20l-6,0%20l-3,24%20z'%20fill='%23fc0'%3E%3C/path%3E%3C/g%3E%3C/svg%3E");
+  width: 12px;
+  height: 12px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 60"><path d="M10,50 l-3,-24 l-6,0 l9,-16 l9,16 l-6,0 l-3,24 z" fill="%23fc0"/></svg>');
   background-size: contain;
   background-repeat: no-repeat;
   z-index: 10;
@@ -429,6 +498,8 @@ body {
   background-color: #000;
   border-radius: var(--radius);
   flex-shrink: 0;
+  position: relative;
+  overflow: visible;
 }
 
 .armor-info {
@@ -472,6 +543,36 @@ body {
 .armor-power .power-icon {
   width: 9px;
   height: 9px;
+}
+
+.exotic-perks {
+  display: none !important;
+}
+
+.exotic-perks:not(:empty) {
+  display: none !important;
+  gap: 3px;
+  align-items: center;
+  width: 100%;
+  margin-left: 36px;
+  margin-top: 2px;
+}
+
+.exotic-perk-icon {
+  width: 26px;
+  height: 26px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  cursor: help;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  border: 1px solid rgba(206, 174, 51, 0.3);
+}
+
+.exotic-perk-icon:hover {
+  transform: scale(1.15);
+  border-color: var(--exotic-color);
 }
 
 /* ========== STATS SECTION ========== */
@@ -519,6 +620,8 @@ body {
   flex-shrink: 0;
 }
 
+/* Remove emoji fallbacks - using real Bungie icons now */
+
 .stat-name {
   white-space: nowrap;
   font-size: 0.65em;
@@ -550,7 +653,7 @@ body {
   display: none;
 }
 
-/* ========== SUBCLASS & ARTIFACT ========== */
+/* ========== SUBCLASS & ARTIFACT (Hidden for compact view) ========== */
 .subclass-section {
   display: flex;
   flex-direction: row;
@@ -854,6 +957,8 @@ body {
   white-space: normal;
 }
 
+/* Remove the display:block override - it breaks flex layout */
+
 /* ========== ERROR MESSAGE ========== */
 .error-message,
 #errorMessage {
@@ -887,9 +992,209 @@ body {
   font-size: 0.7em;
   color: var(--text-muted);
   opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dim-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.dim-link:hover {
+  opacity: 1;
+  color: #5b9cd6;
+}
+
+.footer-separator {
+  color: var(--border-color);
+  opacity: 0.5;
 }
 
 /* ========== UTILITY CLASSES ========== */
 .hidden {
   display: none !important;
 }
+
+/* ========== LAYOUT SYSTEM ========== */
+/* Based on your mockup: Top: Header | Middle: Weapons|Weapons|Stats | Bottom: Subclass+Artifacts */
+
+/* COMPACT LAYOUT - Your mockup style */
+.widget-container.layout-compact {
+  display: grid;
+  grid-template-columns: minmax(280px, auto) minmax(280px, auto) 1fr 1fr; /* 4 columns: weapons, armor, stats, stats */
+  grid-template-rows: auto auto auto;
+  max-width: 1400px;
+}
+
+.layout-compact .character-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+/* Middle row: Weapons | Armor | Stats | Stats */
+.layout-compact .weapons-section {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-compact .weapons-section .weapon-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.layout-compact .armor-section {
+  grid-column: 2;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  display: block;
+}
+
+.layout-compact .armor-section .armor-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.layout-compact .stats-section {
+  grid-column: 3 / 5; /* Span 2 columns */
+  grid-row: 2;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-compact .stats-section .stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* 3 columns x 2 rows */
+  gap: 8px;
+}
+
+/* Bottom row: Subclass + Artifacts */
+.layout-compact .subclass-section {
+  grid-column: 1 / 4;
+  grid-row: 3;
+  border-right: 1px solid var(--border-color);
+}
+
+.layout-compact .artifact-section {
+  grid-column: 4;
+  grid-row: 3;
+  display: block;
+}
+
+/* STANDARD LAYOUT - Current wide horizontal */
+.widget-container.layout-standard {
+  display: grid;
+  grid-template-columns: auto 1px auto 1px auto 1px auto;
+  grid-template-rows: auto auto;
+  max-width: 1400px;
+}
+
+.layout-standard .character-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.layout-standard .weapons-section {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+}
+
+.layout-standard .stats-section {
+  grid-column: 3;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  min-width: 400px;
+}
+
+.layout-standard .stats-section .stats-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.layout-standard .subclass-section {
+  grid-column: 5;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  min-width: 140px;
+}
+
+.layout-standard .armor-section {
+  grid-column: 7;
+  grid-row: 2;
+}
+
+.layout-standard .artifact-section {
+  display: none; /* Hide artifact in standard */
+}
+
+/* FULL LAYOUT - Everything visible, vertical stack */
+.widget-container.layout-full {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto auto auto;
+  max-width: 1200px;
+}
+
+.layout-full .character-header {
+  grid-column: 1 / -1;
+  grid-row: 1;
+}
+
+.layout-full .weapons-section {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-full .armor-section {
+  grid-column: 2;
+  grid-row: 2;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-full .stats-section {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-full .stats-section .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.layout-full .subclass-section {
+  grid-column: 1;
+  grid-row: 4;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.layout-full .artifact-section {
+  grid-column: 2;
+  grid-row: 4;
+  border-bottom: 1px solid var(--border-color);
+  display: block;
+}
+
+.layout-full .error-message,
+.layout-full .last-updated {
+  grid-column: 1 / -1;
+}
+
+/* ========== RESPONSIVE ========== */
+/* Disabled - Widget is web-only, no responsive breakpoints needed */

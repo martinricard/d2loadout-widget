@@ -1,7 +1,7 @@
 {
   "bungieInput": {
     "type": "textfield",
-    "label": "Your Bungie ID",
+    "label": "🎮 Your Bungie Name",
     "value": "",
     "placeholder": "Marty#2689"
   },
@@ -60,7 +60,7 @@
   "showPerks": {
     "type": "dropdown",
     "label": "Show Weapon Perks",
-    "value": "false",
+    "value": "true",
     "options": {
       "true": "Yes",
       "false": "No"
