@@ -449,7 +449,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
     const isExotic = definition.inventory?.tierType === 6;
     
-    // Extract weapon perks - Only the first TWO main perks (columns 3-4 only, socket indexes 2-3)
+    // Extract weapon perks - Only the first TWO main perks (columns 4-5, socket indexes 3-4)
     if (isWeapon && definition.sockets?.socketEntries) {
       let perkCount = 0;
       const maxPerks = 2; // Only show 2 main perks
@@ -463,11 +463,11 @@ async function processEquipmentItem(itemData, itemComponents) {
         // Socket type hash for weapon mod
         const MOD_SOCKET_TYPE = 3851138800; // Weapon Mod Socket
         
-        // Check if this is a major perk socket (columns 3-4 only, indexes 2-3)
+        // Check if this is a major perk socket (columns 4-5, socket indexes 3-4)
         const isMajorPerk = socketDef.socketTypeHash && (
           socketDef.reusablePlugSetHash || 
           socketDef.randomizedPlugSetHash
-        ) && i >= 2 && i <= 3 && socket.isVisible;
+        ) && i >= 3 && i <= 4 && socket.isVisible;
         
         // Only add the first 2 perks found
         if (isMajorPerk && perkCount < maxPerks) {
