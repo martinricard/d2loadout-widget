@@ -540,6 +540,7 @@ async function processEquipmentItem(itemData, itemComponents) {
   // Fetch perk definitions for weapon perks
   const weaponPerkData = [];
   if (weaponPerks.length > 0) {
+    console.log(`[Weapon Perks] Processing ${weaponPerks.length} perks for weapon: ${definition.displayProperties?.name}`);
     for (const perk of weaponPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
@@ -558,6 +559,8 @@ async function processEquipmentItem(itemData, itemComponents) {
           perkDef.description.includes('Increased')
         );
         const isEnhanced = nameHasEnhanced || descHasEnhanced;
+        
+        console.log(`[Weapon Perk] "${perkDef.name}" - nameHasEnhanced: ${nameHasEnhanced}, descHasEnhanced: ${descHasEnhanced}, isEnhanced: ${isEnhanced}`);
         
         weaponPerkData.push({
           ...perkDef,
@@ -625,7 +628,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     }
   }
   
-  return {
+  const result = {
     name: displayName,
     description: definition.displayProperties?.description || '',
     icon: displayIcon,
@@ -652,6 +655,15 @@ async function processEquipmentItem(itemData, itemComponents) {
     iconWatermark: definition.iconWatermark || null,
     iconWatermarkShelved: definition.iconWatermarkShelved || null
   };
+  
+  // Log weapon tier info for debugging
+  if (weaponPerkData.length > 0) {
+    const hasEnhanced = weaponPerkData.some(perk => perk.isEnhanced);
+    const weaponTier = hasEnhanced ? 1 : null;
+    console.log(`[Weapon Tier] "${result.name}" - Has Enhanced Perks: ${hasEnhanced}, Weapon Tier: ${weaponTier}`);
+  }
+  
+  return result;
 }
 
 // Process subclass to extract aspects and fragments
@@ -779,18 +791,25 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             
             // Skip empty, invalid, or NOT ENABLED sockets (must be actively equipped)
             if (!socket || !socket.plugHash || socket.plugHash === 0 || !socket.isEnabled) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: empty or disabled`);
               continue;
             }
             
             // Check if this is a combat mod socket type
             const isCombatModSocket = socketDef.socketTypeHash && COMBAT_MOD_SOCKET_TYPES.has(socketDef.socketTypeHash);
             
-            // Fetch the plug definition to check if it's a mod (itemType 19)
+            // Fetch the plug definition to check if it's a mod
             const plugDef = await fetchItemDefinition(socket.plugHash);
-            const isArmorMod = plugDef?.itemType === 19; // 19 = Armor Mod
+            // itemType 19 = Armor Mod
+            // itemType 20 = Armor Mod (Deprecated/Legacy)
+            // itemType 42 = Weapon Mod (e.g., Adept mods, Temporal Tuning)
+            const isArmorMod = plugDef?.itemType === 19 || plugDef?.itemType === 20; 
+            const isWeaponMod = plugDef?.itemType === 42;
             
             // Get the mod name for better filtering
             const modName = plugDef?.displayProperties?.name || '';
+            
+            console.log(`[DIM Link] Checking socket ${i}: ${modName} (hash: ${socket.plugHash}, socketType: ${socketDef.socketTypeHash}, plugCategory: ${plugCategoryHash}, itemType: ${plugDef?.itemType})`);
             
             // Exclude non-combat mods using plug category hash
             // These are the categories we want to EXCLUDE:
@@ -820,17 +839,17 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             ];
             const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.includes(pattern));
             
-            // Only include if: it's an armor mod AND it's in a combat mod socket AND not excluded by category or name
-            // This triple-checks to ensure we ONLY get actual combat mods
-            if (isArmorMod && isCombatModSocket && !isExcluded && !isExcludedByName) {
+            // Only include if: it's a mod (armor or weapon) AND not excluded by category or name
+            // We removed the strict combat socket requirement because socket types vary
+            const isMod = isArmorMod || isWeaponMod;
+            
+            if (isMod && !isExcluded && !isExcludedByName) {
               modHashes.push(socket.plugHash);
-              console.log(`[DIM Link] ✅ Including combat mod from socket ${i}: ${socket.plugHash} (${modName}, socketType: ${socketDef.socketTypeHash})`);
+              console.log(`[DIM Link] ✅ Including mod from socket ${i}: ${socket.plugHash} (${modName}, itemType: ${plugDef?.itemType}, socketType: ${socketDef.socketTypeHash})`);
             } else if (isExcluded || isExcludedByName) {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName})`);
-            } else if (isArmorMod && !isCombatModSocket) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (not a combat mod socket, socketType: ${socketDef.socketTypeHash}, name: ${modName})`);
-            } else {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, name: ${modName})`);
+            } else if (!isMod) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, name: ${modName}, not a mod)`);
             }
           }
         }
@@ -877,32 +896,28 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       equipped.push(itemData);
     }
     
-    // Get artifact unlocks - ALL 12 active artifact perks (V11: game allows 12 active out of 35 total)
+    // Get artifact unlocks - ALL 12 active artifact perks + weapon mods from artifact
+    // Guardian.report includes both:
+    // 1. The 12 slotted artifact perks
+    // 2. Weapon mods from artifact (e.g., Temporal Armaments, Temporal Blast)
     const artifactUnlocks = {
       unlockedItemHashes: [],
-      seasonNumber: 22 // You might want to make this dynamic based on current season
+      seasonNumber: 27 // Season 27 (current season as of Oct 2025)
     };
     
-    // Use artifactMods array (already filtered with isActive = the 12 equipped perks)
+    // Use artifactMods array (filtered with isVisible = equipped perks + weapon mods)
     if (artifactMods && artifactMods.length > 0) {
-      console.log(`[DIM Link] Processing ${artifactMods.length} active artifact mods (12 max equipped)`);
+      console.log(`[DIM Link] Processing ${artifactMods.length} equipped artifact items (12 perks + weapon mods)`);
       
-      // Hard cap at 12 mods (game limit)
-      const modsToInclude = artifactMods.slice(0, 12);
-      
-      for (const mod of modsToInclude) {
-        // Add all active mods (isActive already filters to the 12 equipped perks)
+      // Include ALL equipped artifact items (no hard cap - includes 12 perks + weapon mods)
+      for (const mod of artifactMods) {
         if (mod.hash) {
           artifactUnlocks.unlockedItemHashes.push(mod.hash);
-          console.log(`[DIM Link] ✅ Including ACTIVE artifact perk: ${mod.name} (hash: ${mod.hash})`);
+          console.log(`[DIM Link] ✅ Including artifact item: ${mod.name} (hash: ${mod.hash}, itemType: ${mod.itemType || 'unknown'})`);
         }
       }
       
-      if (artifactMods.length > 12) {
-        console.warn(`[DIM Link] ⚠️  WARNING: Received ${artifactMods.length} artifact mods, but only including first 12 (game limit)`);
-      }
-      
-      console.log(`[DIM Link] Total active artifact perks: ${artifactUnlocks.unlockedItemHashes.length}/12`);
+      console.log(`[DIM Link] Total artifact items: ${artifactUnlocks.unlockedItemHashes.length} (12 perks + ${artifactUnlocks.unlockedItemHashes.length - 12} weapon mods)`);
     }
     
     // Build the loadout object
@@ -919,9 +934,11 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
     // Debug logging
     console.log('[DIM Link] Generated loadout with:');
     console.log(`  - ${equipped.length} equipped items`);
-    console.log(`  - ${modHashes.length} mod hashes`);
-    console.log(`  - ${artifactUnlocks.unlockedItemHashes.length} artifact unlocks`);
+    console.log(`  - ${modHashes.length} mod hashes (should be ~23 for your build: 20 armor + 3 balanced tuning)`);
+    console.log(`  - ${artifactUnlocks.unlockedItemHashes.length} artifact unlocks (should be 12 equipped, or 14 if including champion mods)`);
     console.log(`  - Items: ${equipped.map(i => i.hash).join(', ')}`);
+    console.log(`  - Mods: ${modHashes.join(', ')}`);
+    console.log(`  - Artifact: ${artifactUnlocks.unlockedItemHashes.join(', ')}`);
     
     // Create the long DIM URL
     const loadoutJson = JSON.stringify(loadoutObj);
@@ -1107,23 +1124,33 @@ async function extractArtifactMods(characterProgressionData) {
     for (const tier of seasonalArtifact.tiers) {
       if (!tier.items) continue;
       
-      // Find all active mods in this tier
+      // Find all EQUIPPED mods in this tier (isVisible = equipped in loadout)
       for (const item of tier.items) {
-        if (item.isActive) {
+        // isActive = unlocked (can be > 12 total)
+        // isVisible = actively equipped in loadout (max 12 perks + weapon mods)
+        if (item.isActive && item.isVisible) {
           // Fetch the mod's name and details from manifest
           const plugDef = await fetchPlugDefinition(item.itemHash);
           
           if (plugDef) {
+            // Include ALL visible/equipped artifact items (perks + weapon mods)
             artifactMods.push({
               name: plugDef.name,
               description: plugDef.description,
               icon: plugDef.icon,
               iconUrl: plugDef.iconUrl,
               hash: item.itemHash,
-              isVisible: item.isVisible || false,
+              isVisible: item.isVisible,
+              isActive: item.isActive,
+              itemType: plugDef.itemType, // For debugging (19=armor, 42=weapon, etc)
               tierHash: tier.tierHash
             });
+            console.log(`[Artifact] ✅ Including EQUIPPED artifact item: ${plugDef.name} (hash: ${item.itemHash}, itemType: ${plugDef.itemType})`);
           }
+        } else if (item.isActive && !item.isVisible) {
+          // Unlocked but not equipped - skip for DIM link
+          const plugDef = await fetchPlugDefinition(item.itemHash);
+          console.log(`[Artifact] ⏭️  Skipping unlocked but NOT equipped: ${plugDef?.name || item.itemHash}`);
         }
       }
     }
