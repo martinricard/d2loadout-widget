@@ -743,55 +743,29 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       3196106184  // Class Item Mod
     ]);
     
-    // Process each equipped item - ONLY include loadout items (weapons, armor, subclass)
+    // Process each equipped item - ONLY include loadout items (weapons, exotic armor, subclass)
     for (const item of equipment.items || []) {
       // Skip items that aren't part of the actual loadout (emblems, ships, sparrows, ghosts, etc.)
       if (!LOADOUT_BUCKETS.has(item.bucketHash)) {
         continue;
       }
       
-      const itemData = {
-        id: item.itemInstanceId,
-        hash: item.itemHash
-      };
+      const isArmor = item.bucketHash === BUCKET_HASHES.HELMET ||
+                      item.bucketHash === BUCKET_HASHES.ARMS ||
+                      item.bucketHash === BUCKET_HASHES.CHEST ||
+                      item.bucketHash === BUCKET_HASHES.LEGS ||
+                      item.bucketHash === BUCKET_HASHES.CLASS_ITEM;
       
-      // Only include socketOverrides for subclass (most important for build identity)
-      // Skip weapons and armor sockets to reduce URL length significantly
-      const isSubclass = item.bucketHash === BUCKET_HASHES.SUBCLASS;
-      
-      if (isSubclass) {
-        const sockets = itemComponents.sockets?.[item.itemInstanceId];
-        if (sockets && sockets.sockets) {
-          const socketOverrides = {};
-          
-          for (let i = 0; i < sockets.sockets.length; i++) {
-            const socket = sockets.sockets[i];
-            if (socket.plugHash && socket.plugHash !== 0) {
-              socketOverrides[i.toString()] = socket.plugHash;
-            }
-          }
-          
-          if (Object.keys(socketOverrides).length > 0) {
-            itemData.socketOverrides = socketOverrides;
-          }
-        }
-      }
-      
-      // Collect only COMBAT mods from armor pieces
-      // Guardian.report approach: Focus on functional combat mods, not cosmetics
-      if (item.bucketHash === BUCKET_HASHES.HELMET ||
-          item.bucketHash === BUCKET_HASHES.ARMS ||
-          item.bucketHash === BUCKET_HASHES.CHEST ||
-          item.bucketHash === BUCKET_HASHES.LEGS ||
-          item.bucketHash === BUCKET_HASHES.CLASS_ITEM) {
-        
+      // Collect COMBAT mods from ALL armor pieces (we'll add them to parameters.mods)
+      if (isArmor) {
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
         
-        // Get item definition to check socket categories
+        // Get item definition to check socket categories and tier type
         const definition = await fetchItemDefinition(item.itemHash);
+        const isExotic = definition?.inventory?.tierType === 6;
         
         if (sockets && sockets.sockets && definition?.sockets?.socketEntries) {
-          console.log(`[DIM Link] Checking ${definition.displayProperties?.name || 'Unknown'} (${sockets.sockets.length} sockets)`);
+          console.log(`[DIM Link] Checking ${definition.displayProperties?.name || 'Unknown'} (Exotic: ${isExotic}, ${sockets.sockets.length} sockets)`);
           
           for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
             const socket = sockets.sockets[i];
@@ -812,6 +786,44 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             } else {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i} (category: ${socketCategoryHash || 'unknown'}): ${socket.plugHash} (not a mod socket)`);
             }
+          }
+        }
+        
+        // Only add exotic armor to equipped array
+        if (!isExotic) {
+          console.log(`[DIM Link] ⏭️  Skipping legendary armor in equipped array: ${definition?.displayProperties?.name || 'Unknown'}`);
+          continue; // Skip adding this item to equipped array
+        } else {
+          console.log(`[DIM Link] ✅ Including exotic armor in equipped array: ${definition?.displayProperties?.name || 'Unknown'}`);
+        }
+      }
+      
+      // Build item data for equipped array (weapons, exotic armor, subclass)
+      const itemData = {
+        id: item.itemInstanceId,
+        hash: item.itemHash
+      };
+      
+      // Include socketOverrides for weapons (for Temporal mods) and subclass (for aspects/fragments)
+      const isWeapon = item.bucketHash === BUCKET_HASHES.KINETIC ||
+                       item.bucketHash === BUCKET_HASHES.ENERGY ||
+                       item.bucketHash === BUCKET_HASHES.POWER;
+      const isSubclass = item.bucketHash === BUCKET_HASHES.SUBCLASS;
+      
+      if (isWeapon || isSubclass) {
+        const sockets = itemComponents.sockets?.[item.itemInstanceId];
+        if (sockets && sockets.sockets) {
+          const socketOverrides = {};
+          
+          for (let i = 0; i < sockets.sockets.length; i++) {
+            const socket = sockets.sockets[i];
+            if (socket.plugHash && socket.plugHash !== 0) {
+              socketOverrides[i.toString()] = socket.plugHash;
+            }
+          }
+          
+          if (Object.keys(socketOverrides).length > 0) {
+            itemData.socketOverrides = socketOverrides;
           }
         }
       }
