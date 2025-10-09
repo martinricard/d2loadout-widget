@@ -1054,6 +1054,14 @@ async function processLoadout(characterId, equipment, itemComponents) {
     2973005342  // Shaders
   ];
   
+  // Socket types to SKIP (intrinsic armor sockets whose stats are already in base stats)
+  const SKIP_SOCKET_TYPES = [
+    2104613635, // Deprecated class ability mods socket (Paragon, Grenadier, etc - non-stat)
+    1271523453, // Intrinsic armor stat socket (already counted in base stats)
+    2212837421, // Intrinsic armor stat socket (already counted in base stats)
+    3303600813  // Intrinsic armor stat socket (already counted in base stats)
+  ];
+  
   for (let i = 0; i < armorItems.length; i++) {
     const item = armorItems[i];
     const itemData = armorPieces[i];
@@ -1065,10 +1073,19 @@ async function processLoadout(characterId, equipment, itemComponents) {
     if (sockets && sockets.sockets) {
       console.log(`[STATS DEBUG] Checking mods for ${itemData.name}:`);
       
-      for (const socket of sockets.sockets) {
+      for (let socketIndex = 0; socketIndex < sockets.sockets.length; socketIndex++) {
+        const socket = sockets.sockets[socketIndex];
         if (socket.plugHash && socket.isEnabled) {
           try {
             const plugDef = await fetchItemDefinition(socket.plugHash);
+            
+            // Skip intrinsic armor sockets (their stats are already in base armor stats)
+            const socketTypeHash = itemComponents.sockets[itemInstanceId]?.sockets?.[socketIndex]?.socketTypeHash;
+            if (socketTypeHash && SKIP_SOCKET_TYPES.includes(socketTypeHash)) {
+              const modName = plugDef?.displayProperties?.name || 'Unknown Mod';
+              console.log(`  [STATS DEBUG] ⏭️  Skipping intrinsic socket: ${modName} (socketType: ${socketTypeHash})`);
+              continue;
+            }
             
             // Skip stat mods in socket 0 (already counted in base stats)
             if (plugDef && plugDef.plug && plugDef.plug.plugCategoryHash) {
