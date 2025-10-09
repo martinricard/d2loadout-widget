@@ -537,15 +537,12 @@ function displayWeapon(slotId, weaponData, slotName) {
   
   if (powerValue) {
     const powerNum = parseInt(powerValue);
-    
+    // Pinnacle power range: 201-550 (cyan with + suffix)
     if (powerNum > 200) {
-      // Show cyan "X +" for pinnacle power (over 200) - with space between number and +
-      const plusValue = powerNum - 200;
-      powerElement.textContent = `${plusValue} +`;
+      powerElement.textContent = `${powerNum} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
-      // Show normal power with invisible + for alignment
-      powerElement.innerHTML = `${powerValue}<span style="opacity: 0; pointer-events: none;"> +</span>`;
+      powerElement.textContent = powerValue;
       powerElement.classList.remove('pinnacle-power');
     }
   }
@@ -658,15 +655,12 @@ function displayArmor(slotId, armorData, slotName) {
   
   if (powerValue) {
     const powerNum = parseInt(powerValue);
-    
+    // Pinnacle power range: 201-550 (cyan with + suffix)
     if (powerNum > 200) {
-      // Show cyan "X +" for pinnacle power (over 200) - with space between number and +
-      const plusValue = powerNum - 200;
-      powerElement.textContent = `${plusValue} +`;
+      powerElement.textContent = `${powerNum} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
-      // Show normal power with invisible + for alignment
-      powerElement.innerHTML = `${powerValue}<span style="opacity: 0; pointer-events: none;"> +</span>`;
+      powerElement.textContent = powerValue;
       powerElement.classList.remove('pinnacle-power');
     }
   }
