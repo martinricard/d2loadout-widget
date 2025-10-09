@@ -223,7 +223,8 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const loadout = await processLoadout(
       mostRecentCharacterId,
       characterEquipment,
-      itemComponents
+      itemComponents,
+      character // Pass character data to get accurate stats
     );
     
     // Extract artifact mods from character progression (not armor sockets!)
@@ -974,7 +975,7 @@ async function shortenDIMUrl(longUrl) {
 }
 
 // Process character loadout
-async function processLoadout(characterId, equipment, itemComponents) {
+async function processLoadout(characterId, equipment, itemComponents, characterData = null) {
   const items = equipment.items || [];
   
   // Find items by bucket
@@ -1020,119 +1021,35 @@ async function processLoadout(characterId, equipment, itemComponents) {
     subclass ? processSubclassDetails(subclass, itemComponents) : null
   ]);
   
-  // Calculate total armor stats INCLUDING armor mods
+  // Get accurate character stats from Bungie API
+  // The character.stats object contains the FINAL calculated stats including:
+  // - Base armor stats
+  // - Armor mods (stat mods, artifice mods, etc.)
+  // - Masterwork bonuses
+  // - Fragment bonuses from subclass
+  // - Any other stat modifiers
   const totalStats = {};
-  const armorPieces = [helmetData, armsData, chestData, legsData, classItemData].filter(Boolean);
-  const armorItems = [helmet, arms, chest, legs, classItem].filter(Boolean);
   
-  console.log('='.repeat(80));
-  console.log('[STATS DEBUG] Calculating total armor stats from', armorPieces.length, 'pieces');
-  console.log('='.repeat(80));
-  
-  // Step 1: Add base armor stats
-  for (const piece of armorPieces) {
-    if (piece.stats) {
-      console.log(`[STATS DEBUG] Processing ${piece.name} (base stats):`);
-      console.log(`  [STATS DEBUG] Item hash: ${piece.hash}, Instance ID: ${piece.instanceId}`);
-      for (const [statHash, statData] of Object.entries(piece.stats)) {
-        const statName = STAT_HASHES[statHash];
-        if (statName) {
-          const statValue = statData.value || 0;
-          totalStats[statName] = (totalStats[statName] || 0) + statValue;
-          console.log(`  [STATS DEBUG] ${statName} (hash ${statHash}): ${statValue} (running total: ${totalStats[statName]})`);
-        } else {
-          console.log(`  [STATS DEBUG] ⚠️ Unknown stat hash: ${statHash} = ${statData.value || 0}`);
-        }
+  if (characterData && characterData.stats) {
+    console.log('='.repeat(80));
+    console.log('[STATS] Using Bungie API character stats (includes ALL bonuses)');
+    console.log('='.repeat(80));
+    
+    // Map Bungie's stat hash IDs to stat names
+    for (const [statHash, statValue] of Object.entries(characterData.stats)) {
+      const statName = STAT_HASHES[statHash];
+      if (statName) {
+        totalStats[statName] = statValue;
+        console.log(`[STATS] ${statName} (hash ${statHash}): ${statValue}`);
       }
     }
+    
+    console.log('='.repeat(80));
+    console.log('[STATS] ⭐ FINAL CHARACTER STATS:', JSON.stringify(totalStats, null, 2));
+    console.log('='.repeat(80));
+  } else {
+    console.warn('[STATS] ⚠️ Warning: characterData or characterData.stats not available, stats will be empty');
   }
-  
-  console.log('[STATS DEBUG] Base stats calculated. Now checking armor mods...');
-  
-  // Step 2: Add armor mod bonuses
-  // Socket category hashes to SKIP (these stat mods in socket 0 are already included in base armor stats)
-  const SKIP_MOD_CATEGORIES = [
-    2487827355, // Socket 0 stat mods (Minor/Major stat mods) - already in base stats
-    4062961227, // Deprecated armor 1.0 mods
-    2973005342  // Shaders (cosmetic only)
-  ];
-  
-  // Socket types to SKIP (intrinsic armor sockets whose stats are already in base stats)
-  const SKIP_SOCKET_TYPES = [
-    2104613635, // Deprecated class ability mods socket (Paragon, Grenadier, etc - non-stat)
-    1271523453, // Intrinsic armor stat socket (already counted in base stats)
-    2212837421, // Intrinsic armor stat socket (already counted in base stats)
-    3303600813  // Intrinsic armor stat socket (already counted in base stats)
-  ];
-  
-  for (let i = 0; i < armorItems.length; i++) {
-    const item = armorItems[i];
-    const itemData = armorPieces[i];
-    if (!item || !itemData) continue;
-    
-    const itemInstanceId = item.itemInstanceId;
-    const sockets = itemComponents.sockets[itemInstanceId];
-    
-    // Fetch item definition to get socket type info
-    const itemDef = await fetchItemDefinition(item.itemHash);
-    
-    if (sockets && sockets.sockets && itemDef?.sockets?.socketEntries) {
-      console.log(`[STATS DEBUG] Checking mods for ${itemData.name}:`);
-      
-      for (let socketIndex = 0; socketIndex < sockets.sockets.length; socketIndex++) {
-        const socket = sockets.sockets[socketIndex];
-        if (socket.plugHash && socket.isEnabled) {
-          try {
-            const plugDef = await fetchItemDefinition(socket.plugHash);
-            
-            // Skip intrinsic armor sockets (their stats are already in base armor stats)
-            const socketDef = itemDef.sockets.socketEntries[socketIndex];
-            const socketTypeHash = socketDef?.socketTypeHash;
-            if (socketTypeHash && SKIP_SOCKET_TYPES.includes(socketTypeHash)) {
-              const modName = plugDef?.displayProperties?.name || 'Unknown Mod';
-              console.log(`  [STATS DEBUG] ⏭️  Skipping intrinsic socket: ${modName} (socketType: ${socketTypeHash})`);
-              continue;
-            }
-            
-            // Skip mods whose stats are already in base stats (socket 0 stat mods, deprecated mods, shaders, etc)
-            if (plugDef && plugDef.plug && plugDef.plug.plugCategoryHash) {
-              if (SKIP_MOD_CATEGORIES.includes(plugDef.plug.plugCategoryHash)) {
-                const modName = plugDef.displayProperties?.name || 'Unknown Mod';
-                console.log(`  [STATS DEBUG] ⏭️  Skipping stat mod: ${modName} (category: ${plugDef.plug.plugCategoryHash})`);
-                continue;
-              }
-            }
-            
-            // Skip "Upgrade Armor" - masterwork stats are already in base stats
-            const modName = plugDef.displayProperties?.name || 'Unknown Mod';
-            if (modName === 'Upgrade Armor') {
-              console.log(`  [STATS DEBUG] ⏭️  Skipping masterwork: ${modName} (stats already in base)`);
-              continue;
-            }
-            
-            if (plugDef && plugDef.investmentStats && plugDef.investmentStats.length > 0) {
-              // This mod has stat bonuses
-              console.log(`  [STATS DEBUG] Found mod with stats: ${modName}`);
-              
-              for (const investment of plugDef.investmentStats) {
-                const statName = STAT_HASHES[investment.statTypeHash];
-                if (statName && investment.value !== 0) {
-                  totalStats[statName] = (totalStats[statName] || 0) + investment.value;
-                  console.log(`    [STATS DEBUG] ${modName} → ${statName}: ${investment.value > 0 ? '+' : ''}${investment.value} (new total: ${totalStats[statName]})`);
-                }
-              }
-            }
-          } catch (error) {
-            // Silently skip mods we can't fetch
-          }
-        }
-      }
-    }
-  }
-  
-  console.log('='.repeat(80));
-  console.log('[STATS DEBUG] ⭐ FINAL TOTAL STATS (WITH MODS):', JSON.stringify(totalStats, null, 2));
-  console.log('='.repeat(80));
   
   return {
     weapons: {
