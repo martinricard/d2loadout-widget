@@ -714,6 +714,7 @@ async function processSubclassDetails(itemData, itemComponents) {
 }
 
 // Generate DIM loadout link (minimal version to stay under URL length limits)
+// V11: Socket category filtering + only equipped artifact mods
 async function generateDIMLink(displayName, classType, equipment, itemComponents, artifactMods, characterProgression) {
   try {
     const equipped = [];
