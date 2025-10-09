@@ -732,6 +732,17 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       BUCKET_HASHES.SUBCLASS
     ]);
     
+    // Armor mod socket categories (these contain ONLY combat mods, not intrinsic perks)
+    // Source: Bungie API - these socket category hashes represent mod slots
+    const ARMOR_MOD_SOCKET_CATEGORIES = new Set([
+      2685412949, // Armor Tier (General Armor Mod)
+      590099826,  // Helmet Mod
+      3872696960, // Arms Mod
+      3723676689, // Chest Mod
+      3607371986, // Leg Mod
+      3196106184  // Class Item Mod
+    ]);
+    
     // Process each equipped item - ONLY include loadout items (weapons, armor, subclass)
     for (const item of equipment.items || []) {
       // Skip items that aren't part of the actual loadout (emblems, ships, sparrows, ghosts, etc.)
@@ -766,7 +777,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         }
       }
       
-      // Collect only COMBAT mods for parameters.mods array
+      // Collect only COMBAT mods from armor pieces
       // Guardian.report approach: Focus on functional combat mods, not cosmetics
       if (item.bucketHash === BUCKET_HASHES.HELMET ||
           item.bucketHash === BUCKET_HASHES.ARMS ||
@@ -775,31 +786,31 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
           item.bucketHash === BUCKET_HASHES.CLASS_ITEM) {
         
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
-        if (sockets && sockets.sockets) {
-          // Look for mods that are:
-          // 1. Visible to player
-          // 2. Have a valid plug hash
-          // 3. Are in positions typically used for combat mods (armor usually has mods in later sockets)
-          // 4. Exclude intrinsic perks (usually in early sockets)
+        
+        // Get item definition to check socket categories
+        const definition = await fetchItemDefinition(item.itemHash);
+        
+        if (sockets && sockets.sockets && definition?.sockets?.socketEntries) {
+          console.log(`[DIM Link] Checking ${definition.displayProperties?.name || 'Unknown'} (${sockets.sockets.length} sockets)`);
           
-          for (let i = 0; i < sockets.sockets.length; i++) {
+          for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
             const socket = sockets.sockets[i];
+            const socketDef = definition.sockets.socketEntries[i];
             
             // Skip empty, invalid, or hidden sockets
             if (!socket || !socket.plugHash || socket.plugHash === 0 || !socket.isVisible) {
               continue;
             }
             
-            // Strategy: Only include sockets from position 5+ to avoid intrinsic perks
-            // Most armor has:
-            // - Socket 0-2: Intrinsic perk, stats, energy type (SKIP)
-            // - Socket 3-4: Shader, ornament (SKIP)
-            // - Socket 5+: Combat mods (INCLUDE)
-            if (i >= 5) {
+            // Check if this socket's category is a mod socket
+            const socketCategoryHash = socketDef?.socketCategoryHash;
+            
+            // Only include if this is a known armor mod socket category
+            if (socketCategoryHash && ARMOR_MOD_SOCKET_CATEGORIES.has(socketCategoryHash)) {
               modHashes.push(socket.plugHash);
-              console.log(`[DIM Link] Including mod from socket ${i}: ${socket.plugHash}`);
+              console.log(`[DIM Link] ✅ Including armor mod from socket ${i} (category: ${socketCategoryHash}): ${socket.plugHash}`);
             } else {
-              console.log(`[DIM Link] Skipping early socket ${i}: ${socket.plugHash} (likely intrinsic/cosmetic)`);
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i} (category: ${socketCategoryHash || 'unknown'}): ${socket.plugHash} (not a mod socket)`);
             }
           }
         }
