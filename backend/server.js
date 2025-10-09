@@ -789,33 +789,48 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             const plugDef = await fetchItemDefinition(socket.plugHash);
             const isArmorMod = plugDef?.itemType === 19; // 19 = Armor Mod
             
+            // Get the mod name for better filtering
+            const modName = plugDef?.displayProperties?.name || '';
+            
             // Exclude non-combat mods using plug category hash
             // These are the categories we want to EXCLUDE:
             const EXCLUDED_PLUG_CATEGORIES = new Set([
-              2973005342, // Shaders
+              2973005342, // Shaders (cosmetic)
               3124752623, // Intrinsic Traits (Exotic armor perks)
               2487827355, // Armor Cosmetics (Ornaments/Transmog)
-              1744546145, // Masterwork Tier
+              1744546145, // Masterwork Tier (Upgrade Armor)
               3993098925, // Empty Mod Socket (default socket)
               2457930460, // Armor Stat Mods (old system, replaced by stats)
               208760563,  // Armor Tier (not a combat mod)
               1282012138, // Reusable Armor Mods (older system)
+              965959289,  // Ornament sockets
+              590099826,  // Armor Appearance (Transmog/Ornaments)
+              2833320680, // Armor Ornaments Universal
             ]);
             
             const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
             const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
             
-            // Only include if: it's an armor mod AND (it's in a combat mod socket OR it's not excluded)
-            // This double-checks to ensure we ONLY get combat mods
-            if (isArmorMod && !isExcluded && (isCombatModSocket || socket.isVisible)) {
+            // Also exclude by name patterns (catches things like "Upgrade Armor", ornaments, etc)
+            const EXCLUDED_MOD_NAMES = [
+              'Upgrade Armor',      // Masterwork
+              'Default Shader',     // Default shader
+              'Restore Defaults',   // Default ornament
+              'Default Ornament',   // Default ornament
+            ];
+            const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.includes(pattern));
+            
+            // Only include if: it's an armor mod AND it's in a combat mod socket AND not excluded by category or name
+            // This triple-checks to ensure we ONLY get actual combat mods
+            if (isArmorMod && isCombatModSocket && !isExcluded && !isExcludedByName) {
               modHashes.push(socket.plugHash);
-              console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'}, socketType: ${socketDef.socketTypeHash})`);
-            } else if (isExcluded) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded category: ${plugCategoryHash}, name: ${plugDef?.displayProperties?.name || 'Unknown'})`);
+              console.log(`[DIM Link] ✅ Including combat mod from socket ${i}: ${socket.plugHash} (${modName}, socketType: ${socketDef.socketTypeHash})`);
+            } else if (isExcluded || isExcludedByName) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName})`);
             } else if (isArmorMod && !isCombatModSocket) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (not a combat mod socket, socketType: ${socketDef.socketTypeHash}, name: ${plugDef?.displayProperties?.name || 'Unknown'})`);
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (not a combat mod socket, socketType: ${socketDef.socketTypeHash}, name: ${modName})`);
             } else {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, not a mod)`);
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, name: ${modName})`);
             }
           }
         }
@@ -871,13 +886,22 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
     // Use artifactMods array (already filtered with isActive = the 12 equipped perks)
     if (artifactMods && artifactMods.length > 0) {
       console.log(`[DIM Link] Processing ${artifactMods.length} active artifact mods (12 max equipped)`);
-      for (const mod of artifactMods) {
+      
+      // Hard cap at 12 mods (game limit)
+      const modsToInclude = artifactMods.slice(0, 12);
+      
+      for (const mod of modsToInclude) {
         // Add all active mods (isActive already filters to the 12 equipped perks)
         if (mod.hash) {
           artifactUnlocks.unlockedItemHashes.push(mod.hash);
           console.log(`[DIM Link] ✅ Including ACTIVE artifact perk: ${mod.name} (hash: ${mod.hash})`);
         }
       }
+      
+      if (artifactMods.length > 12) {
+        console.warn(`[DIM Link] ⚠️  WARNING: Received ${artifactMods.length} artifact mods, but only including first 12 (game limit)`);
+      }
+      
       console.log(`[DIM Link] Total active artifact perks: ${artifactUnlocks.unlockedItemHashes.length}/12`);
     }
     
