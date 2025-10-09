@@ -767,7 +767,10 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       }
       
       // Collect armor mod hashes for parameters.mods array
-      // Only include COMBAT and GENERAL mods, skip stat/shader/ornament sockets
+      // Strategy: Only collect from the LAST few sockets which are the actual mod sockets
+      // Armor typically has 8-10 sockets total:
+      // - Sockets 0-5: Intrinsic perk, stats, shader, ornament, etc (NOT mods)
+      // - Sockets 6-9: Combat mods (these are what we want)
       if (item.bucketHash === BUCKET_HASHES.HELMET ||
           item.bucketHash === BUCKET_HASHES.ARMS ||
           item.bucketHash === BUCKET_HASHES.CHEST ||
@@ -776,23 +779,20 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
         if (sockets && sockets.sockets) {
-          // Armor typically has:
-          // - First 6 sockets: intrinsic/perks/stats/shader/ornament
-          // - Socket 6: Combat Mod (general/leg armor)
-          // - Socket 7: Combat Mod (helmet/arms/chest)
-          // - Socket 8+: Additional mod sockets (class item has artifice)
+          const totalSockets = sockets.sockets.length;
           
-          for (let i = 0; i < sockets.sockets.length; i++) {
+          // Only look at the last 4 sockets (typical mod sockets for armor)
+          // Start from socket 6 or later, but also check we're not going past the end
+          const modSocketStart = Math.max(6, totalSockets - 4);
+          
+          for (let i = modSocketStart; i < totalSockets; i++) {
             const socket = sockets.sockets[i];
             
-            // Skip empty sockets
-            if (!socket.plugHash || socket.plugHash === 0) continue;
+            // Skip empty or invalid sockets
+            if (!socket || !socket.plugHash || socket.plugHash === 0) continue;
             
-            // Only include sockets that are:
-            // 1. Visible (users can see them)
-            // 2. Index >= 6 (combat mods, not intrinsics/stats/shaders)
-            // 3. Not default/empty plugs (user actually inserted a mod)
-            if (socket.isVisible && i >= 6 && socket.plugHash) {
+            // Include if the socket is visible to the player
+            if (socket.isVisible) {
               modHashes.push(socket.plugHash);
             }
           }
