@@ -854,22 +854,23 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       equipped.push(itemData);
     }
     
-    // Get artifact unlocks
+    // Get artifact unlocks - ALL 12 active artifact perks (V11: game allows 12 active out of 35 total)
     const artifactUnlocks = {
       unlockedItemHashes: [],
       seasonNumber: 22 // You might want to make this dynamic based on current season
     };
     
-    if (characterProgression?.seasonalArtifact?.tiers) {
-      for (const tier of characterProgression.seasonalArtifact.tiers) {
-        if (tier.items) {
-          for (const item of tier.items) {
-            if (item.isActive) {
-              artifactUnlocks.unlockedItemHashes.push(item.itemHash);
-            }
-          }
+    // Use artifactMods array (already filtered with isActive = the 12 equipped perks)
+    if (artifactMods && artifactMods.length > 0) {
+      console.log(`[DIM Link] Processing ${artifactMods.length} active artifact mods (12 max equipped)`);
+      for (const mod of artifactMods) {
+        // Add all active mods (isActive already filters to the 12 equipped perks)
+        if (mod.hash) {
+          artifactUnlocks.unlockedItemHashes.push(mod.hash);
+          console.log(`[DIM Link] ✅ Including ACTIVE artifact perk: ${mod.name} (hash: ${mod.hash})`);
         }
       }
+      console.log(`[DIM Link] Total active artifact perks: ${artifactUnlocks.unlockedItemHashes.length}/12`);
     }
     
     // Build the loadout object
