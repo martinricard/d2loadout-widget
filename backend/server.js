@@ -1017,16 +1017,24 @@ async function processLoadout(characterId, equipment, itemComponents) {
   const totalStats = {};
   const armorPieces = [helmetData, armsData, chestData, legsData, classItemData].filter(Boolean);
   
+  console.log('[Stats] Calculating total armor stats from', armorPieces.length, 'pieces');
+  
   for (const piece of armorPieces) {
     if (piece.stats) {
+      console.log(`[Stats] Processing ${piece.name}:`);
       for (const [statHash, statData] of Object.entries(piece.stats)) {
         const statName = STAT_HASHES[statHash];
         if (statName) {
-          totalStats[statName] = (totalStats[statName] || 0) + (statData.value || 0);
+          // statData.value should be the equipped value (base + mods)
+          const statValue = statData.value || 0;
+          totalStats[statName] = (totalStats[statName] || 0) + statValue;
+          console.log(`  - ${statName}: ${statValue} (total so far: ${totalStats[statName]})`);
         }
       }
     }
   }
+  
+  console.log('[Stats] Final total stats:', totalStats);
   
   return {
     weapons: {

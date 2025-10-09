@@ -779,7 +779,8 @@ function displayStats(stats) {
   statNames.forEach(statName => {
     const value = stats[statName] || 0;
     const tier = Math.floor(value / 10);
-    const percentage = Math.min((value / 100) * 100, 100);
+    // The Final Shape: Stats now go 0-200 (max Tier 20)
+    const percentage = Math.min((value / 200) * 100, 100);
     const displayName = statDisplayNames[statName] || statName;
     
     // Update value
