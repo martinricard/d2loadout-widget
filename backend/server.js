@@ -732,17 +732,6 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       BUCKET_HASHES.SUBCLASS
     ]);
     
-    // Armor mod socket categories (these contain ONLY combat mods, not intrinsic perks)
-    // Source: Bungie API - these socket category hashes represent mod slots
-    const ARMOR_MOD_SOCKET_CATEGORIES = new Set([
-      2685412949, // Armor Tier (General Armor Mod)
-      590099826,  // Helmet Mod
-      3872696960, // Arms Mod
-      3723676689, // Chest Mod
-      3607371986, // Leg Mod
-      3196106184  // Class Item Mod
-    ]);
-    
     // Process each equipped item - ONLY include loadout items (weapons, exotic armor, subclass)
     for (const item of equipment.items || []) {
       // Skip items that aren't part of the actual loadout (emblems, ships, sparrows, ghosts, etc.)
@@ -760,7 +749,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       if (isArmor) {
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
         
-        // Get item definition to check socket categories and tier type
+        // Get item definition to check tier type
         const definition = await fetchItemDefinition(item.itemHash);
         const isExotic = definition?.inventory?.tierType === 6;
         
@@ -776,15 +765,15 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               continue;
             }
             
-            // Check if this socket's category is a mod socket
-            const socketCategoryHash = socketDef?.socketCategoryHash;
+            // Fetch the plug definition to check if it's a mod (itemType 19)
+            const plugDef = await fetchItemDefinition(socket.plugHash);
+            const isArmorMod = plugDef?.itemType === 19; // 19 = Armor Mod
             
-            // Only include if this is a known armor mod socket category
-            if (socketCategoryHash && ARMOR_MOD_SOCKET_CATEGORIES.has(socketCategoryHash)) {
+            if (isArmorMod) {
               modHashes.push(socket.plugHash);
-              console.log(`[DIM Link] ✅ Including armor mod from socket ${i} (category: ${socketCategoryHash}): ${socket.plugHash}`);
+              console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'})`);
             } else {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i} (category: ${socketCategoryHash || 'unknown'}): ${socket.plugHash} (not a mod socket)`);
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, not a mod)`);
             }
           }
         }
