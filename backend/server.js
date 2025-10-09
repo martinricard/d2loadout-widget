@@ -1033,7 +1033,7 @@ async function processLoadout(characterId, equipment, itemComponents) {
   for (const piece of armorPieces) {
     if (piece.stats) {
       console.log(`[STATS DEBUG] Processing ${piece.name} (base stats):`);
-      console.log(`  [STATS DEBUG] Item hash: ${piece.itemHash}, Instance ID: ${piece.itemInstanceId}`);
+      console.log(`  [STATS DEBUG] Item hash: ${piece.hash}, Instance ID: ${piece.instanceId}`);
       for (const [statHash, statData] of Object.entries(piece.stats)) {
         const statName = STAT_HASHES[statHash];
         if (statName) {
