@@ -756,14 +756,25 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         if (sockets && sockets.sockets && definition?.sockets?.socketEntries) {
           console.log(`[DIM Link] Checking ${definition.displayProperties?.name || 'Unknown'} (Exotic: ${isExotic}, ${sockets.sockets.length} sockets)`);
           
+          // Socket type hashes for ACTUAL MOD SOCKETS (not cosmetics/perks)
+          const COMBAT_MOD_SOCKET_TYPES = new Set([
+            3956125808, // Armor Mods (Combat Style)
+            2912171003, // Armor Mods (General)
+            4243480345, // Armor Mods (Seasonal)
+            // Add more if needed
+          ]);
+          
           for (let i = 0; i < sockets.sockets.length && i < definition.sockets.socketEntries.length; i++) {
             const socket = sockets.sockets[i];
             const socketDef = definition.sockets.socketEntries[i];
             
-            // Skip empty, invalid, or hidden sockets
-            if (!socket || !socket.plugHash || socket.plugHash === 0 || !socket.isVisible) {
+            // Skip empty, invalid, or NOT ENABLED sockets (must be actively equipped)
+            if (!socket || !socket.plugHash || socket.plugHash === 0 || !socket.isEnabled) {
               continue;
             }
+            
+            // Check if this is a combat mod socket type
+            const isCombatModSocket = socketDef.socketTypeHash && COMBAT_MOD_SOCKET_TYPES.has(socketDef.socketTypeHash);
             
             // Fetch the plug definition to check if it's a mod (itemType 19)
             const plugDef = await fetchItemDefinition(socket.plugHash);
@@ -785,11 +796,15 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
             const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
             
-            if (isArmorMod && !isExcluded) {
+            // Only include if: it's an armor mod AND (it's in a combat mod socket OR it's not excluded)
+            // This double-checks to ensure we ONLY get combat mods
+            if (isArmorMod && !isExcluded && (isCombatModSocket || socket.isVisible)) {
               modHashes.push(socket.plugHash);
-              console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'})`);
+              console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'}, socketType: ${socketDef.socketTypeHash})`);
             } else if (isExcluded) {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded category: ${plugCategoryHash}, name: ${plugDef?.displayProperties?.name || 'Unknown'})`);
+            } else if (isArmorMod && !isCombatModSocket) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (not a combat mod socket, socketType: ${socketDef.socketTypeHash}, name: ${plugDef?.displayProperties?.name || 'Unknown'})`);
             } else {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, not a mod)`);
             }
