@@ -1017,24 +1017,28 @@ async function processLoadout(characterId, equipment, itemComponents) {
   const totalStats = {};
   const armorPieces = [helmetData, armsData, chestData, legsData, classItemData].filter(Boolean);
   
-  console.log('[Stats] Calculating total armor stats from', armorPieces.length, 'pieces');
+  console.log('='.repeat(80));
+  console.log('[STATS DEBUG] Calculating total armor stats from', armorPieces.length, 'pieces');
+  console.log('='.repeat(80));
   
   for (const piece of armorPieces) {
     if (piece.stats) {
-      console.log(`[Stats] Processing ${piece.name}:`);
+      console.log(`[STATS DEBUG] Processing ${piece.name}:`);
       for (const [statHash, statData] of Object.entries(piece.stats)) {
         const statName = STAT_HASHES[statHash];
         if (statName) {
           // statData.value should be the equipped value (base + mods)
           const statValue = statData.value || 0;
           totalStats[statName] = (totalStats[statName] || 0) + statValue;
-          console.log(`  - ${statName}: ${statValue} (total so far: ${totalStats[statName]})`);
+          console.log(`  [STATS DEBUG] ${statName}: ${statValue} (running total: ${totalStats[statName]})`);
         }
       }
     }
   }
   
-  console.log('[Stats] Final total stats:', totalStats);
+  console.log('='.repeat(80));
+  console.log('[STATS DEBUG] ⭐ FINAL TOTAL STATS:', JSON.stringify(totalStats, null, 2));
+  console.log('='.repeat(80));
   
   return {
     weapons: {
