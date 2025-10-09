@@ -1020,21 +1020,22 @@ async function processLoadout(characterId, equipment, itemComponents) {
     subclass ? processSubclassDetails(subclass, itemComponents) : null
   ]);
   
-  // Calculate total armor stats
+  // Calculate total armor stats INCLUDING armor mods
   const totalStats = {};
   const armorPieces = [helmetData, armsData, chestData, legsData, classItemData].filter(Boolean);
+  const armorItems = [helmet, arms, chest, legs, classItem].filter(Boolean);
   
   console.log('='.repeat(80));
   console.log('[STATS DEBUG] Calculating total armor stats from', armorPieces.length, 'pieces');
   console.log('='.repeat(80));
   
+  // Step 1: Add base armor stats
   for (const piece of armorPieces) {
     if (piece.stats) {
-      console.log(`[STATS DEBUG] Processing ${piece.name}:`);
+      console.log(`[STATS DEBUG] Processing ${piece.name} (base stats):`);
       for (const [statHash, statData] of Object.entries(piece.stats)) {
         const statName = STAT_HASHES[statHash];
         if (statName) {
-          // statData.value should be the equipped value (base + mods)
           const statValue = statData.value || 0;
           totalStats[statName] = (totalStats[statName] || 0) + statValue;
           console.log(`  [STATS DEBUG] ${statName}: ${statValue} (running total: ${totalStats[statName]})`);
@@ -1043,8 +1044,47 @@ async function processLoadout(characterId, equipment, itemComponents) {
     }
   }
   
+  console.log('[STATS DEBUG] Base stats calculated. Now checking armor mods...');
+  
+  // Step 2: Add armor mod bonuses
+  for (let i = 0; i < armorItems.length; i++) {
+    const item = armorItems[i];
+    const itemData = armorPieces[i];
+    if (!item || !itemData) continue;
+    
+    const itemInstanceId = item.itemInstanceId;
+    const sockets = itemComponents.sockets[itemInstanceId];
+    
+    if (sockets && sockets.sockets) {
+      console.log(`[STATS DEBUG] Checking mods for ${itemData.name}:`);
+      
+      for (const socket of sockets.sockets) {
+        if (socket.plugHash && socket.isEnabled) {
+          try {
+            const plugDef = await fetchItemDefinition(socket.plugHash);
+            if (plugDef && plugDef.investmentStats && plugDef.investmentStats.length > 0) {
+              // This mod has stat bonuses
+              const modName = plugDef.displayProperties?.name || 'Unknown Mod';
+              console.log(`  [STATS DEBUG] Found mod with stats: ${modName}`);
+              
+              for (const investment of plugDef.investmentStats) {
+                const statName = STAT_HASHES[investment.statTypeHash];
+                if (statName && investment.value !== 0) {
+                  totalStats[statName] = (totalStats[statName] || 0) + investment.value;
+                  console.log(`    [STATS DEBUG] ${modName} → ${statName}: ${investment.value > 0 ? '+' : ''}${investment.value} (new total: ${totalStats[statName]})`);
+                }
+              }
+            }
+          } catch (error) {
+            // Silently skip mods we can't fetch
+          }
+        }
+      }
+    }
+  }
+  
   console.log('='.repeat(80));
-  console.log('[STATS DEBUG] ⭐ FINAL TOTAL STATS:', JSON.stringify(totalStats, null, 2));
+  console.log('[STATS DEBUG] ⭐ FINAL TOTAL STATS (WITH MODS):', JSON.stringify(totalStats, null, 2));
   console.log('='.repeat(80));
   
   return {
