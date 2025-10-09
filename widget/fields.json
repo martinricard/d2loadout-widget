@@ -1,13 +1,13 @@
 {
-  "separe0.1": {
+  "separe0": {
     "type": "hidden",
-    "label": "🎮 ⋮ Destiny 2 Connection",
+    "label": "🔗 ⋮ Bungie Connection",
     "value": "",
     "group": "🔗 Connection"
   },
   "bungieInput": {
     "type": "textfield",
-    "label": "Your Bungie ID",
+    "label": "Bungie ID",
     "value": "",
     "placeholder": "Marty#2689",
     "group": "🔗 Connection"
@@ -22,9 +22,9 @@
   },
   "separe1": {
     "type": "hidden",
-    "label": "👁️ ⋮ Display Options",
+    "label": "👁 ⋮ Visibility Options",
     "value": "",
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
   "showWeapons": {
     "type": "dropdown",
@@ -34,7 +34,7 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
   "showArmor": {
     "type": "dropdown",
@@ -44,7 +44,7 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
   "showStats": {
     "type": "dropdown",
@@ -54,7 +54,7 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
   "showSubclass": {
     "type": "dropdown",
@@ -64,17 +64,33 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
   "showArtifact": {
     "type": "dropdown",
-    "label": "Show Artifact & Mods",
+    "label": "Show Artifact",
     "value": "true",
     "options": {
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
+  },
+  "showFooter": {
+    "type": "dropdown",
+    "label": "Show Footer",
+    "value": "true",
+    "options": {
+      "true": "Yes",
+      "false": "No"
+    },
+    "group": "👁 Display"
+  },
+  "separe2": {
+    "type": "hidden",
+    "label": "🔗 ⋮ DIM Integration",
+    "value": "",
+    "group": "👁 Display"
   },
   "showDIMLink": {
     "type": "dropdown",
@@ -84,13 +100,112 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "📊 Display Settings"
+    "group": "👁 Display"
   },
-  "separe2": {
+  "dimLinkRotating": {
+    "type": "dropdown",
+    "label": "Rotating DIM Message",
+    "value": "true",
+    "options": {
+      "true": "Yes",
+      "false": "No"
+    },
+    "group": "👁 Display"
+  },
+  "dimLinkMessage": {
+    "type": "textfield",
+    "label": "Custom DIM Message",
+    "value": "Copy this link to your browser",
+    "placeholder": "Copy this link to your browser",
+    "group": "👁 Display"
+  },
+  "separe3": {
+    "type": "hidden",
+    "label": "💬 ⋮ Auto-Hide & Commands",
+    "value": "",
+    "group": "💬 Commands"
+  },
+  "autoHide": {
+    "type": "dropdown",
+    "label": "Auto-Hide Mode",
+    "value": "false",
+    "options": {
+      "false": "Always Visible",
+      "true": "Auto-Hide (Hide Until Triggered)"
+    },
+    "group": "💬 Commands"
+  },
+  "triggerType": {
+    "type": "dropdown",
+    "label": "Trigger Type",
+    "value": "commands",
+    "options": {
+      "commands": "Chat Commands",
+      "channelPoints": "Channel Point Redeems"
+    },
+    "group": "💬 Commands"
+  },
+  "autoHideDuration": {
+    "type": "number",
+    "label": "Display Duration (seconds)",
+    "value": 15,
+    "min": 5,
+    "max": 60,
+    "group": "💬 Commands"
+  },
+  "separe4": {
+    "type": "hidden",
+    "label": "⟢ Customize Commands",
+    "value": "",
+    "group": "💬 Commands"
+  },
+  "chatCommand": {
+    "type": "textfield",
+    "label": "Full Loadout",
+    "value": "!loadout",
+    "placeholder": "!loadout",
+    "group": "💬 Commands"
+  },
+  "commandWeapons": {
+    "type": "textfield",
+    "label": "Weapons Only",
+    "value": "!weapons",
+    "placeholder": "!weapons",
+    "group": "💬 Commands"
+  },
+  "commandArmor": {
+    "type": "textfield",
+    "label": "Armor Only",
+    "value": "!armor",
+    "placeholder": "!armor",
+    "group": "💬 Commands"
+  },
+  "commandStats": {
+    "type": "textfield",
+    "label": "Stats Only",
+    "value": "!stats",
+    "placeholder": "!stats",
+    "group": "💬 Commands"
+  },
+  "commandSubclass": {
+    "type": "textfield",
+    "label": "Subclass Only",
+    "value": "!subclass",
+    "placeholder": "!subclass",
+    "group": "💬 Commands"
+  },
+  "commandArtifact": {
+    "type": "textfield",
+    "label": "Artifact Only",
+    "value": "!artifact",
+    "placeholder": "!artifact",
+    "group": "💬 Commands"
+  },
+  "separe5": {
     "type": "hidden",
     "label": "⚔️ ⋮ Weapon & Armor Options",
     "value": "",
-    "group": "🎯 Equipment Settings"
+    "group": "⚔️ Equipment"
   },
   "showPerks": {
     "type": "dropdown",
@@ -100,68 +215,68 @@
       "true": "Yes",
       "false": "No"
     },
-    "group": "🎯 Equipment Settings"
+    "group": "⚔️ Equipment"
   },
   "exoticPerksDisplay": {
     "type": "dropdown",
-    "label": "Exotic Class Item Perks Display",
+    "label": "Exotic Class Item Display",
     "value": "text",
     "options": {
-      "text": "Text Names",
+      "text": "Text",
       "icons": "Icons"
     },
-    "group": "🎯 Equipment Settings"
+    "group": "⚔️ Equipment"
   },
-  "separe3": {
+  "separe6": {
     "type": "hidden",
     "label": "🎨 ⋮ Color Customization",
     "value": "",
-    "group": "🎨 Styling"
+    "group": "🎨 Colors"
   },
   "backgroundColor": {
     "type": "colorpicker",
-    "label": "Background Color",
+    "label": "Background",
     "value": "#101014",
-    "group": "🎨 Styling"
+    "group": "🎨 Colors"
   },
   "borderColor": {
     "type": "colorpicker",
-    "label": "Border Color",
+    "label": "Border",
     "value": "#2c2c2f",
-    "group": "🎨 Styling"
+    "group": "🎨 Colors"
   },
   "textColor": {
     "type": "colorpicker",
-    "label": "Text Color",
+    "label": "Text",
     "value": "#ffffff",
-    "group": "🎨 Styling"
+    "group": "🎨 Colors"
   },
   "exoticColor": {
     "type": "colorpicker",
-    "label": "Exotic Highlight",
+    "label": "Exotic",
     "value": "#CEAE33",
-    "group": "🎨 Styling"
+    "group": "🎨 Colors"
   },
-  "separe4": {
+  "separe7": {
     "type": "hidden",
     "label": "🔤 ⋮ Font Options",
     "value": "",
-    "group": "🎨 Styling"
+    "group": "🔤 Typography"
   },
   "fontFamily": {
     "type": "googleFont",
-    "label": "Font Family",
+    "label": "Font",
     "value": "Roboto Condensed",
-    "group": "🎨 Styling"
+    "group": "🔤 Typography"
   },
   "fontSize": {
     "type": "slider",
-    "label": "Font Size",
+    "label": "Size",
     "value": 14,
     "min": 10,
     "max": 24,
     "step": 1,
-    "group": "🎨 Styling"
+    "group": "🔤 Typography"
   },
   "version": {
     "type": "hidden",

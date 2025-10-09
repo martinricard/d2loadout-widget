@@ -1,4 +1,8 @@
-/* D2 Loadout Widget - Compact Wide Layout - CLEAN VERSION */
+/*
+ * D2 Loadout Widget for StreamElements
+ * Displays your Destiny 2 character's loadout on stream
+ * Version 1.0
+ */
 
 :root {
   --bg-color: #1a1a1f;
@@ -31,6 +35,32 @@ body {
   width: 760px;
   max-width: 760px;
   margin: 0 auto;
+  position: relative;
+  overflow: hidden; /* Ensure hidden content doesn't show */
+  height: 500px; /* Match container height to create proper clipping */
+}
+
+/* Feathered edge effect */
+#d2-loadout-widget.feathered .widget-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top,
+    rgba(15, 15, 18, 1) 0%,
+    rgba(15, 15, 18, 0.95) 10%,
+    rgba(15, 15, 18, 0.85) 20%,
+    rgba(15, 15, 18, 0.7) 30%,
+    rgba(15, 15, 18, 0.5) 40%,
+    rgba(15, 15, 18, 0.3) 50%,
+    rgba(15, 15, 18, 0.15) 60%,
+    rgba(15, 15, 18, 0.05) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 100;
 }
 
 .widget-container {
@@ -41,6 +71,9 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  position: relative;
 }
 
 /* ========== CHARACTER HEADER ========== */
@@ -57,7 +90,6 @@ body {
   min-height: 54px;
 }
 
-/* Emblem as full header background */
 .character-header::before {
   content: '';
   position: absolute;
@@ -157,10 +189,9 @@ body {
   padding: 6px 8px;
 }
 
-/* Default to compact layout if no class is specified */
 .widget-container:not(.layout-standard):not(.layout-full) {
   display: grid;
-  grid-template-columns: 280px 320px 160px; /* 3 columns: weapons, armor, stats */
+  grid-template-columns: 280px 320px 160px;
   grid-template-rows: auto auto auto;
   width: 760px;
   max-width: 760px;
@@ -171,7 +202,6 @@ body {
   grid-row: 1;
 }
 
-/* Middle row: Weapons | Armor | Stats */
 .widget-container:not(.layout-standard):not(.layout-full) .weapons-section {
   grid-column: 1;
   grid-row: 2;
@@ -200,7 +230,7 @@ body {
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section {
-  grid-column: 3; /* Single column */
+  grid-column: 3;
   grid-row: 2;
   border-bottom: 1px solid var(--border-color);
   padding-left: 8px;
@@ -212,16 +242,15 @@ body {
 
 .widget-container:not(.layout-standard):not(.layout-full) .stats-section .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* 2 columns x 3 rows for stats */
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   column-gap: 8px;
   max-width: 140px;
   width: 140px;
 }
 
-/* Bottom row: Subclass + Artifacts COMBINED on left, Stats on right */
 .widget-container:not(.layout-standard):not(.layout-full) .subclass-section {
-  grid-column: 1 / -1; /* Span all columns */
+  grid-column: 1 / -1;
   grid-row: 3;
   display: flex;
   flex-direction: row;
@@ -231,7 +260,7 @@ body {
 }
 
 .widget-container:not(.layout-standard):not(.layout-full) .artifact-section {
-  display: flex !important; /* Show artifacts inside subclass section */
+  display: flex !important;
   flex-direction: column;
   align-items: flex-start;
 }
@@ -316,24 +345,21 @@ body {
   font-size: 0.95em;
   font-weight: 700;
   color: #f1d770;
-  text-align: right;
-  min-width: 32px;
+  text-align: left;
+  min-width: 50px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-left: auto;
   flex-shrink: 0;
 }
 
-.weapon-power .power-icon {
-  width: 10px;
-  height: 10px;
+.weapon-power:not(.pinnacle-power) {
+  color: #c9c9c9;
 }
 
-/* Pinnacle power styling (over 200) */
 .weapon-power.pinnacle-power {
-  color: #00e8d3; /* Cyan color */
+  color: #00e8d3;
   font-weight: 900;
 }
 
@@ -342,7 +368,6 @@ body {
   font-weight: 900;
 }
 
-/* Weapon Perks - Hidden by default, shown when enabled */
 .weapon-perks {
   display: none;
   gap: 6px;
@@ -372,12 +397,10 @@ body {
   transform: scale(1.15);
 }
 
-/* Enhanced perks get extra spacing but stay aligned with weapon text */
 .weapon-perk-icon.enhanced {
   margin-right: 4px;
 }
 
-/* Enhanced perk indicator - yellow arrow on left edge of icon */
 .weapon-perk-icon.enhanced::before {
   content: '';
   position: absolute;
@@ -478,22 +501,24 @@ body {
   font-size: 0.85em;
   font-weight: 700;
   color: #f1d770;
-  text-align: right;
-  min-width: 28px;
+  text-align: left;
+  min-width: 48px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  justify-content: flex-end;
+  justify-content: flex-start;
   margin-left: auto;
   flex-shrink: 0;
 }
 
-.armor-power .power-icon {
-  width: 9px;
-  height: 9px;
+.armor-power:not(.pinnacle-power) {
+  color: #c9c9c9;
 }
 
-/* Exotic armor perks (for exotic class items) */
+.armor-power.pinnacle-power {
+  color: #00e8d3;
+  font-weight: 900;
+}
+
 .exotic-perks {
   display: none;
   gap: 2px;
@@ -525,7 +550,6 @@ body {
   border-color: rgba(206, 174, 51, 0.6);
 }
 
-/* Exotic perk text display */
 .exotic-perk-text {
   font-size: 0.65em;
   font-weight: 500;
@@ -632,10 +656,9 @@ body {
 }
 
 .subclass-section .section-title {
-  display: none; /* Hide the floating section title */
+  display: none;
 }
 
-/* Single horizontal row containing EVERYTHING */
 .subclass-display {
   display: flex;
   flex-direction: row;
@@ -698,7 +721,6 @@ body {
   display: none;
 }
 
-/* Aspects Grid - Inline in same row */
 .aspects-container {
   display: flex;
   align-items: flex-start;
@@ -752,7 +774,6 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* Fragments Grid - Inline in same row */
 .fragments-container {
   display: flex;
   align-items: flex-start;
@@ -806,7 +827,6 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* Tooltips for aspects and fragments */
 .aspect-tooltip,
 .fragment-tooltip {
   display: none;
@@ -963,11 +983,14 @@ body {
   text-align: center;
   font-size: 0.7em;
   color: var(--text-muted);
-  opacity: 0.5;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+.last-updated {
+  opacity: 0.5; /* Keep timestamp dimmed */
 }
 
 .footer-separator {
@@ -980,14 +1003,14 @@ body {
 }
 
 .dim-link {
-  color: var(--text-muted);
+  color: #ffc857;
   text-decoration: none;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-family);
   font-size: 0.85em;
-  font-weight: 500;
-  pointer-events: none; /* Since viewers can't click on overlay */
+  font-weight: 600;
+  pointer-events: none;
   cursor: default;
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* ========== UTILITY CLASSES ========== */

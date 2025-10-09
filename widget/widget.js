@@ -1,9 +1,15 @@
-// D2 Loadout Widget - JavaScript
-// StreamElements Custom Widget
+/*
+ * D2 Loadout Widget for StreamElements
+ * Displays your Destiny 2 character's loadout on stream
+ * Version 1.0
+ */
 
 let fieldData = {};
 let refreshInterval = null;
-let isFirstLoad = true; // Track if this is the initial load
+let isFirstLoad = true;
+let autoHideTimeout = null;
+let lastCommandTime = 0;
+const COMMAND_COOLDOWN = 3000;
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -18,8 +24,307 @@ window.addEventListener('onWidgetLoad', function (obj) {
   // Hide sections based on settings
   toggleSections();
   
+  // Setup auto-hide behavior
+  setupAutoHide();
+  
   // Fetch initial data
   fetchLoadout();
+});
+
+// Setup auto-hide functionality
+function setupAutoHide() {
+  const autoHide = fieldData.autoHide === 'true';
+  const widgetContainer = document.querySelector('.widget-container');
+  
+  if (autoHide) {
+    // Wait for widget to render, then get actual height
+    setTimeout(() => {
+      const widgetHeight = widgetContainer.offsetHeight;
+      console.log('[D2 Widget] Widget height:', widgetHeight, 'px');
+      
+      // Initially hide the widget - slide down to bottom of 500px container
+      // Calculate how far down to move: 500px (container height) - current top position
+      widgetContainer.style.transform = `translateY(500px)`;
+      widgetContainer.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+      console.log('[D2 Widget] Auto-hide enabled - widget hidden at bottom');
+    }, 100);
+  } else {
+    // Make sure widget is visible
+    widgetContainer.style.transform = 'translateY(0)';
+    widgetContainer.style.opacity = '1';
+    widgetContainer.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+  }
+}
+
+// Show widget (slide up from bottom)
+function showWidget(displayMode = 'full') {
+  const widgetContainer = document.querySelector('.widget-container');
+  const widgetWrapper = document.getElementById('d2-loadout-widget');
+  const duration = parseInt(fieldData.autoHideDuration || 15) * 1000;
+  
+  console.log('[D2 Widget] Showing widget - sliding up with mode:', displayMode);
+  
+  // Remove feathering mask when showing
+  if (widgetWrapper) {
+    widgetWrapper.classList.remove('feathered');
+  }
+  
+  // Apply display mode - hide/show sections based on command
+  applyDisplayMode(displayMode);
+  
+  // Slide up - remove any transforms
+  widgetContainer.style.transform = 'translateY(0)';
+  
+  // Clear any existing timeout
+  if (autoHideTimeout) {
+    clearTimeout(autoHideTimeout);
+  }
+  
+  // Auto-hide after duration
+  autoHideTimeout = setTimeout(() => {
+    hideWidget();
+  }, duration);
+}
+
+// Apply display mode - show only requested sections
+function applyDisplayMode(mode) {
+  const sections = {
+    weapons: document.getElementById('weaponsSection'),
+    armor: document.getElementById('armorSection'),
+    stats: document.getElementById('statsSection'),
+    subclass: document.getElementById('subclassSection'),
+    artifact: document.getElementById('artifactSection')
+  };
+  
+  // Define what each mode shows
+  const modes = {
+    full: { weapons: true, armor: true, stats: true, subclass: true, artifact: true },
+    subclass: { weapons: false, armor: false, stats: false, subclass: true, artifact: true },
+    stats: { weapons: false, armor: false, stats: true, subclass: false, artifact: false },
+    weapons: { weapons: true, armor: false, stats: false, subclass: false, artifact: false },
+    armor: { weapons: false, armor: true, stats: false, subclass: false, artifact: false },
+    artifact: { weapons: false, armor: false, stats: false, subclass: true, artifact: true }
+  };
+  
+  const config = modes[mode] || modes.full;
+  
+  // Apply visibility - use inline styles to override field settings temporarily
+  Object.keys(sections).forEach(key => {
+    const section = sections[key];
+    if (section) {
+      if (config[key]) {
+        section.style.display = '';
+        section.classList.remove('hidden');
+      } else {
+        section.style.display = 'none';
+      }
+    }
+  });
+  
+  // Adjust grid layout based on visible sections
+  const container = document.querySelector('.widget-container');
+  const footer = document.querySelector('.widget-footer');
+  
+  if (mode === 'stats') {
+    // Center stats in a compact layout
+    container.style.gridTemplateColumns = '1fr';
+    container.style.gridTemplateRows = 'auto auto auto 1fr auto'; // Add flexible row before footer
+    if (sections.stats) {
+      sections.stats.style.gridColumn = '1';
+      sections.stats.style.gridRow = '2';
+      sections.stats.style.borderRight = 'none';
+      sections.stats.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (footer) {
+      footer.style.gridColumn = '1';
+      footer.style.gridRow = '5'; // Footer at bottom
+    }
+  } else if (mode === 'weapons') {
+    // Single column for weapons
+    container.style.gridTemplateColumns = '1fr';
+    container.style.gridTemplateRows = 'auto auto auto 1fr auto'; // Add flexible row before footer
+    if (sections.weapons) {
+      sections.weapons.style.gridColumn = '1';
+      sections.weapons.style.gridRow = '2';
+      sections.weapons.style.borderRight = 'none';
+      sections.weapons.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (footer) {
+      footer.style.gridColumn = '1';
+      footer.style.gridRow = '5'; // Footer at bottom
+    }
+  } else if (mode === 'armor') {
+    // Single column for armor
+    container.style.gridTemplateColumns = '1fr';
+    container.style.gridTemplateRows = 'auto auto auto 1fr auto'; // Add flexible row before footer
+    if (sections.armor) {
+      sections.armor.style.gridColumn = '1';
+      sections.armor.style.gridRow = '2';
+      sections.armor.style.borderRight = 'none';
+      sections.armor.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (footer) {
+      footer.style.gridColumn = '1';
+      footer.style.gridRow = '5'; // Footer at bottom
+    }
+  } else if (mode === 'subclass' || mode === 'artifact') {
+    // Full width for subclass/artifact
+    container.style.gridTemplateColumns = '1fr';
+    container.style.gridTemplateRows = 'auto auto auto 1fr auto'; // Add flexible row before footer
+    if (sections.subclass) {
+      sections.subclass.style.gridRow = '3';
+    }
+    if (footer) {
+      footer.style.gridColumn = '1';
+      footer.style.gridRow = '5'; // Footer at bottom
+    }
+  } else {
+    // Reset to default 3-column layout
+    container.style.gridTemplateColumns = '280px 320px 160px';
+    container.style.gridTemplateRows = 'auto auto auto'; // Reset to default rows
+    if (sections.weapons) {
+      sections.weapons.style.gridColumn = '1';
+      sections.weapons.style.gridRow = '2';
+      sections.weapons.style.borderRight = '1px solid var(--border-color)';
+      sections.weapons.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (sections.armor) {
+      sections.armor.style.gridColumn = '2';
+      sections.armor.style.gridRow = '2';
+      sections.armor.style.borderRight = '1px solid var(--border-color)';
+      sections.armor.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (sections.stats) {
+      sections.stats.style.gridColumn = '3';
+      sections.stats.style.gridRow = '2';
+      sections.stats.style.borderRight = 'none';
+      sections.stats.style.borderBottom = '1px solid var(--border-color)';
+    }
+    if (sections.subclass) {
+      sections.subclass.style.gridRow = '3';
+    }
+    if (footer) {
+      footer.style.gridColumn = '1 / -1';
+      footer.style.gridRow = 'auto'; // Reset to default
+    }
+  }
+  
+  console.log('[D2 Widget] Applied display mode:', mode, config);
+}
+
+// Hide widget (slide down to bottom of container)
+function hideWidget() {
+  const widgetContainer = document.querySelector('.widget-container');
+  const widgetWrapper = document.getElementById('d2-loadout-widget');
+  console.log('[D2 Widget] Hiding widget - sliding down with feather');
+  
+  // Apply feathering mask when hiding
+  if (widgetWrapper) {
+    widgetWrapper.classList.add('feathered');
+  }
+  
+  // Slide down to bottom of 500px container
+  widgetContainer.style.transform = `translateY(500px)`;
+  
+  // Clear timeout
+  if (autoHideTimeout) {
+    clearTimeout(autoHideTimeout);
+    autoHideTimeout = null;
+  }
+}
+
+// Listen for chat messages (StreamElements event)
+window.addEventListener('onEventReceived', function (obj) {
+  if (!obj.detail) return;
+  
+  const { listener, event } = obj.detail;
+  const autoHide = fieldData.autoHide === 'true';
+  const triggerType = fieldData.triggerType || 'commands';
+  
+  console.log('[D2 Widget] Event received - Listener:', listener, 'Trigger Type:', triggerType, 'Auto-Hide:', autoHide);
+  
+  // Only process events if auto-hide is enabled
+  if (!autoHide) return;
+  
+  // Check cooldown first - prevent spam for both commands and channel points
+  const now = Date.now();
+  const timeSinceLastCommand = now - lastCommandTime;
+  
+  if (timeSinceLastCommand < COMMAND_COOLDOWN) {
+    const remainingCooldown = Math.ceil((COMMAND_COOLDOWN - timeSinceLastCommand) / 1000);
+    console.log(`[D2 Widget] Command on cooldown - ${remainingCooldown}s remaining`);
+    return; // Ignore during cooldown
+  }
+  
+  // Handle Chat Commands
+  if (triggerType === 'commands' && listener === 'message') {
+    const message = (event?.data?.text || event?.text || '').toLowerCase().trim();
+    
+    console.log('[D2 Widget] Chat message received:', message);
+    
+    // Define all commands with their display modes
+    const commands = {
+      [fieldData.chatCommand || '!loadout']: 'full',
+      [fieldData.commandSubclass || '!subclass']: 'subclass',
+      [fieldData.commandStats || '!stats']: 'stats',
+      [fieldData.commandWeapons || '!weapons']: 'weapons',
+      [fieldData.commandArmor || '!armor']: 'armor',
+      [fieldData.commandArtifact || '!artifact']: 'artifact'
+    };
+    
+    // Check if message matches any command
+    for (const [command, mode] of Object.entries(commands)) {
+      const normalizedCommand = command.toLowerCase().trim();
+      if (message.startsWith(normalizedCommand)) {
+        console.log('[D2 Widget] Command triggered:', command, '- Mode:', mode);
+        lastCommandTime = now; // Update last command time
+        showWidget(mode);
+        break;
+      }
+    }
+  }
+  
+  // Handle Channel Point Redemptions
+  // StreamElements can send redemptions as 'redemption-latest', 'event', or other listeners
+  const isRedemption = triggerType === 'channelPoints' && 
+                       (listener === 'redemption-latest' || 
+                        listener === 'event' || 
+                        listener.includes('redemption'));
+  
+  if (isRedemption) {
+    // StreamElements stores the reward name in event.data.redemption
+    const rewardTitle = (event?.data?.redemption || event?.name || event?.title || event?.reward?.title || '').toLowerCase().trim();
+    
+    console.log('[D2 Widget] Channel point redemption received!');
+    console.log('[D2 Widget] - Reward name:', rewardTitle);
+    
+    // Map reward titles to display modes (case-insensitive matching)
+    const redemptions = {
+      'show loadout': 'full',
+      'show subclass': 'subclass',
+      'show stats': 'stats',
+      'show weapons': 'weapons',
+      'show armor': 'armor',
+      'show artifact': 'artifact'
+    };
+    
+    // Check if redemption matches any display mode
+    let matched = false;
+    for (const [reward, mode] of Object.entries(redemptions)) {
+      if (rewardTitle.includes(reward)) {
+        console.log('[D2 Widget] ✅ Redemption matched:', reward, '- Mode:', mode);
+        lastCommandTime = now; // Update last command time
+        showWidget(mode);
+        matched = true;
+        break;
+      }
+    }
+    
+    if (!matched) {
+      console.log('[D2 Widget] ⚠️ No match found for redemption title:', rewardTitle);
+      console.log('[D2 Widget] Available redemptions:', Object.keys(redemptions));
+    }
+  }
 });
 
 // Apply custom styles from field data
@@ -145,22 +450,9 @@ function displayLoadout(data) {
   document.getElementById('characterName').classList.remove('loading');
   document.getElementById('characterClass').textContent = data.character?.class || '';
   
-  // Create power icon SVG element
+  // Set power level text only (no diamond icon)
   const lightElement = document.getElementById('characterLight');
-  lightElement.textContent = '';
-  
-  // Diamond icon BEFORE the power level number
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'power-icon');
-  svg.setAttribute('viewBox', '0 0 32 32');
-  
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
-  path.setAttribute('fill', '#f1d770');
-  
-  svg.appendChild(path);
-  lightElement.appendChild(svg);
-  lightElement.appendChild(document.createTextNode(data.character?.light || 0));
+  lightElement.textContent = data.character?.light || 0;
   
   // Character emblem
   if (data.character?.emblemPath) {
@@ -252,18 +544,8 @@ function displayWeapon(slotId, weaponData, slotName) {
       powerElement.textContent = `${plusValue} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
-      // Show normal power with diamond icon
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'power-icon');
-      svg.setAttribute('viewBox', '0 0 32 32');
-      
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
-      path.setAttribute('fill', '#f1d770');
-      
-      svg.appendChild(path);
-      powerElement.appendChild(svg);
-      powerElement.appendChild(document.createTextNode(powerValue));
+      // Show normal power with invisible + for alignment
+      powerElement.innerHTML = `${powerValue}<span style="opacity: 0; pointer-events: none;"> +</span>`;
       powerElement.classList.remove('pinnacle-power');
     }
   }
@@ -383,18 +665,8 @@ function displayArmor(slotId, armorData, slotName) {
       powerElement.textContent = `${plusValue} +`;
       powerElement.classList.add('pinnacle-power');
     } else {
-      // Show normal power with diamond icon
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('class', 'power-icon');
-      svg.setAttribute('viewBox', '0 0 32 32');
-      
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M22.962 8.863c-2.628-2.576-4.988-5.407-7.045-8.458l-0.123-0.193c-2.234 3.193-4.556 5.993-7.083 8.592l0.015-0.016c-2.645 2.742-5.496 5.245-8.542 7.499l-0.184 0.13c3.341 2.271 6.262 4.682 8.943 7.335l-0.005-0.005c2.459 2.429 4.71 5.055 6.731 7.858l0.125 0.182c4.324-6.341 9.724-11.606 15.986-15.649l0.219-0.133c-3.401-2.168-6.359-4.524-9.048-7.153l0.010 0.010zM18.761 18.998c-1.036 1.024-1.971 2.145-2.792 3.35l-0.050 0.078c-0.884-1.215-1.8-2.285-2.793-3.279l0 0c-1.090-1.075-2.280-2.055-3.552-2.923l-0.088-0.057c1.326-0.969 2.495-1.988 3.571-3.097l0.007-0.007c1.010-1.051 1.947-2.191 2.794-3.399l0.061-0.092c0.882 1.32 1.842 2.471 2.912 3.51l0.005 0.005c1.089 1.072 2.293 2.034 3.589 2.864l0.088 0.053c-1.412 0.905-2.641 1.891-3.754 2.994l0.002-0.002z');
-      path.setAttribute('fill', '#f1d770');
-      
-      svg.appendChild(path);
-      powerElement.appendChild(svg);
-      powerElement.appendChild(document.createTextNode(powerValue));
+      // Show normal power with invisible + for alignment
+      powerElement.innerHTML = `${powerValue}<span style="opacity: 0; pointer-events: none;"> +</span>`;
       powerElement.classList.remove('pinnacle-power');
     }
   }
@@ -707,9 +979,22 @@ function hideError() {
 }
 
 // Update DIM link display
+// Variable to track rotating message state
+let dimLinkRotationInterval = null;
+
 function updateDIMLink(dimLinkUrl) {
   const dimLinkElement = document.getElementById('dimLink');
   const footerSeparator = document.querySelector('.footer-separator');
+  const footerElement = document.querySelector('.widget-footer');
+  
+  // Check if footer should be shown at all
+  const showFooter = fieldData.showFooter !== 'false';
+  if (!showFooter) {
+    if (footerElement) footerElement.style.display = 'none';
+    return;
+  } else {
+    if (footerElement) footerElement.style.display = 'flex';
+  }
   
   // Check if DIM link feature is enabled
   const showDIMLink = fieldData.showDIMLink !== 'false';
@@ -718,6 +1003,11 @@ function updateDIMLink(dimLinkUrl) {
     // Hide the DIM link and separator
     if (dimLinkElement) dimLinkElement.style.display = 'none';
     if (footerSeparator) footerSeparator.style.display = 'none';
+    // Clear any existing rotation interval
+    if (dimLinkRotationInterval) {
+      clearInterval(dimLinkRotationInterval);
+      dimLinkRotationInterval = null;
+    }
     return;
   }
   
@@ -760,7 +1050,47 @@ function updateDIMLink(dimLinkUrl) {
     }
     
     console.log('[DIM Link] Displaying as:', displayText);
-    dimLinkElement.textContent = displayText;
+    
+    // Clear any existing interval
+    if (dimLinkRotationInterval) {
+      clearInterval(dimLinkRotationInterval);
+    }
+    
+    // Check if rotating messages are enabled
+    const enableRotation = fieldData.dimLinkRotating !== 'false';
+    const customMessage = fieldData.dimLinkMessage || 'Copy this link to your browser';
+    
+    if (enableRotation) {
+      // Set up rotating messages with fade transition
+      const messages = [
+        customMessage,
+        displayText
+      ];
+      let currentIndex = 0;
+      
+      // Set initial text with fade-in
+      dimLinkElement.textContent = messages[currentIndex];
+      dimLinkElement.style.transition = 'opacity 0.6s ease-in-out';
+      dimLinkElement.style.opacity = '1';
+      
+      // Rotate messages every 5 seconds with fade effect
+      dimLinkRotationInterval = setInterval(() => {
+        // Fade out
+        dimLinkElement.style.opacity = '0';
+        
+        // Wait for fade out, then change text and fade in
+        setTimeout(() => {
+          currentIndex = (currentIndex + 1) % messages.length;
+          dimLinkElement.textContent = messages[currentIndex];
+          dimLinkElement.style.opacity = '1';
+        }, 600); // Match the transition duration
+      }, 5000);
+    } else {
+      // Just show the link without rotation
+      dimLinkElement.textContent = displayText;
+      dimLinkElement.style.transition = 'none';
+      dimLinkElement.style.opacity = '1';
+    }
   }
   
   if (footerSeparator) {

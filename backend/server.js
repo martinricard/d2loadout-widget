@@ -719,8 +719,26 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
     const equipped = [];
     const modHashes = [];
     
-    // Process each equipped item - ONLY include essential data
+    // Define which bucket hashes to include in the DIM link (weapons, armor, subclass ONLY)
+    const LOADOUT_BUCKETS = new Set([
+      BUCKET_HASHES.KINETIC,
+      BUCKET_HASHES.ENERGY,
+      BUCKET_HASHES.POWER,
+      BUCKET_HASHES.HELMET,
+      BUCKET_HASHES.ARMS,
+      BUCKET_HASHES.CHEST,
+      BUCKET_HASHES.LEGS,
+      BUCKET_HASHES.CLASS_ITEM,
+      BUCKET_HASHES.SUBCLASS
+    ]);
+    
+    // Process each equipped item - ONLY include loadout items (weapons, armor, subclass)
     for (const item of equipment.items || []) {
+      // Skip items that aren't part of the actual loadout (emblems, ships, sparrows, ghosts, etc.)
+      if (!LOADOUT_BUCKETS.has(item.bucketHash)) {
+        continue;
+      }
+      
       const itemData = {
         id: item.itemInstanceId,
         hash: item.itemHash
@@ -749,6 +767,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       }
       
       // Collect armor mod hashes for parameters.mods array
+      // Only include COMBAT and GENERAL mods, skip stat/shader/ornament sockets
       if (item.bucketHash === BUCKET_HASHES.HELMET ||
           item.bucketHash === BUCKET_HASHES.ARMS ||
           item.bucketHash === BUCKET_HASHES.CHEST ||
@@ -757,13 +776,23 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
         if (sockets && sockets.sockets) {
-          // Only get actual mods (socket category 4 typically = mods)
-          // Skip intrinsic perks, stats, shaders, etc.
+          // Armor typically has:
+          // - First 6 sockets: intrinsic/perks/stats/shader/ornament
+          // - Socket 6: Combat Mod (general/leg armor)
+          // - Socket 7: Combat Mod (helmet/arms/chest)
+          // - Socket 8+: Additional mod sockets (class item has artifice)
+          
           for (let i = 0; i < sockets.sockets.length; i++) {
             const socket = sockets.sockets[i];
-            // Simple heuristic: mods are usually in later socket indices (after perks/stats)
-            // And are typically not default plugs
-            if (socket.plugHash && socket.plugHash !== 0 && i >= 6) {
+            
+            // Skip empty sockets
+            if (!socket.plugHash || socket.plugHash === 0) continue;
+            
+            // Only include sockets that are:
+            // 1. Visible (users can see them)
+            // 2. Index >= 6 (combat mods, not intrinsics/stats/shaders)
+            // 3. Not default/empty plugs (user actually inserted a mod)
+            if (socket.isVisible && i >= 6 && socket.plugHash) {
               modHashes.push(socket.plugHash);
             }
           }
@@ -802,10 +831,19 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
       }
     };
     
+    // Debug logging
+    console.log('[DIM Link] Generated loadout with:');
+    console.log(`  - ${equipped.length} equipped items`);
+    console.log(`  - ${modHashes.length} mod hashes`);
+    console.log(`  - ${artifactUnlocks.unlockedItemHashes.length} artifact unlocks`);
+    console.log(`  - Items: ${equipped.map(i => i.hash).join(', ')}`);
+    
     // Create the long DIM URL
     const loadoutJson = JSON.stringify(loadoutObj);
     const encodedLoadout = encodeURIComponent(loadoutJson);
     const longUrl = `https://app.destinyitemmanager.com/loadouts?loadout=${encodedLoadout}`;
+    
+    console.log(`[DIM Link] URL length: ${longUrl.length} characters`);
     
     // Shorten the URL using DIM's URL shortener
     const shortUrl = await shortenDIMUrl(longUrl);
