@@ -1070,7 +1070,10 @@ async function processLoadout(characterId, equipment, itemComponents) {
     const itemInstanceId = item.itemInstanceId;
     const sockets = itemComponents.sockets[itemInstanceId];
     
-    if (sockets && sockets.sockets) {
+    // Fetch item definition to get socket type info
+    const itemDef = await fetchItemDefinition(item.itemHash);
+    
+    if (sockets && sockets.sockets && itemDef?.sockets?.socketEntries) {
       console.log(`[STATS DEBUG] Checking mods for ${itemData.name}:`);
       
       for (let socketIndex = 0; socketIndex < sockets.sockets.length; socketIndex++) {
@@ -1080,7 +1083,8 @@ async function processLoadout(characterId, equipment, itemComponents) {
             const plugDef = await fetchItemDefinition(socket.plugHash);
             
             // Skip intrinsic armor sockets (their stats are already in base armor stats)
-            const socketTypeHash = itemComponents.sockets[itemInstanceId]?.sockets?.[socketIndex]?.socketTypeHash;
+            const socketDef = itemDef.sockets.socketEntries[socketIndex];
+            const socketTypeHash = socketDef?.socketTypeHash;
             if (socketTypeHash && SKIP_SOCKET_TYPES.includes(socketTypeHash)) {
               const modName = plugDef?.displayProperties?.name || 'Unknown Mod';
               console.log(`  [STATS DEBUG] ⏭️  Skipping intrinsic socket: ${modName} (socketType: ${socketTypeHash})`);
