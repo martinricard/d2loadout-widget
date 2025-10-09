@@ -769,9 +769,25 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             const plugDef = await fetchItemDefinition(socket.plugHash);
             const isArmorMod = plugDef?.itemType === 19; // 19 = Armor Mod
             
-            if (isArmorMod) {
+            // Exclude non-combat mods using plug category hash
+            // These are the categories we want to EXCLUDE:
+            const EXCLUDED_PLUG_CATEGORIES = new Set([
+              2973005342, // Shaders
+              3124752623, // Intrinsic Traits (Exotic armor perks)
+              2487827355, // Armor Cosmetics (Ornaments)
+              1744546145, // Masterwork Tier
+              3993098925, // Empty Mod Socket (default socket)
+              2457930460, // Armor Stat Mods (old system, replaced by stats)
+            ]);
+            
+            const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
+            const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
+            
+            if (isArmorMod && !isExcluded) {
               modHashes.push(socket.plugHash);
               console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'})`);
+            } else if (isExcluded) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded category: ${plugCategoryHash})`);
             } else {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, not a mod)`);
             }
