@@ -1050,11 +1050,10 @@ async function processLoadout(characterId, equipment, itemComponents) {
   console.log('[STATS DEBUG] Base stats calculated. Now checking armor mods...');
   
   // Step 2: Add armor mod bonuses
-  // Socket category hashes to SKIP (these are stat mods that are already counted in base stats)
+  // Socket category hashes to SKIP (these are NOT stat-affecting, or are cosmetic only)
   const SKIP_MOD_CATEGORIES = [
-    2487827355, // Armor stat mods (Minor/Major Mobility/Resilience/Recovery/Discipline/Intellect/Strength Mod)
     4062961227, // Deprecated armor 1.0 mods
-    2973005342  // Shaders
+    2973005342  // Shaders (cosmetic only)
   ];
   
   // Socket types to SKIP (intrinsic armor sockets whose stats are already in base stats)
@@ -1094,11 +1093,11 @@ async function processLoadout(characterId, equipment, itemComponents) {
               continue;
             }
             
-            // Skip stat mods in socket 0 (already counted in base stats)
+            // Skip non-stat affecting mods (deprecated mods, shaders, etc)
             if (plugDef && plugDef.plug && plugDef.plug.plugCategoryHash) {
               if (SKIP_MOD_CATEGORIES.includes(plugDef.plug.plugCategoryHash)) {
                 const modName = plugDef.displayProperties?.name || 'Unknown Mod';
-                console.log(`  [STATS DEBUG] ⏭️  Skipping stat mod: ${modName} (category: ${plugDef.plug.plugCategoryHash})`);
+                console.log(`  [STATS DEBUG] ⏭️  Skipping non-stat mod: ${modName} (category: ${plugDef.plug.plugCategoryHash})`);
                 continue;
               }
             }
