@@ -1033,12 +1033,15 @@ async function processLoadout(characterId, equipment, itemComponents) {
   for (const piece of armorPieces) {
     if (piece.stats) {
       console.log(`[STATS DEBUG] Processing ${piece.name} (base stats):`);
+      console.log(`  [STATS DEBUG] Item hash: ${piece.itemHash}, Instance ID: ${piece.itemInstanceId}`);
       for (const [statHash, statData] of Object.entries(piece.stats)) {
         const statName = STAT_HASHES[statHash];
         if (statName) {
           const statValue = statData.value || 0;
           totalStats[statName] = (totalStats[statName] || 0) + statValue;
-          console.log(`  [STATS DEBUG] ${statName}: ${statValue} (running total: ${totalStats[statName]})`);
+          console.log(`  [STATS DEBUG] ${statName} (hash ${statHash}): ${statValue} (running total: ${totalStats[statName]})`);
+        } else {
+          console.log(`  [STATS DEBUG] ⚠️ Unknown stat hash: ${statHash} = ${statData.value || 0}`);
         }
       }
     }
