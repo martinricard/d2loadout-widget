@@ -1100,9 +1100,15 @@ async function processLoadout(characterId, equipment, itemComponents) {
               }
             }
             
+            // Skip "Upgrade Armor" - masterwork stats are already in base stats
+            const modName = plugDef.displayProperties?.name || 'Unknown Mod';
+            if (modName === 'Upgrade Armor') {
+              console.log(`  [STATS DEBUG] ⏭️  Skipping masterwork: ${modName} (stats already in base)`);
+              continue;
+            }
+            
             if (plugDef && plugDef.investmentStats && plugDef.investmentStats.length > 0) {
               // This mod has stat bonuses
-              const modName = plugDef.displayProperties?.name || 'Unknown Mod';
               console.log(`  [STATS DEBUG] Found mod with stats: ${modName}`);
               
               for (const investment of plugDef.investmentStats) {
