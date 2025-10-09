@@ -766,11 +766,8 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         }
       }
       
-      // Collect armor mod hashes for parameters.mods array
-      // Strategy: Only collect from the LAST few sockets which are the actual mod sockets
-      // Armor typically has 8-10 sockets total:
-      // - Sockets 0-5: Intrinsic perk, stats, shader, ornament, etc (NOT mods)
-      // - Sockets 6-9: Combat mods (these are what we want)
+      // Collect only COMBAT mods for parameters.mods array
+      // Guardian.report approach: Focus on functional combat mods, not cosmetics
       if (item.bucketHash === BUCKET_HASHES.HELMET ||
           item.bucketHash === BUCKET_HASHES.ARMS ||
           item.bucketHash === BUCKET_HASHES.CHEST ||
@@ -779,21 +776,30 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
         
         const sockets = itemComponents.sockets?.[item.itemInstanceId];
         if (sockets && sockets.sockets) {
-          const totalSockets = sockets.sockets.length;
+          // Look for mods that are:
+          // 1. Visible to player
+          // 2. Have a valid plug hash
+          // 3. Are in positions typically used for combat mods (armor usually has mods in later sockets)
+          // 4. Exclude intrinsic perks (usually in early sockets)
           
-          // Only look at the last 4 sockets (typical mod sockets for armor)
-          // Start from socket 6 or later, but also check we're not going past the end
-          const modSocketStart = Math.max(6, totalSockets - 4);
-          
-          for (let i = modSocketStart; i < totalSockets; i++) {
+          for (let i = 0; i < sockets.sockets.length; i++) {
             const socket = sockets.sockets[i];
             
-            // Skip empty or invalid sockets
-            if (!socket || !socket.plugHash || socket.plugHash === 0) continue;
+            // Skip empty, invalid, or hidden sockets
+            if (!socket || !socket.plugHash || socket.plugHash === 0 || !socket.isVisible) {
+              continue;
+            }
             
-            // Include if the socket is visible to the player
-            if (socket.isVisible) {
+            // Strategy: Only include sockets from position 5+ to avoid intrinsic perks
+            // Most armor has:
+            // - Socket 0-2: Intrinsic perk, stats, energy type (SKIP)
+            // - Socket 3-4: Shader, ornament (SKIP)
+            // - Socket 5+: Combat mods (INCLUDE)
+            if (i >= 5) {
               modHashes.push(socket.plugHash);
+              console.log(`[DIM Link] Including mod from socket ${i}: ${socket.plugHash}`);
+            } else {
+              console.log(`[DIM Link] Skipping early socket ${i}: ${socket.plugHash} (likely intrinsic/cosmetic)`);
             }
           }
         }
