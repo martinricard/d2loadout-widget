@@ -40,14 +40,14 @@ const BUCKET_HASHES = {
   SUBCLASS: 3284755031
 };
 
-// Stat hashes for armor (The Final Shape - correct mapping)
+// Stat hashes for armor (The Final Shape - corrected mapping based on actual API data)
 const STAT_HASHES = {
-  '2996146975': 'Mobility',      // Weapons stat
-  '392767087': 'Resilience',     // Health stat
+  '2996146975': 'Strength',      // Melee stat (API returns this as Strength value)
+  '392767087': 'Mobility',       // Weapons stat (API returns this as Mobility value)
   '1943323491': 'Recovery',      // Class stat
   '1735777505': 'Discipline',    // Grenade stat
   '144602215': 'Intellect',      // Super stat
-  '4244567218': 'Strength'       // Melee stat
+  '4244567218': 'Resilience'     // Health stat (API returns this as Resilience value)
 };
 
 // Health check endpoint (Render uses this to verify deployment)
