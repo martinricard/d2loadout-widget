@@ -249,6 +249,13 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       characterProgression
     );
     
+    // ============================================================================
+    // LOG STATS BEING SENT TO CLIENT
+    // ============================================================================
+    console.log('🎯🎯🎯 STATS BEING SENT TO CLIENT 🎯🎯🎯');
+    console.log('Stats object:', JSON.stringify(loadout.stats, null, 2));
+    console.log('🎯🎯🎯 END STATS 🎯🎯🎯');
+    
     res.json({
       success: true,
       displayName: data.profile?.data?.userInfo?.displayName || 'Guardian',
