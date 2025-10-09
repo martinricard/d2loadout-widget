@@ -774,10 +774,12 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             const EXCLUDED_PLUG_CATEGORIES = new Set([
               2973005342, // Shaders
               3124752623, // Intrinsic Traits (Exotic armor perks)
-              2487827355, // Armor Cosmetics (Ornaments)
+              2487827355, // Armor Cosmetics (Ornaments/Transmog)
               1744546145, // Masterwork Tier
               3993098925, // Empty Mod Socket (default socket)
               2457930460, // Armor Stat Mods (old system, replaced by stats)
+              208760563,  // Armor Tier (not a combat mod)
+              1282012138, // Reusable Armor Mods (older system)
             ]);
             
             const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
@@ -787,7 +789,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               modHashes.push(socket.plugHash);
               console.log(`[DIM Link] ✅ Including armor mod from socket ${i}: ${socket.plugHash} (${plugDef?.displayProperties?.name || 'Unknown'})`);
             } else if (isExcluded) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded category: ${plugCategoryHash})`);
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded category: ${plugCategoryHash}, name: ${plugDef?.displayProperties?.name || 'Unknown'})`);
             } else {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, not a mod)`);
             }

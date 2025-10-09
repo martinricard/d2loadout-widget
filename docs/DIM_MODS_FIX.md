@@ -6,8 +6,22 @@ The `parameters.mods` array in generated DIM links was coming back empty, even t
 ## Root Cause
 The socket category hash filtering approach wasn't working correctly. The socket category hashes we were using may not have matched the actual Bungie API values.
 
-## Solution (V8 - Item Type Filtering)
-Changed from socket category filtering to **item type filtering**:
+## Solution (V9 - Item Type + Plug Category Filtering)
+Changed to **item type filtering with exclusion list**:
+
+### V8 (Initial Fix)
+- Check if `plugDef.itemType === 19` (Armor Mod)
+- This caught ALL mods including shaders, ornaments, masterworks
+
+### V9 (Current)
+- Check if `plugDef.itemType === 19` (Armor Mod)
+- **EXCLUDE** non-combat mods using plug category hashes:
+  - Shaders (2973005342)
+  - Intrinsic Traits/Exotic perks (3124752623)
+  - Armor Cosmetics/Ornaments (2487827355)
+  - Masterwork Tier (1744546145)
+  - Empty Mod Socket (3993098925)
+  - Old Armor Stat Mods (2457930460)
 
 ```javascript
 // OLD APPROACH (V7) - Socket Category Filtering
