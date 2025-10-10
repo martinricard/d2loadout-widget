@@ -320,14 +320,20 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     } else {
       // It's a Bungie name (e.g., "Marty#2689")
       try {
-        const searchResponse = await axios.get(
+        const nameParts = platformOrName.split('#');
+        const displayName = nameParts[0];
+        const displayNameCode = nameParts[1] || '0000';
+        
+        console.log(`[DIM Link] Searching for player: ${displayName}#${displayNameCode}`);
+        
+        const searchResponse = await axios.post(
           `https://www.bungie.net/Platform/Destiny2/SearchDestinyPlayerByBungieName/All/`,
           {
-            headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
-            data: {
-              displayName: platformOrName.split('#')[0],
-              displayNameCode: platformOrName.split('#')[1] || '0000'
-            }
+            displayName: displayName,
+            displayNameCode: displayNameCode
+          },
+          {
+            headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
           }
         );
         
@@ -338,7 +344,10 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
         
         platform = players[0].membershipType;
         membershipId = players[0].membershipId;
+        
+        console.log(`[DIM Link] Found player: platform=${platform}, membershipId=${membershipId}`);
       } catch (error) {
+        console.error(`[DIM Link] Search error:`, error.response?.data || error.message);
         return res.status(500).json({ success: false, error: 'Failed to search player', message: error.message });
       }
     }
