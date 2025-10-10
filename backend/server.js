@@ -540,13 +540,20 @@ async function processEquipmentItem(itemData, itemComponents) {
   // Fetch perk definitions for weapon perks
   const weaponPerkData = [];
   if (weaponPerks.length > 0) {
-    console.log(`[Weapon Perks] Processing ${weaponPerks.length} perks for weapon: ${definition.displayProperties?.name}`);
+    // Check weapon tier for Edge of Fate system
+    // If Tier 2+ (currentVersion >= 1), all main perks (socket 3 & 4) are enhanced
+    const weaponTier = definition.quality?.currentVersion;
+    const hasEdgeTier = weaponTier !== undefined && weaponTier >= 1;
+    
+    console.log(`[Weapon Perks] Processing ${weaponPerks.length} perks for weapon: ${definition.displayProperties?.name} (Edge of Fate Tier: ${weaponTier}, Has Enhanced Tier: ${hasEdgeTier})`);
+    
     for (const perk of weaponPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
         // Check if this is an enhanced perk:
         // 1. Name contains "Enhanced"
         // 2. OR description contains enhanced indicators like "additional", "increased", "longer lasting", "more powerful"
+        // 3. OR Edge of Fate Tier 2+ weapon (currentVersion >= 1) and this is a main perk (socket 3 or 4)
         const nameHasEnhanced = perkDef.name && perkDef.name.includes('Enhanced');
         const descHasEnhanced = perkDef.description && (
           perkDef.description.includes('additional') ||
@@ -558,9 +565,14 @@ async function processEquipmentItem(itemData, itemComponents) {
           perkDef.description.includes('increased') ||
           perkDef.description.includes('Increased')
         );
-        const isEnhanced = nameHasEnhanced || descHasEnhanced;
         
-        console.log(`[Weapon Perk] "${perkDef.name}" - nameHasEnhanced: ${nameHasEnhanced}, descHasEnhanced: ${descHasEnhanced}, isEnhanced: ${isEnhanced}`);
+        // For Edge of Fate weapons at Tier 2+, perks in columns 3 & 4 are enhanced
+        const isMainPerk = perk.socketIndex === 3 || perk.socketIndex === 4;
+        const isEnhancedByTier = hasEdgeTier && isMainPerk;
+        
+        const isEnhanced = nameHasEnhanced || descHasEnhanced || isEnhancedByTier;
+        
+        console.log(`[Weapon Perk] "${perkDef.name}" (socket ${perk.socketIndex}) - nameHasEnhanced: ${nameHasEnhanced}, descHasEnhanced: ${descHasEnhanced}, tierEnhanced: ${isEnhancedByTier}, FINAL: ${isEnhanced}`);
         
         weaponPerkData.push({
           ...perkDef,
