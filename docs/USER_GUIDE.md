@@ -127,6 +127,83 @@ Response will show:
 
 ---
 
+## Chat Command Integration 💬
+
+### Setting Up the !dimlink Command
+
+Your viewers can type `!dimlink` in chat to get your current loadout link!
+
+#### Step 1: Create the Command in StreamElements
+
+1. Go to your StreamElements dashboard
+2. Navigate to **Chatbot** → **Commands** → **Custom Commands**
+3. Click **Add New Command**
+4. Use these settings:
+   - **Command Name:** `!dimlink`
+   - **Response:** `$(user)'s loadout: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/YOUR_BUNGIE_NAME?format=text)`
+   - **Cooldown:** 10-30 seconds (to prevent spam)
+   - **User Level:** Everyone
+
+#### Step 2: Replace YOUR_BUNGIE_NAME
+
+In the response URL, replace `YOUR_BUNGIE_NAME` with your actual Bungie ID:
+
+**Example:**
+- If your Bungie Name is `Marty#2689`
+- Replace spaces with `%20` and `#` with `%23`
+- Final URL: `Marty%232689`
+
+**Full command response:**
+```
+$(user)'s loadout: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
+```
+
+#### Step 3: Test It!
+
+Type `!dimlink` in your chat. The bot should respond with:
+```
+YourViewer's loadout: https://tinyurl.com/abc123
+```
+
+#### Alternative: Use Nightbot or Other Bots
+
+**Nightbot:**
+```
+!addcom !dimlink $(user)'s loadout: $(urlfetch https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
+```
+
+**Fossabot:**
+```
+!addcom !dimlink $(user)'s loadout: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
+```
+
+### How It Works
+
+1. Viewer types `!dimlink` in chat
+2. Bot calls our API with your Bungie ID
+3. API fetches your current loadout from Bungie
+4. API generates a DIM link (identical to widget's link)
+5. API shortens it with TinyURL
+6. Bot posts the short link in chat
+
+### Troubleshooting Chat Commands
+
+**"unable to make request"**
+- Check that your Bungie Name is URL-encoded correctly
+- Make sure you're using `?format=text` at the end
+- Verify the API is online: https://d2loadout-widget.onrender.com/health
+
+**Empty loadout in DIM**
+- This should not happen - the chat command uses the same logic as the widget
+- If it does, contact support
+
+**Bot not responding**
+- Check command cooldown hasn't triggered
+- Verify command name is correct (case-sensitive)
+- Test the API URL directly in your browser
+
+---
+
 ## API Endpoints
 
 ### For Users with Bungie Name:
@@ -146,6 +223,22 @@ Direct access with platform (3 = Steam) and ID.
 GET /api/search/Marty#2689
 ```
 Returns all accounts for that Bungie name.
+
+### DIM Link Only (for Chat Commands):
+```
+GET /api/dimlink/Marty#2689?format=text
+```
+Returns just the TinyURL as plain text (for chat bots).
+
+**Without `?format=text`, returns JSON:**
+```json
+{
+  "success": true,
+  "dimLink": "https://tinyurl.com/abc123",
+  "displayName": "Marty",
+  "characterClass": "Warlock"
+}
+```
 
 ---
 

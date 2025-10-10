@@ -269,7 +269,8 @@ window.addEventListener('onEventReceived', function (obj) {
       [fieldData.commandStats || '!stats']: 'stats',
       [fieldData.commandWeapons || '!weapons']: 'weapons',
       [fieldData.commandArmor || '!armor']: 'armor',
-      [fieldData.commandArtifact || '!artifact']: 'artifact'
+      [fieldData.commandArtifact || '!artifact']: 'artifact',
+      '!dimlink': 'dimlink' // Special: handled by StreamElements bot, not widget
     };
     
     // Check if message matches any command
@@ -278,6 +279,15 @@ window.addEventListener('onEventReceived', function (obj) {
       if (message.startsWith(normalizedCommand)) {
         console.log('[D2 Widget] Command triggered:', command, '- Mode:', mode);
         lastCommandTime = now; // Update last command time
+        
+        // Special handling for !dimlink - this is handled by StreamElements bot
+        if (mode === 'dimlink') {
+          console.log('[D2 Widget] !dimlink command detected.');
+          console.log('[D2 Widget] This command should be handled by StreamElements bot custom command.');
+          console.log('[D2 Widget] See documentation for setup: docs/DIM_LINK_CHAT_COMMAND.md');
+          break;
+        }
+        
         showWidget(mode);
         break;
       }

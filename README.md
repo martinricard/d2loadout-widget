@@ -1,5 +1,20 @@
-# D2 Loadout Widget
+# D2 L## 🎮 Features
 
+Shows your active Destiny 2 character's complete loadout with **real images from Bungie**:
+- ⚔️ **3 Equipped Weapons** with icons, power levels, perks, and mods
+- 🛡️ **5 Armor Pieces** with icons, power levels, and exotic perks
+- 📊 **Character Stats** with Final Shape icons (Weapons, Health, Class, Grenade, Super, Melee)
+- ✨ **Subclass Build** with aspects and fragments
+- 🔱 **Seasonal Artifact** with unlocked mods
+- 💬 **Chat Command Integration** - Viewers can type `!dimlink` to get your loadout link
+- 📱 **Display Modes** - Show specific sections (!loadout, !subclass, !stats, !weapons, !armor, !artifact)
+- 🔗 **DIM Link Integration** with TinyURL shortening for easy sharing
+- 💎 **Exotic Items** highlighted with golden text
+- 🎯 **Enhanced Perks** marked with arrows for Edge of Fate weapons
+- 🖼️ **Character Emblem** as header background
+- 🔄 **Auto-updates** every 60 seconds (configurable)
+
+Perfect for viewers who want to see exactly what build you're using!
 A **StreamElements custom widget** that displays your Destiny 2 character's current loadout in real-time on your stream!
 
 Inspired by [Guardian.report](https://guardian.report/)'s loadout display with enhanced interactivity.
@@ -44,6 +59,7 @@ All documentation is in the [`docs/`](docs/) folder:
 
 ### Essential Guides
 - **[User Guide](docs/USER_GUIDE.md)** - StreamElements setup for streamers
+- **[Chat Command Setup](docs/DIM_LINK_CHAT_COMMAND.md)** - Enable !dimlink command for viewers
 - **[Command Modes](docs/COMMAND_MODES.md)** - Chat command feature guide
 - **[Bungie API Setup](docs/BUNGIE_APP_SETUP.md)** - Get your API key
 - **[Project Status](docs/STATUS.md)** - Current version (v1.0)

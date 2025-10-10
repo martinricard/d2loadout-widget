@@ -407,13 +407,22 @@ async function fetchPlugDefinition(plugHash) {
     });
     
     const definition = response.data.Response;
+    
+    // For artifact mods with iconSequences, use the first frame (active state)
+    let iconPath = definition.displayProperties?.icon || '';
+    if (definition.displayProperties?.iconSequences && 
+        definition.displayProperties.iconSequences.length > 0 &&
+        definition.displayProperties.iconSequences[0].frames &&
+        definition.displayProperties.iconSequences[0].frames.length > 0) {
+      iconPath = definition.displayProperties.iconSequences[0].frames[0];
+      console.log(`[Plug ${plugHash}] Using iconSequences frame: ${iconPath}`);
+    }
+    
     const plugData = {
       name: definition.displayProperties?.name || 'Unknown Mod',
       description: definition.displayProperties?.description || '',
-      icon: definition.displayProperties?.icon || '',
-      iconUrl: definition.displayProperties?.icon 
-        ? `https://www.bungie.net${definition.displayProperties.icon}` 
-        : null
+      icon: iconPath,
+      iconUrl: iconPath ? `https://www.bungie.net${iconPath}` : null
     };
     
     // Cache the result

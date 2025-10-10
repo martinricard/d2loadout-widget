@@ -133,25 +133,33 @@
     <div class="privacy-container">
         <div class="header">
             <h1>Privacy Policy</h1>
-            <div class="last-update">Last Update: October 8, 2025</div>
+            <div class="last-update">Last Update: October 9, 2025</div>
         </div>
 
         <div class="intro">
-            <strong>D2 Loadout Widget</strong> is a free StreamElements widget for Destiny 2 streamers. We explain how your data is used below.
+            <strong>D2 Loadout Widget</strong> is a free StreamElements widget and chat bot integration for Destiny 2 streamers. We explain how your data is used below.
         </div>
 
         <ul class="data-list">
             <li>
                 <strong>Bungie API</strong>
-                We use the Bungie.net API to fetch your Destiny 2 loadout information. Your Bungie ID is only stored locally in your browser. No personal data is sent to our servers.
+                We use the Bungie.net API to fetch your Destiny 2 loadout information. Your Bungie ID is passed through our server to make API requests, but is not stored or logged. No personal data is retained.
             </li>
             <li>
                 <strong>TinyURL Service</strong>
-                We use TinyURL to shorten DIM (Destiny Item Manager) links for easier sharing. This service may log the URLs generated.
+                We generate shortened DIM (Destiny Item Manager) links for easy sharing in chat and overlays. TinyURL may log generated URLs for their service operations.
+            </li>
+            <li>
+                <strong>Chat Commands</strong>
+                Our bot responds to chat commands (e.g., !dimlink) to share your loadout link. The command uses your configured Bungie ID to fetch real-time data. No chat messages are stored.
             </li>
             <li>
                 <strong>StreamElements</strong>
                 This widget runs on StreamElements. Please refer to their privacy policy for information on data collection by the platform.
+            </li>
+            <li>
+                <strong>Server Hosting</strong>
+                Our backend is hosted on Render.com. Temporary logs may be created for debugging but contain no personal information and are automatically deleted after 7 days.
             </li>
         </ul>
 
