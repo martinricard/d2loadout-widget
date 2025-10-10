@@ -805,11 +805,6 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             
             // Fetch the plug definition to check if it's a mod
             const plugDef = await fetchItemDefinition(socket.plugHash);
-            // itemType 19 = Armor Mod
-            // itemType 20 = Armor Mod (Deprecated/Legacy)
-            // itemType 42 = Weapon Mod (e.g., Adept mods, Temporal Tuning)
-            const isArmorMod = plugDef?.itemType === 19 || plugDef?.itemType === 20; 
-            const isWeaponMod = plugDef?.itemType === 42;
             
             // Get the mod name and plug category for better filtering
             const modName = plugDef?.displayProperties?.name || '';
@@ -835,7 +830,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             
             const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
             
-            // Also exclude by name patterns (catches things like "Upgrade Armor", ornaments, etc)
+            // Exclude by name patterns (catches things like "Upgrade Armor", ornaments, etc)
             const EXCLUDED_MOD_NAMES = [
               'Upgrade Armor',      // Masterwork
               'Default Shader',     // Default shader
@@ -843,7 +838,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               'Default Ornament',   // Default ornament
               'Spirit of',          // Exotic class item perks (intrinsic, not mods)
               'Empty',              // Empty mod slots
-              'Ornament',           // All ornaments (armor appearance)
+              'Ornament',           // All ornaments (armor appearance/transmog)
               'Shader',             // All shaders
               // Armor archetypes (Armor 3.0 intrinsic properties, not equippable mods)
               'Brawler',            // Melee archetype
@@ -852,22 +847,29 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             ];
             const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.includes(pattern));
             
-            // Also exclude old stat mods by pattern (+X stat)
+            // Exclude old stat mods by pattern (+X stat)
             const isOldStatMod = modName.match(/^\+\d+\s+(super|melee|grenade|weapons|health|class)/i);
             
-            // Also exclude if it's a "tuning" socket (balanced tuning mods are OK, but empty tuning sockets are not)
+            // Exclude if it's a "tuning" socket (balanced tuning mods are OK, but empty tuning sockets are not)
             const isEmptyTuning = modName.toLowerCase().includes('tuning') && modName.toLowerCase().includes('empty');
             
-            // Only include if: it's a mod (armor or weapon) AND not excluded by category or name
-            // We removed the strict combat socket requirement because socket types vary
+            // Skip early if excluded by category or name (before checking item type)
+            if (isExcluded || isExcludedByName || isOldStatMod || isEmptyTuning) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName}, oldStatMod: ${!!isOldStatMod}, emptyTuning: ${isEmptyTuning})`);
+              continue;
+            }
+            
+            // itemType 19 = Armor Mod (current Armor 3.0 system)
+            // itemType 20 = Legacy Armor Mod (old armor mod system)
+            // itemType 42 = Weapon Mod (e.g., Adept mods, Temporal Tuning)
+            const isArmorMod = plugDef?.itemType === 19 || plugDef?.itemType === 20; 
+            const isWeaponMod = plugDef?.itemType === 42;
             const isMod = isArmorMod || isWeaponMod;
             
-            if (isMod && !isExcluded && !isExcludedByName && !isOldStatMod && !isEmptyTuning) {
+            if (isMod) {
               modHashes.push(socket.plugHash);
               console.log(`[DIM Link] ✅ Including mod from socket ${i}: ${socket.plugHash} (${modName}, itemType: ${plugDef?.itemType}, socketType: ${socketDef.socketTypeHash})`);
-            } else if (isExcluded || isExcludedByName || isOldStatMod || isEmptyTuning) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName}, oldStatMod: ${!!isOldStatMod}, emptyTuning: ${isEmptyTuning})`);
-            } else if (!isMod) {
+            } else {
               console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (itemType: ${plugDef?.itemType || 'unknown'}, name: ${modName}, not a mod)`);
             }
           }
