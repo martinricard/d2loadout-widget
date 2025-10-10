@@ -826,6 +826,10 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               965959289,  // Ornament sockets
               590099826,  // Armor Appearance (Transmog/Ornaments)
               2833320680, // Armor Ornaments Universal
+              2673423377, // Exotic Armor Ornaments (e.g., Getaway Artist ornaments)
+              1509135441, // Universal Ornaments - Chest (Warlock)
+              505602046,  // Universal Ornaments - Class Item (Warlock Bond)
+              3281006437, // Universal Ornaments - Legs (Warlock)
             ]);
             
             const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
