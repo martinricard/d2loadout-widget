@@ -650,8 +650,12 @@ async function processEquipmentItem(itemData, itemComponents) {
     state: itemData.state || 0,
     overrideStyleItemHash: itemData.overrideStyleItemHash || null,
     quality: definition.quality || null,
-    // Weapon tier: Check if ANY weapon perk is enhanced (indicates T2+ weapon)
-    weaponTier: weaponPerkData.some(perk => perk.isEnhanced) ? 1 : null,
+    // Weapon tier: Check Edge of Fate tier system first, then fall back to enhanced perk detection
+    // Edge of Fate (S27+): quality.currentVersion = tier (0-4 = Tier 1-5)
+    // Legacy: Check if ANY weapon perk is enhanced (indicates T2+ for old crafted weapons)
+    weaponTier: definition.quality?.currentVersion !== undefined 
+      ? definition.quality.currentVersion // Edge of Fate tier (0-4 maps to Tier 1-5)
+      : (weaponPerkData.some(perk => perk.isEnhanced) ? 1 : null), // Legacy enhanced perk detection
     iconWatermark: definition.iconWatermark || null,
     iconWatermarkShelved: definition.iconWatermarkShelved || null
   };
@@ -659,8 +663,9 @@ async function processEquipmentItem(itemData, itemComponents) {
   // Log weapon tier info for debugging
   if (weaponPerkData.length > 0) {
     const hasEnhanced = weaponPerkData.some(perk => perk.isEnhanced);
-    const weaponTier = hasEnhanced ? 1 : null;
-    console.log(`[Weapon Tier] "${result.name}" - Has Enhanced Perks: ${hasEnhanced}, Weapon Tier: ${weaponTier}`);
+    const qualityTier = definition.quality?.currentVersion;
+    const finalTier = result.weaponTier;
+    console.log(`[Weapon Tier] "${result.name}" - Quality Tier: ${qualityTier}, Has Enhanced Perks: ${hasEnhanced}, Final Weapon Tier: ${finalTier}`);
   }
   
   return result;
@@ -806,8 +811,9 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             const isArmorMod = plugDef?.itemType === 19 || plugDef?.itemType === 20; 
             const isWeaponMod = plugDef?.itemType === 42;
             
-            // Get the mod name for better filtering
+            // Get the mod name and plug category for better filtering
             const modName = plugDef?.displayProperties?.name || '';
+            const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
             
             console.log(`[DIM Link] Checking socket ${i}: ${modName} (hash: ${socket.plugHash}, socketType: ${socketDef.socketTypeHash}, plugCategory: ${plugCategoryHash}, itemType: ${plugDef?.itemType})`);
             
@@ -827,7 +833,6 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               2833320680, // Armor Ornaments Universal
             ]);
             
-            const plugCategoryHash = plugDef?.plug?.plugCategoryHash;
             const isExcluded = plugCategoryHash && EXCLUDED_PLUG_CATEGORIES.has(plugCategoryHash);
             
             // Also exclude by name patterns (catches things like "Upgrade Armor", ornaments, etc)
