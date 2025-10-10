@@ -832,20 +832,20 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             
             // Exclude by name patterns (catches things like "Upgrade Armor", ornaments, etc)
             const EXCLUDED_MOD_NAMES = [
-              'Upgrade Armor',      // Masterwork
-              'Default Shader',     // Default shader
-              'Restore Defaults',   // Default ornament
-              'Default Ornament',   // Default ornament
-              'Spirit of',          // Exotic class item perks (intrinsic, not mods)
-              'Empty',              // Empty mod slots
-              'Ornament',           // All ornaments (armor appearance/transmog)
-              'Shader',             // All shaders
+              'upgrade armor',      // Masterwork
+              'default shader',     // Default shader
+              'restore defaults',   // Default ornament
+              'default ornament',   // Default ornament
+              'spirit of',          // Exotic class item perks (intrinsic, not mods)
+              'empty',              // Empty mod slots
+              'ornament',           // All ornaments (armor appearance/transmog)
+              'shader',             // All shaders
               // Armor archetypes (Armor 3.0 intrinsic properties, not equippable mods)
-              'Brawler',            // Melee archetype
-              'Grenadier',          // Grenade archetype
-              'Paragon',            // Class ability archetype
+              'brawler',            // Melee archetype
+              'grenadier',          // Grenade archetype
+              'paragon',            // Class ability archetype
             ];
-            const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.includes(pattern));
+            const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.toLowerCase().includes(pattern));
             
             // Exclude old stat mods by pattern (+X stat)
             const isOldStatMod = modName.match(/^\+\d+\s+(super|melee|grenade|weapons|health|class)/i);
