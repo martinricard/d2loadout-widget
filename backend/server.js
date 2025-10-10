@@ -303,54 +303,106 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
 // Usage: /api/dimlink/:platformOrName/:membershipIdOrTag?
 // Query param: ?format=text returns plain text URL (for StreamElements)
 // Returns: { success: true, dimLink: "https://tinyurl.com/..." } or plain text
+// This endpoint does minimal processing - just generates the DIM link without full loadout processing
 app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => {
   try {
     const { platformOrName, membershipIdOrTag } = req.params;
-    const format = req.query.format; // Check for ?format=text
+    const format = req.query.format;
     
-    // Instead of calling the main endpoint, we'll call it via localhost to avoid external routing issues
-    // Render apps can access themselves via localhost
-    const loadoutUrl = membershipIdOrTag 
-      ? `http://localhost:${PORT}/api/loadout/${platformOrName}/${membershipIdOrTag}`
-      : `http://localhost:${PORT}/api/loadout/${platformOrName}`;
+    console.log(`[DIM Link] Request for: ${platformOrName}${membershipIdOrTag ? '/' + membershipIdOrTag : ''}`);
     
-    console.log(`[DIM Link] Fetching loadout from: ${loadoutUrl}`);
+    // Parse Bungie ID or platform
+    let platform, membershipId;
     
-    const response = await axios.get(loadoutUrl, {
-      timeout: 25000 // 25 second timeout
+    if (membershipIdOrTag) {
+      platform = platformOrName;
+      membershipId = membershipIdOrTag;
+    } else {
+      // It's a Bungie name (e.g., "Marty#2689")
+      try {
+        const searchResponse = await axios.get(
+          `https://www.bungie.net/Platform/Destiny2/SearchDestinyPlayerByBungieName/All/`,
+          {
+            headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+            data: {
+              displayName: platformOrName.split('#')[0],
+              displayNameCode: platformOrName.split('#')[1] || '0000'
+            }
+          }
+        );
+        
+        const players = searchResponse.data.Response;
+        if (!players || players.length === 0) {
+          return res.status(404).json({ success: false, error: 'Player not found' });
+        }
+        
+        platform = players[0].membershipType;
+        membershipId = players[0].membershipId;
+      } catch (error) {
+        return res.status(500).json({ success: false, error: 'Failed to search player', message: error.message });
+      }
+    }
+    
+    // Fetch profile with minimal components (just what we need for DIM link)
+    const profileUrl = `https://www.bungie.net/Platform/Destiny2/${platform}/Profile/${membershipId}/?components=100,200,205,300,304,305`;
+    const { data } = await axios.get(profileUrl, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
     });
     
-    if (response.data.success && response.data.dimLink) {
-      console.log(`[DIM Link] Success! Link: ${response.data.dimLink}`);
-      
-      // Return plain text if format=text (for StreamElements)
-      if (format === 'text') {
-        res.type('text/plain');
-        res.send(response.data.dimLink);
-      } else {
-        // Return JSON (default)
-        res.json({
-          success: true,
-          dimLink: response.data.dimLink,
-          displayName: response.data.displayName,
-          characterClass: response.data.character.class
-        });
-      }
+    if (!data.Response) {
+      return res.status(404).json({ success: false, error: 'Profile not found' });
+    }
+    
+    // Get most recent character
+    const characters = data.Response.characters?.data;
+    if (!characters) {
+      return res.status(404).json({ success: false, error: 'No characters found' });
+    }
+    
+    const mostRecentCharacterId = Object.keys(characters).sort((a, b) => 
+      new Date(characters[b].dateLastPlayed) - new Date(characters[a].dateLastPlayed)
+    )[0];
+    
+    const character = characters[mostRecentCharacterId];
+    const equipment = data.Response.characterEquipment?.data?.[mostRecentCharacterId]?.items || [];
+    const itemComponents = data.Response.itemComponents;
+    
+    // Get artifact mods (simplified)
+    const characterProgression = data.Response.characterProgressions?.data?.[mostRecentCharacterId];
+    const artifactMods = await extractArtifactMods(characterProgression, itemComponents);
+    
+    // Generate DIM link
+    const displayName = data.Response.profile?.data?.userInfo?.displayName || 'Guardian';
+    const dimLink = await generateDIMLink(
+      displayName,
+      character.classType,
+      equipment,
+      itemComponents,
+      artifactMods,
+      characterProgression
+    );
+    
+    console.log(`[DIM Link] Generated: ${dimLink}`);
+    
+    // Return based on format
+    if (format === 'text') {
+      res.type('text/plain');
+      res.send(dimLink || 'DIM link generation failed');
     } else {
-      console.error('[DIM Link] No DIM link in response');
-      res.status(404).json({
-        success: false,
-        error: 'DIM link not available',
-        message: 'Failed to generate DIM link'
+      res.json({
+        success: true,
+        dimLink: dimLink,
+        displayName: displayName,
+        characterClass: ['Titan', 'Hunter', 'Warlock'][character.classType] || 'Unknown'
       });
     }
     
   } catch (error) {
     console.error('[DIM Link] Error:', error.message);
     console.error('[DIM Link] Stack:', error.stack);
-    res.status(error.response?.status || 500).json({ 
+    res.status(500).json({ 
       success: false,
-      error: 'Failed to fetch DIM link',
+      error: 'Failed to generate DIM link',
       message: error.message
     });
   }
