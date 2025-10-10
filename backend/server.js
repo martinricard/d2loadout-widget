@@ -301,11 +301,13 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
 
 // New endpoint: Get just the DIM link (for StreamElements custom commands)
 // Usage: /api/dimlink/:platformOrName/:membershipIdOrTag?
-// Returns: { success: true, dimLink: "https://tinyurl.com/..." }
+// Query param: ?format=text returns plain text URL (for StreamElements)
+// Returns: { success: true, dimLink: "https://tinyurl.com/..." } or plain text
 app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => {
   try {
     // Call the main loadout endpoint logic but return only the DIM link
     const { platformOrName, membershipIdOrTag } = req.params;
+    const format = req.query.format; // Check for ?format=text
     
     // Reuse the same logic from /api/loadout endpoint
     // For simplicity, we'll make an internal request to the main endpoint
@@ -317,12 +319,19 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const response = await axios.get(loadoutUrl);
     
     if (response.data.success && response.data.dimLink) {
-      res.json({
-        success: true,
-        dimLink: response.data.dimLink,
-        displayName: response.data.displayName,
-        characterClass: response.data.character.class
-      });
+      // Return plain text if format=text (for StreamElements)
+      if (format === 'text') {
+        res.type('text/plain');
+        res.send(response.data.dimLink);
+      } else {
+        // Return JSON (default)
+        res.json({
+          success: true,
+          dimLink: response.data.dimLink,
+          displayName: response.data.displayName,
+          characterClass: response.data.character.class
+        });
+      }
     } else {
       res.status(404).json({
         success: false,

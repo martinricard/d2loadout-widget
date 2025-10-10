@@ -1,6 +1,40 @@
 # DIM Link Chat Command Setup
 
-This guide explains how to set up a chat command that posts the DIM loadout link when requested.
+This guide explains how to set up a chat command that posts the D## StreamElements Variables
+
+According to [StreamElements documentation](https://docs.streamelements.com/chatbot/variables/customapi), you can use:
+
+- `$(customapi URL)` or `$(urlfetch URL)` - Fetches content from a URL via GET request
+- Returns the raw response (plain text or JSON)
+- Only supports HTTP 200 status codes
+- Both `$()` and `${}` syntax work
+
+### Available Response Formats
+
+**JSON Format (default):**
+```
+GET /api/dimlink/Marty%232689
+```
+Returns:
+```json
+{
+  "success": true,
+  "dimLink": "https://tinyurl.com/abc123",
+  "displayName": "Marty",
+  "characterClass": "Warlock"
+}
+```
+
+**Plain Text Format (recommended for chat):**
+```
+GET /api/dimlink/Marty%232689?format=text
+```
+Returns:
+```
+https://tinyurl.com/abc123
+```
+
+The `?format=text` parameter makes the response chat-friendly by returning just the URL without JSON formatting.ink when requested.
 
 ## Overview
 
@@ -33,17 +67,29 @@ The widget backend provides a dedicated endpoint `/api/dimlink/:bungieId` that r
 **Command Name:** `!dimlink` (or `!loadoutlink`, `!build`, etc.)
 
 **Response:**
+
+Since StreamElements `$(customapi)` returns the raw JSON response, we need to format the API to return just the link as plain text.
+
+**Option 1: Simple text response (easiest)**
 ```
-${user.name}'s ${urlfetch https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689}
+$(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689)
+```
+This will output the raw JSON like:
+```
+{"success":true,"dimLink":"https://tinyurl.com/abc123","displayName":"Marty","characterClass":"Warlock"}
 ```
 
-Or for a cleaner format with JSONPath:
+**Option 2: Use backend to return plain text**
+For a cleaner response, we can modify the backend to return just the URL when a `?format=text` parameter is added.
 
+After the backend update, use:
 ```
-${user.name}'s Warlock loadout: ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.dimLink}
+$(user)'s loadout: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
 ```
 
-**Note:** Replace `Marty%232689` with your actual Bungie ID (URL-encoded, with `%23` instead of `#`).
+**Note:** 
+- Replace `Marty%232689` with your actual Bungie ID (URL-encoded, with `%23` instead of `#`)
+- Both `$(customapi)` and `$(urlfetch)` work the same way
 
 ### Step 3: Set Command Options
 
@@ -54,29 +100,35 @@ ${user.name}'s Warlock loadout: ${customapi.https://d2loadout-widget.onrender.co
 
 ### Example Responses
 
-**Basic:**
+**Basic (JSON response):**
 ```
-${urlfetch https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689}
+$(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689)
+```
+Output: `{"success":true,"dimLink":"https://tinyurl.com/abc123","displayName":"Marty","characterClass":"Warlock"}`
+
+**Plain text (cleanest for chat):**
+```
+$(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
 ```
 Output: `https://tinyurl.com/abc123`
 
 **With username:**
 ```
-${user.name}'s loadout: ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.dimLink}
+$(user)'s loadout: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text)
 ```
 Output: `viewer123's loadout: https://tinyurl.com/abc123`
 
-**With character class:**
-```
-Check out ${user.name}'s ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.characterClass} build: ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.dimLink}
-```
-Output: `Check out viewer123's Warlock build: https://tinyurl.com/abc123`
-
 **Fancy format:**
 ```
-🎮 ${user.name} wants to see the loadout! | ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.characterClass}: ${customapi.https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689.dimLink} | Try it in DIM! ⚔️
+🎮 $(user) wants to see the loadout! ⚔️ $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text) 🎮
 ```
-Output: `🎮 viewer123 wants to see the loadout! | Warlock: https://tinyurl.com/abc123 | Try it in DIM! ⚔️`
+Output: `🎮 viewer123 wants to see the loadout! ⚔️ https://tinyurl.com/abc123 🎮`
+
+**With instructions:**
+```
+Check out $(user)'s build: $(customapi https://d2loadout-widget.onrender.com/api/dimlink/Marty%232689?format=text) - Try it in DIM!
+```
+Output: `Check out viewer123's build: https://tinyurl.com/abc123 - Try it in DIM!`
 
 ## StreamElements Variables
 
