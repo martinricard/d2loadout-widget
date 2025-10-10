@@ -299,6 +299,48 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   }
 });
 
+// New endpoint: Get just the DIM link (for StreamElements custom commands)
+// Usage: /api/dimlink/:platformOrName/:membershipIdOrTag?
+// Returns: { success: true, dimLink: "https://tinyurl.com/..." }
+app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => {
+  try {
+    // Call the main loadout endpoint logic but return only the DIM link
+    const { platformOrName, membershipIdOrTag } = req.params;
+    
+    // Reuse the same logic from /api/loadout endpoint
+    // For simplicity, we'll make an internal request to the main endpoint
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const loadoutUrl = membershipIdOrTag 
+      ? `${baseUrl}/api/loadout/${platformOrName}/${membershipIdOrTag}`
+      : `${baseUrl}/api/loadout/${platformOrName}`;
+    
+    const response = await axios.get(loadoutUrl);
+    
+    if (response.data.success && response.data.dimLink) {
+      res.json({
+        success: true,
+        dimLink: response.data.dimLink,
+        displayName: response.data.displayName,
+        characterClass: response.data.character.class
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'DIM link not available',
+        message: 'Failed to generate DIM link'
+      });
+    }
+    
+  } catch (error) {
+    console.error('DIM link fetch error:', error.message);
+    res.status(error.response?.status || 500).json({ 
+      success: false,
+      error: 'Failed to fetch DIM link',
+      message: error.message
+    });
+  }
+});
+
 // Helper function to get platform name
 function getPlatformName(membershipType) {
   const platforms = {
