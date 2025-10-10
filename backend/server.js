@@ -115,42 +115,116 @@ app.get('/api/search/:displayName', async (req, res) => {
 });
 
 // Get character loadout - supports both membership ID and Bungie name
-app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => {
-  let { platformOrName, membershipIdOrTag } = req.params;
+// ============================================================================
+// SHARED HELPER: Fetch full loadout data (used by both /api/loadout and /api/dimlink)
+// ============================================================================
+async function fetchLoadoutData(platformOrName, membershipIdOrTag) {
   let platform = platformOrName;
   let membershipId = membershipIdOrTag;
   
-  // If membershipIdOrTag is provided, it's the normal format: /api/loadout/3/4611686018467484767
-  // If not, platformOrName might be a Bungie name: /api/loadout/Marty#2689
+  // If membershipIdOrTag is provided, it's the normal format: 3/4611686018467484767
+  // If not, platformOrName might be a Bungie name: Marty#2689
   if (!membershipIdOrTag && platformOrName.includes('#')) {
     // It's a Bungie name, search for it first
-    try {
-      const searchUrl = `${BUNGIE_API_BASE}/Destiny2/SearchDestinyPlayer/-1/${encodeURIComponent(platformOrName)}/`;
-      const searchResponse = await axios.get(searchUrl, {
-        headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
-      });
-      
-      const players = searchResponse.data.Response;
-      if (!players || players.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: 'Player not found',
-          message: `No player found with Bungie name: ${platformOrName}`
-        });
-      }
-      
-      // Use the first result (primary platform)
-      platform = players[0].membershipType;
-      membershipId = players[0].membershipId;
-      
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to search player',
-        message: error.message
-      });
+    const searchUrl = `${BUNGIE_API_BASE}/Destiny2/SearchDestinyPlayer/-1/${encodeURIComponent(platformOrName)}/`;
+    const searchResponse = await axios.get(searchUrl, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+    
+    const players = searchResponse.data.Response;
+    if (!players || players.length === 0) {
+      throw new Error(`No player found with Bungie name: ${platformOrName}`);
+    }
+    
+    // Use the first result (primary platform)
+    platform = players[0].membershipType;
+    membershipId = players[0].membershipId;
+  }
+  
+  // Fetch profile with character equipment and stats
+  // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 202=CharacterProgressions,
+  //             205=CharacterEquipment, 300=ItemInstances, 304=ItemStats, 305=ItemSockets
+  const components = '?components=100,104,200,202,205,300,304,305';
+  const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
+  
+  const response = await axios.get(profileUrl, {
+    headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+  });
+  
+  const data = response.data.Response;
+  const characters = data.characters?.data || {};
+  const equipment = data.characterEquipment?.data || {};
+  const characterProgressions = data.characterProgressions?.data || {};
+  const profileProgression = data.profileProgression?.data || {};
+  const itemComponents = {
+    instances: data.itemComponents?.instances?.data || {},
+    stats: data.itemComponents?.stats?.data || {},
+    sockets: data.itemComponents?.sockets?.data || {}
+  };
+  
+  // Find the most recently played character
+  let mostRecentCharacterId = null;
+  let mostRecentDate = null;
+  
+  for (const [charId, charData] of Object.entries(characters)) {
+    const lastPlayed = new Date(charData.dateLastPlayed);
+    if (!mostRecentDate || lastPlayed > mostRecentDate) {
+      mostRecentDate = lastPlayed;
+      mostRecentCharacterId = charId;
     }
   }
+  
+  if (!mostRecentCharacterId) {
+    throw new Error('This player has no Destiny 2 characters');
+  }
+  
+  const character = characters[mostRecentCharacterId];
+  const characterEquipment = equipment[mostRecentCharacterId];
+  const characterProgression = characterProgressions[mostRecentCharacterId];
+  
+  // Extract artifact mods
+  const artifactMods = await extractArtifactMods(characterProgression);
+  
+  // Get seasonal artifact info
+  const seasonalArtifact = profileProgression.seasonalArtifact || null;
+  let artifactInfo = null;
+  if (seasonalArtifact && seasonalArtifact.artifactHash) {
+    artifactInfo = await fetchArtifactModHashes(seasonalArtifact.artifactHash);
+  }
+  
+  // Generate DIM link
+  const displayName = data.profile?.data?.userInfo?.displayName || 'Guardian';
+  const dimLink = await generateDIMLink(
+    displayName,
+    character.classType,
+    characterEquipment,
+    itemComponents,
+    artifactMods,
+    characterProgression
+  );
+  
+  return {
+    platform,
+    membershipId,
+    data,
+    character,
+    mostRecentCharacterId,
+    characterEquipment,
+    characterProgression,
+    itemComponents,
+    artifactMods,
+    artifactInfo,
+    seasonalArtifact,
+    dimLink
+  };
+}
+
+// ============================================================================
+// API ENDPOINTS
+// ============================================================================
+
+app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => {
+  const { platformOrName, membershipIdOrTag } = req.params;
   
   if (!process.env.BUNGIE_API_KEY) {
     return res.status(500).json({
@@ -161,77 +235,19 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   }
   
   try {
-    // Fetch profile with character equipment and stats
-    // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 202=CharacterProgressions,
-    //             205=CharacterEquipment, 300=ItemInstances, 304=ItemStats, 305=ItemSockets
-    const components = '?components=100,104,200,202,205,300,304,305';
-    const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
-    
-    const response = await axios.get(profileUrl, {
-      headers: {
-        'X-API-Key': process.env.BUNGIE_API_KEY
-      }
-    });
-    
-    const data = response.data.Response;
-    const characters = data.characters?.data || {};
-    const equipment = data.characterEquipment?.data || {};
-    const characterProgressions = data.characterProgressions?.data || {};
-    const profileProgression = data.profileProgression?.data || {};
-    const itemComponents = {
-      instances: data.itemComponents?.instances?.data || {},
-      stats: data.itemComponents?.stats?.data || {},
-      sockets: data.itemComponents?.sockets?.data || {}
-    };
-    
-    // Get seasonal artifact info from profile
-    const seasonalArtifact = profileProgression.seasonalArtifact || null;
-    let artifactInfo = null;
-    
-    if (seasonalArtifact && seasonalArtifact.artifactHash) {
-      artifactInfo = await fetchArtifactModHashes(seasonalArtifact.artifactHash);
-    }
-    
-    // Find the most recently played character
-    let mostRecentCharacterId = null;
-    let mostRecentDate = null;
-    
-    for (const [charId, charData] of Object.entries(characters)) {
-      const lastPlayed = new Date(charData.dateLastPlayed);
-      if (!mostRecentDate || lastPlayed > mostRecentDate) {
-        mostRecentDate = lastPlayed;
-        mostRecentCharacterId = charId;
-      }
-    }
-    
-    if (!mostRecentCharacterId) {
-      return res.status(404).json({
-        success: false,
-        error: 'No characters found',
-        message: 'This player has no Destiny 2 characters'
-      });
-    }
-    
-    // Get character info
-    const character = characters[mostRecentCharacterId];
-    const characterEquipment = equipment[mostRecentCharacterId];
-    
-    // Get character progression data for artifact mods
-    const characterProgression = characterProgressions[mostRecentCharacterId];
+    // Use shared helper to fetch all data
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag);
     
     // Process the loadout
     const loadout = await processLoadout(
-      mostRecentCharacterId,
-      characterEquipment,
-      itemComponents,
-      character // Pass character data to get accurate stats
+      loadoutData.mostRecentCharacterId,
+      loadoutData.characterEquipment,
+      loadoutData.itemComponents,
+      loadoutData.character
     );
     
-    // Extract artifact mods from character progression (not armor sockets!)
-    const artifactMods = await extractArtifactMods(characterProgression);
-    
     // Add artifact mods to loadout
-    loadout.artifactMods = artifactMods;
+    loadout.artifactMods = loadoutData.artifactMods;
     
     // Get class name
     const classNames = {
@@ -239,16 +255,6 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       1: 'Hunter',
       2: 'Warlock'
     };
-    
-    // Generate DIM loadout link
-    const dimLink = await generateDIMLink(
-      data.profile?.data?.userInfo?.displayName || 'Guardian',
-      character.classType,
-      characterEquipment,
-      itemComponents,
-      artifactMods,
-      characterProgression
-    );
     
     // ============================================================================
     // LOG STATS BEING SENT TO CLIENT
@@ -259,32 +265,32 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     
     res.json({
       success: true,
-      displayName: data.profile?.data?.userInfo?.displayName || 'Guardian',
-      membershipId: membershipId,
-      platform: platform,
-      platformName: getPlatformName(parseInt(platform)),
+      displayName: loadoutData.data.profile?.data?.userInfo?.displayName || 'Guardian',
+      membershipId: loadoutData.membershipId,
+      platform: loadoutData.platform,
+      platformName: getPlatformName(parseInt(loadoutData.platform)),
       character: {
-        id: mostRecentCharacterId,
-        class: classNames[character.classType] || 'Unknown',
-        race: character.raceType,
-        light: character.light,
-        emblemPath: character.emblemPath 
-          ? `https://www.bungie.net${character.emblemPath}` 
+        id: loadoutData.mostRecentCharacterId,
+        class: classNames[loadoutData.character.classType] || 'Unknown',
+        race: loadoutData.character.raceType,
+        light: loadoutData.character.light,
+        emblemPath: loadoutData.character.emblemPath 
+          ? `https://www.bungie.net${loadoutData.character.emblemPath}` 
           : null,
-        emblemBackgroundPath: character.emblemBackgroundPath
-          ? `https://www.bungie.net${character.emblemBackgroundPath}`
+        emblemBackgroundPath: loadoutData.character.emblemBackgroundPath
+          ? `https://www.bungie.net${loadoutData.character.emblemBackgroundPath}`
           : null,
-        lastPlayed: character.dateLastPlayed
+        lastPlayed: loadoutData.character.dateLastPlayed
       },
-      artifact: seasonalArtifact ? {
-        name: artifactInfo?.name || 'Unknown Artifact',
-        icon: artifactInfo?.icon || '',
-        iconUrl: artifactInfo?.iconUrl || null,
-        powerBonus: seasonalArtifact.powerBonus || 0,
-        pointsUnlocked: seasonalArtifact.pointsAcquired || 0
+      artifact: loadoutData.seasonalArtifact ? {
+        name: loadoutData.artifactInfo?.name || 'Unknown Artifact',
+        icon: loadoutData.artifactInfo?.icon || '',
+        iconUrl: loadoutData.artifactInfo?.iconUrl || null,
+        powerBonus: loadoutData.seasonalArtifact.powerBonus || 0,
+        pointsUnlocked: loadoutData.seasonalArtifact.pointsAcquired || 0
       } : null,
       loadout: loadout,
-      dimLink: dimLink, // Add DIM link to response
+      dimLink: loadoutData.dimLink,
       timestamp: new Date().toISOString()
     });
     
@@ -304,7 +310,7 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
 // Usage: /api/dimlink/:platformOrName/:membershipIdOrTag?
 // Query param: ?format=text returns plain text URL (for StreamElements)
 // Returns: { success: true, dimLink: "https://tinyurl.com/..." } or plain text
-// This endpoint simply calls the main /api/loadout endpoint and extracts the dimLink
+// This endpoint uses the shared fetchLoadoutData function to get the same DIM link as the widget
 app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => {
   try {
     const { platformOrName, membershipIdOrTag } = req.params;
@@ -312,40 +318,28 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     
     console.log(`[DIM Link] Request for: ${platformOrName}${membershipIdOrTag ? '/' + membershipIdOrTag : ''}`);
     
-    // Build the internal URL for the main loadout endpoint
-    const loadoutPath = membershipIdOrTag 
-      ? `/api/loadout/${platformOrName}/${membershipIdOrTag}`
-      : `/api/loadout/${platformOrName}`;
+    // Use shared helper to fetch data and generate DIM link
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag);
     
-    // Make internal request to main endpoint
-    const baseUrl = `http://localhost:${PORT}`;
-    const loadoutUrl = `${baseUrl}${loadoutPath}`;
-    
-    console.log(`[DIM Link] Fetching from: ${loadoutUrl}`);
-    
-    const { data } = await axios.get(loadoutUrl, {
-      timeout: 30000 // 30 second timeout
-    });
-    
-    if (!data.success || !data.dimLink) {
+    if (!loadoutData.dimLink) {
       return res.status(500).json({ 
         success: false, 
-        error: 'Failed to get DIM link from loadout endpoint' 
+        error: 'Failed to generate DIM link' 
       });
     }
     
-    console.log(`[DIM Link] Successfully retrieved: ${data.dimLink}`);
+    console.log(`[DIM Link] Successfully retrieved: ${loadoutData.dimLink}`);
     
     // Return based on format
     if (format === 'text') {
       res.type('text/plain');
-      res.send(data.dimLink);
+      res.send(loadoutData.dimLink);
     } else {
       res.json({
         success: true,
-        dimLink: data.dimLink,
-        displayName: data.displayName,
-        characterClass: data.character.class
+        dimLink: loadoutData.dimLink,
+        displayName: loadoutData.data.profile?.data?.userInfo?.displayName || 'Guardian',
+        characterClass: ['Titan', 'Hunter', 'Warlock'][loadoutData.character.classType] || 'Unknown'
       });
     }
     
