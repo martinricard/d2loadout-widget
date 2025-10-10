@@ -305,20 +305,24 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
 // Returns: { success: true, dimLink: "https://tinyurl.com/..." } or plain text
 app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => {
   try {
-    // Call the main loadout endpoint logic but return only the DIM link
     const { platformOrName, membershipIdOrTag } = req.params;
     const format = req.query.format; // Check for ?format=text
     
-    // Reuse the same logic from /api/loadout endpoint
-    // For simplicity, we'll make an internal request to the main endpoint
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Instead of calling the main endpoint, we'll call it via localhost to avoid external routing issues
+    // Render apps can access themselves via localhost
     const loadoutUrl = membershipIdOrTag 
-      ? `${baseUrl}/api/loadout/${platformOrName}/${membershipIdOrTag}`
-      : `${baseUrl}/api/loadout/${platformOrName}`;
+      ? `http://localhost:${PORT}/api/loadout/${platformOrName}/${membershipIdOrTag}`
+      : `http://localhost:${PORT}/api/loadout/${platformOrName}`;
     
-    const response = await axios.get(loadoutUrl);
+    console.log(`[DIM Link] Fetching loadout from: ${loadoutUrl}`);
+    
+    const response = await axios.get(loadoutUrl, {
+      timeout: 25000 // 25 second timeout
+    });
     
     if (response.data.success && response.data.dimLink) {
+      console.log(`[DIM Link] Success! Link: ${response.data.dimLink}`);
+      
       // Return plain text if format=text (for StreamElements)
       if (format === 'text') {
         res.type('text/plain');
@@ -333,6 +337,7 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
         });
       }
     } else {
+      console.error('[DIM Link] No DIM link in response');
       res.status(404).json({
         success: false,
         error: 'DIM link not available',
@@ -341,7 +346,8 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     }
     
   } catch (error) {
-    console.error('DIM link fetch error:', error.message);
+    console.error('[DIM Link] Error:', error.message);
+    console.error('[DIM Link] Stack:', error.stack);
     res.status(error.response?.status || 500).json({ 
       success: false,
       error: 'Failed to fetch DIM link',
