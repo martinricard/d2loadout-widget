@@ -537,23 +537,39 @@ async function processEquipmentItem(itemData, itemComponents) {
     }
   }
   
+  // Determine weapon tier BEFORE processing perks (needed for enhanced perk detection)
+  // Edge of Fate uses tier ornaments to determine weapon tier
+  let finalWeaponTier = definition.quality?.currentVersion; // Base tier from quality
+  
+  // Check if weapon has a tier ornament applied
+  if (itemData.overrideStyleItemHash) {
+    const ornamentDef = await fetchPlugDefinition(itemData.overrideStyleItemHash);
+    if (ornamentDef && ornamentDef.description) {
+      // Check if ornament description contains "tier X" (e.g., "tier 5 weapon ornament")
+      const tierMatch = ornamentDef.description.match(/tier\s+(\d+)/i);
+      if (tierMatch) {
+        const ornamentTier = parseInt(tierMatch[1]);
+        finalWeaponTier = ornamentTier - 1; // Convert tier display (1-5) to currentVersion (0-4)
+        console.log(`[Weapon Tier] Found tier ornament: "${ornamentDef.name}" - Tier ${ornamentTier} (currentVersion: ${finalWeaponTier})`);
+      }
+    }
+  }
+  
   // Fetch perk definitions for weapon perks
   const weaponPerkData = [];
   if (weaponPerks.length > 0) {
-    // Check weapon tier for Edge of Fate system
-    // If Tier 2+ (currentVersion >= 1), all main perks (socket 3 & 4) are enhanced
-    const weaponTier = definition.quality?.currentVersion;
-    const hasEdgeTier = weaponTier !== undefined && weaponTier >= 1;
+    // Use the pre-computed weapon tier (accounts for tier ornaments)
+    const hasEdgeTier = finalWeaponTier !== undefined && finalWeaponTier !== null && finalWeaponTier >= 1; // Tier 2+ weapons have enhanced perks
     
-    console.log(`[Weapon Perks] Processing ${weaponPerks.length} perks for weapon: ${definition.displayProperties?.name} (Edge of Fate Tier: ${weaponTier}, Has Enhanced Tier: ${hasEdgeTier})`);
+    console.log(`[Weapon Perks] Processing ${weaponPerks.length} perks for weapon: ${definition.displayProperties?.name} (Final Tier: ${finalWeaponTier}, Has Enhanced: ${hasEdgeTier})`);
     
     for (const perk of weaponPerks) {
       const perkDef = await fetchPlugDefinition(perk.plugHash);
       if (perkDef) {
         // Check if this is an enhanced perk:
         // 1. Name contains "Enhanced"
-        // 2. OR description contains enhanced indicators like "additional", "increased", "longer lasting", "more powerful"
-        // 3. OR Edge of Fate Tier 2+ weapon (currentVersion >= 1) and this is a main perk (socket 3 or 4)
+        // 2. OR description contains enhanced indicators
+        // 3. OR Edge of Fate Tier 2+ weapon (finalWeaponTier >= 1) and this is a main perk (socket 3 or 4)
         const nameHasEnhanced = perkDef.name && perkDef.name.includes('Enhanced');
         const descHasEnhanced = perkDef.description && (
           perkDef.description.includes('additional') ||
@@ -662,11 +678,11 @@ async function processEquipmentItem(itemData, itemComponents) {
     state: itemData.state || 0,
     overrideStyleItemHash: itemData.overrideStyleItemHash || null,
     quality: definition.quality || null,
-    // Weapon tier: Check Edge of Fate tier system first, then fall back to enhanced perk detection
-    // Edge of Fate (S27+): quality.currentVersion = tier (0-4 = Tier 1-5)
+    // Weapon tier: Use finalWeaponTier which accounts for tier ornaments
+    // Edge of Fate (S27+): Tier determined by ornament if applied, otherwise quality.currentVersion
     // Legacy: Check if ANY weapon perk is enhanced (indicates T2+ for old crafted weapons)
-    weaponTier: definition.quality?.currentVersion !== undefined 
-      ? definition.quality.currentVersion // Edge of Fate tier (0-4 maps to Tier 1-5)
+    weaponTier: finalWeaponTier !== undefined && finalWeaponTier !== null
+      ? finalWeaponTier // Use pre-computed tier (accounts for ornaments)
       : (weaponPerkData.some(perk => perk.isEnhanced) ? 1 : null), // Legacy enhanced perk detection
     iconWatermark: definition.iconWatermark || null,
     iconWatermarkShelved: definition.iconWatermarkShelved || null
@@ -676,8 +692,7 @@ async function processEquipmentItem(itemData, itemComponents) {
   if (weaponPerkData.length > 0) {
     const hasEnhanced = weaponPerkData.some(perk => perk.isEnhanced);
     const qualityTier = definition.quality?.currentVersion;
-    const finalTier = result.weaponTier;
-    console.log(`[Weapon Tier] "${result.name}" - Quality Tier: ${qualityTier}, Has Enhanced Perks: ${hasEnhanced}, Final Weapon Tier: ${finalTier}`);
+    console.log(`[Weapon Tier] "${result.name}" - Quality Tier: ${qualityTier}, Final Weapon Tier: ${result.weaponTier}, Has Enhanced Perks: ${hasEnhanced}`);
   }
   
   return result;
