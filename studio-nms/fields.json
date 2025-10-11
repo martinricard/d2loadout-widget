@@ -1,0 +1,236 @@
+{
+  "version": {
+    "type": "hidden",
+    "label": "D2 Loadout Widget v1.0.0",
+    "value": "",
+    "group": "ℹ️ ⋮ About"
+  },
+  "credits": {
+    "type": "hidden",
+    "label": "Made for Destiny 2 Streamers",
+    "value": "",
+    "group": "ℹ️ ⋮ About"
+  },
+  "separator1": {
+    "type": "hidden",
+    "label": "════════════════════════",
+    "value": "",
+    "group": "ℹ️ ⋮ About"
+  },
+  
+  "bungieInput": {
+    "type": "text",
+    "label": "Bungie ID (e.g., YourName#1234)",
+    "value": "",
+    "group": "🎮 ⋮ Character Settings"
+  },
+  "separator2": {
+    "type": "hidden",
+    "label": "⟢ Your full Bungie name with #",
+    "value": "",
+    "group": "🎮 ⋮ Character Settings"
+  },
+  "updateInterval": {
+    "type": "number",
+    "label": "Update Interval (seconds)",
+    "value": 60,
+    "group": "🎮 ⋮ Character Settings"
+  },
+  
+  "autoHide": {
+    "type": "checkbox",
+    "label": "Auto-Hide Mode",
+    "value": false,
+    "group": "👁️ ⋮ Display Settings"
+  },
+  "separator3": {
+    "type": "hidden",
+    "label": "⟢ Widget hides after display",
+    "value": "",
+    "group": "👁️ ⋮ Display Settings"
+  },
+  "hideDuration": {
+    "type": "number",
+    "label": "Hide Duration (seconds)",
+    "value": 30,
+    "group": "👁️ ⋮ Display Settings"
+  },
+  "featheredEdge": {
+    "type": "checkbox",
+    "label": "Feathered Bottom Edge",
+    "value": true,
+    "group": "👁️ ⋮ Display Settings"
+  },
+  "widgetSize": {
+    "type": "dropdown",
+    "label": "Widget Layout",
+    "value": "wide",
+    "options": {
+      "wide": "Wide (Compact)",
+      "standard": "Standard",
+      "full": "Full"
+    },
+    "group": "👁️ ⋮ Display Settings"
+  },
+  
+  "chatCommand": {
+    "type": "text",
+    "label": "Main Loadout Command",
+    "value": "!loadout",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "separator4": {
+    "type": "hidden",
+    "label": "⟢ Commands to trigger display",
+    "value": "",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandWeapons": {
+    "type": "text",
+    "label": "Weapons Command",
+    "value": "!weapons",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandArmor": {
+    "type": "text",
+    "label": "Armor Command",
+    "value": "!armor",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandStats": {
+    "type": "text",
+    "label": "Stats Command",
+    "value": "!stats",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandSubclass": {
+    "type": "text",
+    "label": "Subclass Command",
+    "value": "!subclass",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandArtifact": {
+    "type": "text",
+    "label": "Artifact Command",
+    "value": "!artifact",
+    "group": "💬 ⋮ Chat Commands"
+  },
+  "commandCooldown": {
+    "type": "number",
+    "label": "Command Cooldown (seconds)",
+    "value": 20,
+    "group": "💬 ⋮ Chat Commands"
+  },
+  
+  "redemptionFull": {
+    "type": "text",
+    "label": "Full Loadout Redemption",
+    "value": "Show Loadout",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "separator5": {
+    "type": "hidden",
+    "label": "⟢ Channel point reward names",
+    "value": "",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "redemptionWeapons": {
+    "type": "text",
+    "label": "Weapons Redemption",
+    "value": "Show Weapons",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "redemptionArmor": {
+    "type": "text",
+    "label": "Armor Redemption",
+    "value": "Show Armor",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "redemptionStats": {
+    "type": "text",
+    "label": "Stats Redemption",
+    "value": "Show Stats",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "redemptionSubclass": {
+    "type": "text",
+    "label": "Subclass Redemption",
+    "value": "Show Subclass",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  "redemptionArtifact": {
+    "type": "text",
+    "label": "Artifact Redemption",
+    "value": "Show Artifact",
+    "group": "🎁 ⋮ Channel Points"
+  },
+  
+  "showWeapons": {
+    "type": "checkbox",
+    "label": "Show Weapons Section",
+    "value": true,
+    "group": "🎨 ⋮ Section Visibility"
+  },
+  "showArmor": {
+    "type": "checkbox",
+    "label": "Show Armor Section",
+    "value": true,
+    "group": "🎨 ⋮ Section Visibility"
+  },
+  "showStats": {
+    "type": "checkbox",
+    "label": "Show Stats Section",
+    "value": true,
+    "group": "🎨 ⋮ Section Visibility"
+  },
+  "showSubclass": {
+    "type": "checkbox",
+    "label": "Show Subclass Section",
+    "value": true,
+    "group": "🎨 ⋮ Section Visibility"
+  },
+  "showArtifact": {
+    "type": "checkbox",
+    "label": "Show Artifact Section",
+    "value": true,
+    "group": "🎨 ⋮ Section Visibility"
+  },
+  
+  "backendUrl": {
+    "type": "text",
+    "label": "Backend API URL",
+    "value": "https://d2loadout-widget.onrender.com",
+    "group": "⚙️ ⋮ Advanced Settings"
+  },
+  "separator6": {
+    "type": "hidden",
+    "label": "⟢ Use default or your own backend",
+    "value": "",
+    "group": "⚙️ ⋮ Advanced Settings"
+  },
+  
+  "helpDiscord": {
+    "type": "text",
+    "label": "💠  Help & Support",
+    "value": "github.com/martinricard/d2loadout-widget",
+    "group": "📖 ⋮ Support"
+  },
+  "separator7": {
+    "type": "hidden",
+    "label": "════════════════════════",
+    "value": "",
+    "group": "📖 ⋮ Support"
+  },
+  "documentation": {
+    "type": "text",
+    "label": "📘  Documentation",
+    "value": "github.com/martinricard/d2loadout-widget/tree/main/docs",
+    "group": "📖 ⋮ Support"
+  },
+  "dimLinkSetup": {
+    "type": "text",
+    "label": "🔗  DIM Link Setup Guide",
+    "value": "See docs/DIM_LINK_CHAT_COMMAND.md",
+    "group": "📖 ⋮ Support"
+  }
+}

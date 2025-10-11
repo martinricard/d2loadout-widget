@@ -9,7 +9,6 @@ let refreshInterval = null;
 let isFirstLoad = true;
 let autoHideTimeout = null;
 let lastCommandTime = 0;
-const COMMAND_COOLDOWN = 3000;
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -246,12 +245,15 @@ window.addEventListener('onEventReceived', function (obj) {
   // Only process events if auto-hide is enabled
   if (!autoHide) return;
   
+  // Get configurable cooldown (convert seconds to milliseconds)
+  const commandCooldown = (parseInt(fieldData.commandCooldown) || 20) * 1000;
+  
   // Check cooldown first - prevent spam for both commands and channel points
   const now = Date.now();
   const timeSinceLastCommand = now - lastCommandTime;
   
-  if (timeSinceLastCommand < COMMAND_COOLDOWN) {
-    const remainingCooldown = Math.ceil((COMMAND_COOLDOWN - timeSinceLastCommand) / 1000);
+  if (timeSinceLastCommand < commandCooldown) {
+    const remainingCooldown = Math.ceil((commandCooldown - timeSinceLastCommand) / 1000);
     console.log(`[D2 Widget] Command on cooldown - ${remainingCooldown}s remaining`);
     return; // Ignore during cooldown
   }

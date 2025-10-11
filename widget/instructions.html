@@ -28,7 +28,7 @@
                     rgba(16, 16, 20, 0.95) 60%, 
                     #101014 100%
                 ),
-                url('https://press.bungie.com/Files/File?url=Q81XdHF0AZe4uWM4lLOQQd7x8HGL%2baOSgQvmSqo3pyIvT%2fvnzXhGwKr7g4vg2vwNXJHxtgyTOOe4iQy%2bmQvEuXK%2fNzZnOIsaPXJ61NMUrBB%2fS26Q%2fDMwMLI2AP1xX2snjHAyzerChsK5nf%2bQopdujQMznyLbqDoFOrk4mMyHGRmqLb4vDuEAiRJoycoCyopbU66KmuQt1GR64KGrc8dPaLhHIydm1%2fQPbzV6A0U%2bfsOoboj4XUwMxS7w2Ij87Ix86OP0vXM%2fIhBf0aivdIUb9p6whfmZwTJ19xDvsLBuXFEJQYgLx4%2f1R9Yi1v%2fh4Oh8YK31j8OOSelQx2y1qQP7xIVqmkoODaFNlJ7LIwUi4DLcPWefw78qJt4NQgdqXOKJsqfIldbhtwmXh8uz3%2b5M6k7xOGmutih9eueTrQnkgeorB%2f1L%2fKsE%2bemd9ylIM%2f15peHY39PeqGaSyfMKU2t02sqf5Uyx4TSNfbQcGjODU2KPuyYk47GGH7E8jbVUNhIAMT1%2fnsqiGK9kJuE612ggc57ud0CQwgjYWWnHWSnSHGQ%3d') top center / cover no-repeat;
+                url('https://www.bungie.net/7/ca/destiny/bgs/season27/s27_key_art_16x9.jpg') top center / cover no-repeat;
             background-color: #101014;
             border: 2px solid #2c2c2f;
             border-radius: 8px;
@@ -80,6 +80,27 @@
 
         .section {
             margin-bottom: 0.8em;
+        }
+        
+        /* Specific grid placements for better space usage */
+        .section:nth-of-type(3) { /* Setup */
+            grid-column: 1 / -1;
+        }
+        
+        .section:nth-of-type(4) { /* Chat Commands */
+            grid-column: 1;
+        }
+        
+        .section:nth-of-type(5) { /* Channel Points */
+            grid-column: 2;
+        }
+        
+        .section:nth-of-type(6) { /* Cooldown System */
+            grid-column: 1;
+        }
+        
+        .section:nth-of-type(7) { /* DIM Link Feature */
+            grid-column: 2;
         }
 
         .section-title {
@@ -228,7 +249,8 @@
                 <ol class="step-list">
                     <li>Enter your <span class="highlight">Bungie ID</span> (e.g., Guardian#1234) in the widget settings</li>
                     <li>Choose display mode: <span class="highlight">"Always Visible"</span> (widget stays on screen) or <span class="highlight">"Auto-Hide"</span> (widget appears only when triggered)</li>
-                    <li>If using Auto-Hide, select trigger type: <span class="highlight">Chat Commands</span> or <span class="highlight">Channel Point Redeems</span></li>
+                    <li>If using Auto-Hide, set <span class="highlight">Display Duration</span> (default: 15 seconds) and <span class="highlight">Command Cooldown</span> (default: 20 seconds)</li>
+                    <li>Select trigger type: <span class="highlight">Chat Commands</span> or <span class="highlight">Channel Point Redeems</span></li>
                 </ol>
             </div>
         </div>
@@ -261,6 +283,18 @@
         </div>
 
         <div class="section">
+            <div class="section-title">Cooldown System</div>
+            <div class="section-content">
+                <div class="info-box">
+                    <strong>⏱️ Command Cooldown:</strong>
+                    Prevents spam by ignoring repeated commands during the cooldown period (default: 20 seconds). 
+                    Set higher than Display Duration (15s) to avoid triggering the widget before it hides. 
+                    Adjustable from 0-60 seconds in settings. Applies to both chat commands and channel points.
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
             <div class="section-title">DIM Link Feature</div>
             <div class="section-content">
                 <div class="info-box">
@@ -274,7 +308,7 @@
         </div>
 
         <div class="note">
-            <strong>💡 Pro Tip:</strong> Customize command names and display duration in the widget settings. 
+            <strong>💡 Pro Tip:</strong> Customize command names, display duration, and cooldown in the widget settings. 
             The widget automatically refreshes every minute to show your latest Destiny 2 loadout!
         </div>
 

@@ -201,6 +201,14 @@
     "placeholder": "!artifact",
     "group": "💬 Commands"
   },
+  "commandCooldown": {
+    "type": "number",
+    "label": "Command Cooldown (seconds)",
+    "value": 20,
+    "min": 0,
+    "max": 60,
+    "group": "💬 Commands"
+  },
   "separe5": {
     "type": "hidden",
     "label": "⚔️ ⋮ Weapon & Armor Options",
