@@ -9,6 +9,7 @@ let refreshInterval = null;
 let isFirstLoad = true;
 let autoHideTimeout = null;
 let lastCommandTime = 0;
+let maintenanceCheckInterval = null;
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -25,6 +26,10 @@ window.addEventListener('onWidgetLoad', function (obj) {
   
   // Setup auto-hide behavior
   setupAutoHide();
+  
+  // Check maintenance status and start periodic checks
+  checkMaintenanceStatus();
+  maintenanceCheckInterval = setInterval(checkMaintenanceStatus, 300000); // Check every 5 minutes
   
   // Fetch initial data
   fetchLoadout();
@@ -393,6 +398,39 @@ function toggleSections() {
   // REMOVED: Dynamic width calculation that causes blur
   // Let CSS handle the layout naturally without JS width manipulation
   console.log(`[D2 Loadout Widget] Sections toggled - Weapons: ${showWeapons}, Armor: ${showArmor}, Stats: ${showStats}`);
+}
+
+// Check Bungie maintenance status
+async function checkMaintenanceStatus() {
+  try {
+    console.log('[D2 Widget] Checking maintenance status...');
+    const response = await fetch('https://d2loadout-widget.onrender.com/api/status');
+    const data = await response.json();
+    
+    console.log('[D2 Widget] Maintenance status:', data);
+    
+    const banner = document.getElementById('maintenanceBanner');
+    const messageElement = document.getElementById('maintenanceMessage');
+    
+    if (data.maintenance) {
+      // Show maintenance banner
+      let message = data.message || 'Destiny 2 services are currently unavailable';
+      if (data.estimatedEnd) {
+        message += ` • Expected to resume: ${data.estimatedEnd}`;
+      }
+      
+      messageElement.textContent = message;
+      banner.style.display = 'flex';
+      console.log('[D2 Widget] ⚠️ Maintenance detected - banner shown');
+    } else {
+      // Hide maintenance banner
+      banner.style.display = 'none';
+      console.log('[D2 Widget] ✅ No maintenance - services operational');
+    }
+  } catch (error) {
+    console.error('[D2 Widget] Error checking maintenance status:', error);
+    // Don't show banner on check failure - only show when confirmed maintenance
+  }
 }
 
 // Fetch loadout data from API
@@ -1109,5 +1147,8 @@ function updateDIMLink(dimLinkUrl) {
 window.addEventListener('beforeunload', function() {
   if (refreshInterval) {
     clearInterval(refreshInterval);
+  }
+  if (maintenanceCheckInterval) {
+    clearInterval(maintenanceCheckInterval);
   }
 });

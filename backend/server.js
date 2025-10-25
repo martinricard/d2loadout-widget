@@ -50,6 +50,13 @@ const STAT_HASHES = {
   '4244567218': 'Resilience'     // Health stat (API returns this as Resilience value)
 };
 
+// Maintenance status cache
+const maintenanceCache = {
+  data: null,
+  lastCheck: null,
+  TTL: 300000 // 5 minutes
+};
+
 // Health check endpoint (Render uses this to verify deployment)
 app.get('/', (req, res) => {
   res.json({
@@ -59,6 +66,7 @@ app.get('/', (req, res) => {
     version: '0.1.0',
     endpoints: [
       'GET /health - Health check',
+      'GET /api/status - Check Bungie maintenance status',
       'GET /api/loadout/:platform/:membershipId - Get character loadout',
       'GET /api/search/:displayName - Search player by Bungie name'
     ]
@@ -67,6 +75,80 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy' });
+});
+
+// Check Bungie maintenance status via GlobalAlerts API
+app.get('/api/status', async (req, res) => {
+  try {
+    // Check cache first
+    const now = Date.now();
+    if (maintenanceCache.data && maintenanceCache.lastCheck && (now - maintenanceCache.lastCheck) < maintenanceCache.TTL) {
+      console.log('[Maintenance] Returning cached status');
+      return res.json(maintenanceCache.data);
+    }
+
+    console.log('[Maintenance] Fetching fresh status from Bungie GlobalAlerts API');
+    const response = await axios.get(`${BUNGIE_API_BASE}/GlobalAlerts/`, {
+      headers: {
+        'X-API-Key': process.env.BUNGIE_API_KEY
+      },
+      timeout: 5000 // 5 second timeout
+    });
+
+    const alerts = response.data.Response || [];
+    
+    // Check for active maintenance alerts
+    const maintenanceAlert = alerts.find(alert => {
+      // Check if alert is currently active
+      if (!alert.AlertTimestamp) return false;
+      
+      const alertTime = new Date(alert.AlertTimestamp);
+      const alertLevel = alert.AlertLevel || 0;
+      
+      // Level 1 = Blue (info), Level 2 = Yellow (warning), Level 3 = Red (critical/maintenance)
+      // Consider Level 2+ as maintenance/warning worthy
+      return alertLevel >= 2 && alertTime <= new Date();
+    });
+
+    let status = {
+      maintenance: false,
+      message: null,
+      estimatedEnd: null,
+      alertLevel: 0,
+      timestamp: new Date().toISOString()
+    };
+
+    if (maintenanceAlert) {
+      status.maintenance = true;
+      status.message = maintenanceAlert.AlertString || 'Destiny 2 services are experiencing issues';
+      status.alertLevel = maintenanceAlert.AlertLevel || 2;
+      
+      // Try to parse end time from message (Bungie often includes time estimates)
+      const html = maintenanceAlert.AlertHtml || '';
+      const timeMatch = html.match(/until\\s+(\\d{1,2}:\\d{2}\\s*[AP]M\\s*[A-Z]{2,4})/i);
+      if (timeMatch) {
+        status.estimatedEnd = timeMatch[1];
+      }
+    }
+
+    // Cache the result
+    maintenanceCache.data = status;
+    maintenanceCache.lastCheck = now;
+
+    res.json(status);
+  } catch (error) {
+    console.error('[Maintenance] Error checking status:', error.message);
+    
+    // Don't block widget on maintenance check failure
+    res.json({
+      maintenance: false,
+      message: null,
+      estimatedEnd: null,
+      alertLevel: 0,
+      timestamp: new Date().toISOString(),
+      error: 'Unable to check maintenance status'
+    });
+  }
 });
 
 // Search player by Bungie display name (e.g., Marty#2689)
@@ -934,6 +1016,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               'empty',              // Empty mod slots
               'ornament',           // All ornaments (armor appearance/transmog)
               'shader',             // All shaders
+              'mask',               // Festival of the Lost masks (seasonal cosmetic)
               // Armor archetypes (Armor 3.0 intrinsic properties, not equippable mods)
               'brawler',            // Melee archetype
               'grenadier',          // Grenade archetype
