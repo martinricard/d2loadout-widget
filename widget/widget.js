@@ -451,7 +451,9 @@ async function fetchLoadout() {
       document.getElementById('characterName').classList.add('loading');
     }
     
-    const apiUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}`;
+    // Add timestamp to force fresh DIM link generation (bypasses TinyURL cache)
+    const timestamp = Date.now();
+    const apiUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}?t=${timestamp}`;
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
