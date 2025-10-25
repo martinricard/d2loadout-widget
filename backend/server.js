@@ -1017,6 +1017,7 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               'ornament',           // All ornaments (armor appearance/transmog)
               'shader',             // All shaders
               'mask',               // Festival of the Lost masks (seasonal cosmetic)
+              'veiled haunting',    // Festival of the Lost ornament set (all armor pieces)
               // Armor archetypes (Armor 3.0 intrinsic properties, not equippable mods)
               'brawler',            // Melee archetype
               'grenadier',          // Grenade archetype
