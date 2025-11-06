@@ -1375,4 +1375,5 @@ app.listen(PORT, () => {
   console.log(`🔍 Search endpoint: http://localhost:${PORT}/api/search/{displayName}`);
   console.log('');
   console.log('✅ No OAuth required - using API key only!');
+  console.log('🌐 CORS enabled for all origins (GitHub Pages compatible)');
 });
