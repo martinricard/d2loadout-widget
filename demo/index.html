@@ -1,462 +1,669 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D2 Loadout Widget - Studio NMS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/widget.css">
-    <style>
-        body {
-            font-family: 'Roboto Condensed', 'Roboto', 'Arial', sans-serif;
-            background: #ffffff !important;
-            color: #333 !important;
-            display: flex;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
-        .control-panel {
-            width: 320px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #ffffff;
-            padding: 30px 24px;
-            overflow-y: auto;
-            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
-            position: fixed;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            z-index: 100;
-        }
-        .panel-header {
-            margin-bottom: 32px;
-            padding-bottom: 24px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        }
-        .panel-header h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #CEAE33;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .subtitle {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 400;
-        }
-        .panel-section {
-            margin-bottom: 28px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .panel-section h3 {
-            font-size: 14px;
-            font-weight: 700;
-            color: #CEAE33;
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .demo-btn {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: #ffffff;
-            font-family: 'Roboto Condensed', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .demo-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(206, 174, 51, 0.4);
-            transform: translateX(4px);
-        }
-        .demo-btn.active {
-            background: rgba(206, 174, 51, 0.2);
-            border-color: #CEAE33;
-            color: #CEAE33;
-        }
-        .btn-icon {
-            font-size: 18px;
-        }
-        .toggle-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .toggle-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            padding: 8px 0;
-        }
-        .toggle-option input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #CEAE33;
-        }
-        .toggle-option span {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-        }
-        .info-display {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 12px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 4px;
-        }
-        .info-label {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        .info-value {
-            font-size: 13px;
-            color: #ffffff;
-            font-weight: 600;
-        }
-        .info-value.status {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 11px;
-            text-transform: uppercase;
-        }
-        .info-value.status.loading {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffc107;
-        }
-        .info-value.status.connected {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-        }
-        .info-value.status.error {
-            background: rgba(244, 67, 54, 0.2);
-            color: #f44336;
-        }
-        .about-text {
-            font-size: 13px;
-            line-height: 1.6;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 12px;
-        }
-        .features-list {
-            list-style: none;
-            padding: 0;
-        }
-        .features-list li {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.7);
-            padding: 6px 0 6px 20px;
-            position: relative;
-        }
-        .features-list li::before {
-            content: '✓';
-            position: absolute;
-            left: 0;
-            color: #CEAE33;
-            font-weight: 700;
-        }
-        .panel-footer {
-            margin-top: 32px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            text-align: center;
-        }
-        .panel-footer p {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-bottom: 6px;
-        }
-        .panel-footer a {
-            color: #CEAE33;
-            text-decoration: none;
-        }
-        .widget-display {
-            flex: 1;
-            margin-left: 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            background: #ffffff;
-        }
-        .widget-container-wrapper {
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D2 Loadout Widget - Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="widget.css">
+  <style>
+    body {
+      display: flex;
+      margin: 0;
+      font-family: 'Roboto Condensed', sans-serif;
+      background: #ffffff !important;
+    }
+    .demo-panel {
+      width: 320px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 30px 24px;
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 10000;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+    #widget-area {
+      margin-left: 320px;
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #ffffff;
+    }
+    /* Match StreamElements window size */
+    #d2-loadout-widget {
+      width: 927px;
+      height: 562px;
+      overflow: hidden;
+    }
+    #d2-loadout-widget .widget-container {
+      width: 100%;
+      height: auto; /* Let it resize dynamically based on visible sections */
+    }
+    .panel-header {
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .panel-header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #CEAE33;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 400;
+    }
+    .panel-section {
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .panel-section h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #CEAE33;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .demo-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: #ffffff;
+      font-family: 'Roboto Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .demo-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(206, 174, 51, 0.4);
+      transform: translateX(4px);
+    }
+    .demo-btn.active {
+      background: rgba(206, 174, 51, 0.2);
+      border-color: #CEAE33;
+      color: #CEAE33;
+    }
+    .btn-icon {
+      font-size: 18px;
+    }
+    .demo-panel input {
+      width: 100%;
+      padding: 10px 12px;
+      margin: 8px 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-family: 'Roboto Condensed', sans-serif;
+      font-size: 14px;
+    }
+    .demo-panel input:focus {
+      outline: none;
+      border-color: rgba(206, 174, 51, 0.5);
+      background: rgba(255,255,255,0.08);
+    }
+    .demo-panel label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .info-display {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .info-label {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      font-weight: 500;
+    }
+    .info-value {
+      font-size: 13px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .status.connected { color: #4ade80; }
+    .status.error { color: #ff4444; }
+    .status.loading { color: #fbbf24; }
+    .refresh-btn {
+      margin-top: 12px;
+    }
+    /* Widget display area - matches StreamElements browser source container */
+    #widget-area {
+      margin-left: 320px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      background: #000000; /* Black background like StreamElements */
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    /* StreamElements browser source container size */
+    .widget-viewport {
+      width: 854px;
+      height: 547px;
+      background: #000000;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(206, 174, 51, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* Widget at natural size (760x500) - exactly as in StreamElements */
+    #d2-loadout-widget {
+      width: 760px !important;
+      max-width: 760px !important;
+      height: 500px !important;
+      margin: 0 auto;
+    }
+    
+    #d2-loadout-widget .widget-container {
+      width: 760px !important;
+      max-width: 760px !important;
+    }
+    
+    #d2-loadout-widget .loadout-widget {
+      width: 760px !important;
+      max-width: 760px !important;
+    }
+  </style>
 </head>
 <body>
-    <!-- Control Panel -->
-    <div class="control-panel">
-        <div class="panel-header">
-            <h1>D2 Loadout Widget</h1>
-            <p class="subtitle">Live Demo</p>
-        </div>
-
-        <div class="panel-section">
-            <h3>Configuration</h3>
-            <div class="info-display">
-                <div class="info-item" style="flex-direction: column; gap: 8px; align-items: stretch;">
-                    <label style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; font-weight: 600;">Bungie ID:</label>
-                    <input type="text" id="bungieIdInput" value="Marty#2689" style="padding: 8px 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #ffffff; font-family: 'Roboto Condensed', sans-serif; font-size: 14px;">
-                    <button class="demo-btn" id="updateBungieId" style="margin-top: 4px; justify-content: center;">
-                        <span class="btn-icon">🔄</span>
-                        Update & Refresh
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel-section">
-            <h3>View Controls</h3>
-            <div class="control-group">
-                <button class="demo-btn active" data-view="all">
-                    <span class="btn-icon">🎯</span>
-                    Full Loadout
-                </button>
-                <button class="demo-btn" data-view="weapons">
-                    <span class="btn-icon">⚔️</span>
-                    Weapons Only
-                </button>
-                <button class="demo-btn" data-view="armor">
-                    <span class="btn-icon">🛡️</span>
-                    Armor Only
-                </button>
-                <button class="demo-btn" data-view="stats">
-                    <span class="btn-icon">📊</span>
-                    Stats Only
-                </button>
-                <button class="demo-btn" data-view="subclass">
-                    <span class="btn-icon">✨</span>
-                    Subclass Only
-                </button>
-                <button class="demo-btn" data-view="artifact">
-                    <span class="btn-icon">💎</span>
-                    Artifact Only
-                </button>
-            </div>
-        </div>
-
-        <div class="panel-section">
-            <h3>Display Options</h3>
-            <div class="toggle-group">
-                <label class="toggle-option">
-                    <input type="checkbox" id="showWeapons" checked>
-                    <span>Show Weapons</span>
-                </label>
-                <label class="toggle-option">
-                    <input type="checkbox" id="showArmor" checked>
-                    <span>Show Armor</span>
-                </label>
-                <label class="toggle-option">
-                    <input type="checkbox" id="showStats" checked>
-                    <span>Show Stats</span>
-                </label>
-                <label class="toggle-option">
-                    <input type="checkbox" id="showSubclass" checked>
-                    <span>Show Subclass</span>
-                </label>
-                <label class="toggle-option">
-                    <input type="checkbox" id="showArtifact" checked>
-                    <span>Show Artifact</span>
-                </label>
-                <label class="toggle-option">
-                    <input type="checkbox" id="showPerks">
-                    <span>Show Weapon Perks</span>
-                </label>
-            </div>
-        </div>
-
-        <div class="panel-section">
-            <h3>Live Data</h3>
-            <div class="info-display">
-                <div class="info-item">
-                    <span class="info-label">Bungie ID:</span>
-                    <span class="info-value">Marty#2689</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Status:</span>
-                    <span class="info-value status" id="connectionStatus">Loading...</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Last Update:</span>
-                    <span class="info-value" id="lastUpdate">--:--:--</span>
-                </div>
-            </div>
-            <button class="demo-btn refresh-btn" id="refreshData">
-                <span class="btn-icon">🔄</span>
-                Refresh Data
-            </button>
-        </div>
-
-        <div class="panel-section">
-            <h3>Test Commands</h3>
-            <p class="about-text">Simulate chat commands to test different views:</p>
-            <div class="control-group">
-                <button class="demo-btn" data-command="!loadout">
-                    <span class="btn-icon">💬</span>
-                    !loadout
-                </button>
-                <button class="demo-btn" data-command="!weapons">
-                    <span class="btn-icon">💬</span>
-                    !weapons
-                </button>
-                <button class="demo-btn" data-command="!armor">
-                    <span class="btn-icon">💬</span>
-                    !armor
-                </button>
-                <button class="demo-btn" data-command="!stats">
-                    <span class="btn-icon">💬</span>
-                    !stats
-                </button>
-                <button class="demo-btn" data-command="!subclass">
-                    <span class="btn-icon">💬</span>
-                    !subclass
-                </button>
-                <button class="demo-btn" data-command="!artifact">
-                    <span class="btn-icon">💬</span>
-                    !artifact
-                </button>
-            </div>
-        </div>
-
-        <div class="panel-section">
-            <h3>About</h3>
-            <p class="about-text">
-                This demo showcases the D2 Loadout Widget using live data from Bungie's API.
-                The widget displays real-time loadout information for Destiny 2 streamers.
-            </p>
-            <p class="about-text">
-                <strong>Features:</strong>
-            </p>
-            <ul class="features-list">
-                <li>Live Bungie API integration</li>
-                <li>Multiple view modes</li>
-                <li>Chat command triggers</li>
-                <li>Channel points support</li>
-                <li>Auto-refresh system</li>
-                <li>Customizable styling</li>
-            </ul>
-        </div>
-
-        <div class="panel-footer">
-            <p>Made with ❤️ by</p>
-            <p><strong>Studio Notice Me Senpai</strong></p>
-            <p><a href="mailto:contact@noticemesenpai.studio">contact@noticemesenpai.studio</a></p>
-        </div>
+  <div class="demo-panel">
+    <div class="panel-header">
+      <h1>D2 Loadout Widget</h1>
+      <p class="subtitle">Live Demo</p>
     </div>
 
-    <!-- Widget Display Area -->
-    <div class="widget-display">
-        <div class="widget-container-wrapper">
-            <div id="d2-loadout-widget">
-                <div class="widget-container">
-                    <div class="character-header">
-                        <div class="character-emblem"></div>
-                        <div class="character-info">
-                            <div class="character-name loading">Loading Guardian...</div>
-                            <div class="character-details">
-                                <span class="character-class">...</span>
-                                <span class="character-separator">•</span>
-                                <span class="character-light">
-                                    <span class="power-icon">⚡</span>
-                                    <span>...</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Weapons Section -->
-                    <div class="weapons-section" id="weaponsSection">
-                        <div class="section-title">Weapons</div>
-                        <div class="weapon-grid" id="weaponGrid">
-                            <!-- Weapons will be loaded here -->
-                        </div>
-                    </div>
-
-                    <!-- Armor Section -->
-                    <div class="armor-section" id="armorSection">
-                        <div class="section-title">Armor</div>
-                        <div class="armor-grid" id="armorGrid">
-                            <!-- Armor will be loaded here -->
-                        </div>
-                    </div>
-
-                    <!-- Stats Section -->
-                    <div class="stats-section" id="statsSection">
-                        <div class="section-title">Stats</div>
-                        <div class="stats-grid" id="statsGrid">
-                            <!-- Stats will be loaded here -->
-                        </div>
-                    </div>
-
-                    <!-- Subclass Section -->
-                    <div class="subclass-section" id="subclassSection">
-                        <div class="subclass-display">
-                            <div class="subclass-info">
-                                <div class="subclass-name">Subclass</div>
-                            </div>
-                            <div class="subclass-icon"></div>
-                        </div>
-                        
-                        <div class="aspects-container">
-                            <div class="aspects-label">Aspects</div>
-                            <div class="aspects-grid" id="aspectsGrid"></div>
-                        </div>
-                        
-                        <div class="fragments-container">
-                            <div class="fragments-label">Fragments</div>
-                            <div class="fragments-grid" id="fragmentsGrid"></div>
-                        </div>
-                    </div>
-
-                    <!-- Artifact Section -->
-                    <div class="artifact-section" id="artifactSection">
-                        <div class="section-title">Artifact Mods</div>
-                        <div class="artifact-mods-container">
-                            <div class="artifact-mods-grid" id="artifactModsGrid"></div>
-                        </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="widget-footer">
-                        <span class="last-updated" id="lastUpdatedFooter">Last updated: --:--:--</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="panel-section">
+      <h3>Configuration</h3>
+      <label>Bungie ID:</label>
+      <input type="text" id="bungieInput" value="Marty#2689" placeholder="Guardian#1234">
+      <button class="demo-btn" id="updateBungieId">
+        <span class="btn-icon">🔄</span>
+        Update & Refresh
+      </button>
     </div>
 
-    <script src="assets/js/demo.js?v=2.3"></script>
+    <div class="panel-section">
+      <h3>View Controls</h3>
+      <div class="control-group">
+        <button class="demo-btn active" data-view="all">
+          <span class="btn-icon">📋</span>
+          Full Loadout
+        </button>
+        <button class="demo-btn" data-view="weapons">
+          <span class="btn-icon">🔫</span>
+          Weapons Only
+        </button>
+        <button class="demo-btn" data-view="armor">
+          <span class="btn-icon">🛡️</span>
+          Armor Only
+        </button>
+        <button class="demo-btn" data-view="stats">
+          <span class="btn-icon">📊</span>
+          Stats Only
+        </button>
+        <button class="demo-btn" data-view="subclass">
+          <span class="btn-icon">⚡</span>
+          Subclass Only
+        </button>
+        <button class="demo-btn" data-view="artifact">
+          <span class="btn-icon">🔮</span>
+          Artifact Only
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Test Commands</h3>
+      <div class="control-group">
+        <button class="demo-btn" data-command="!loadout">
+          <span class="btn-icon">💬</span>
+          !loadout
+        </button>
+        <button class="demo-btn" data-command="!weapons">
+          <span class="btn-icon">💬</span>
+          !weapons
+        </button>
+        <button class="demo-btn" data-command="!armor">
+          <span class="btn-icon">💬</span>
+          !armor
+        </button>
+        <button class="demo-btn" data-command="!stats">
+          <span class="btn-icon">💬</span>
+          !stats
+        </button>
+        <button class="demo-btn" data-command="!subclass">
+          <span class="btn-icon">💬</span>
+          !subclass
+        </button>
+        <button class="demo-btn" data-command="!artifact">
+          <span class="btn-icon">💬</span>
+          !artifact
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h3>Live Data</h3>
+      <div class="info-display">
+        <div class="info-item">
+          <span class="info-label">Bungie ID:</span>
+          <span class="info-value" id="currentBungieId">Marty#2689</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Status:</span>
+          <span class="info-value status loading" id="connectionStatus">Loading...</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Last Update:</span>
+          <span class="info-value" id="lastUpdate">--:--:--</span>
+        </div>
+      </div>
+      <button class="demo-btn refresh-btn" id="refreshData">
+        <span class="btn-icon">🔄</span>
+        Refresh Data
+      </button>
+    </div>
+  </div>
+  <div id="widget-area">
+    <!-- StreamElements browser source viewport (854x547) -->
+    <div class="widget-viewport">
+      <div id="d2-loadout-widget" class="loadout-widget">
+        <div class="widget-container">
+        <!-- Maintenance Banner (hidden by default) -->
+      <div class="maintenance-banner" id="maintenanceBanner" style="display: none;">
+        <div class="maintenance-icon">⚠️</div>
+        <div class="maintenance-content">
+          <div class="maintenance-title">Destiny 2 Maintenance</div>
+          <div class="maintenance-message" id="maintenanceMessage">API services are currently unavailable</div>
+        </div>
+      </div>
+
+      <!-- Character Header -->
+      <div class="character-header">
+        <div class="character-emblem" id="characterEmblem"></div>
+        <div class="character-info">
+          <div class="character-name" id="characterName">Loading...</div>
+          <div class="character-details">
+            <span class="character-class" id="characterClass"></span>
+            <span class="character-separator">•</span>
+            <span class="character-light" id="characterLight"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weapons Section -->
+      <div class="weapons-section" id="weaponsSection">
+        <div class="section-title">Weapons</div>
+        <div class="weapon-grid">
+          <div class="weapon-slot" id="kineticSlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Kinetic</div>
+            </div>
+            <div class="weapon-power"></div>
+            <div class="weapon-perks"></div>
+          </div>
+          <div class="weapon-slot" id="energySlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Energy</div>
+            </div>
+            <div class="weapon-power"></div>
+            <div class="weapon-perks"></div>
+          </div>
+          <div class="weapon-slot" id="powerSlot">
+            <div class="weapon-icon"></div>
+            <div class="weapon-info">
+              <div class="weapon-name">-</div>
+              <div class="weapon-type">Power</div>
+            </div>
+            <div class="weapon-power"></div>
+            <div class="weapon-perks"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Armor Section -->
+      <div class="armor-section" id="armorSection">
+        <div class="section-title">Armor</div>
+        <div class="armor-grid">
+          <div class="armor-slot" id="helmetSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Helmet</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="armsSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Arms</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="chestSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Chest</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="legsSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Legs</div>
+            </div>
+            <div class="armor-power"></div>
+          </div>
+          <div class="armor-slot" id="classItemSlot">
+            <div class="armor-icon"></div>
+            <div class="armor-info">
+              <div class="armor-name">-</div>
+              <div class="armor-type">Class Item</div>
+            </div>
+            <div class="armor-power"></div>
+            <div class="exotic-perks"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="stats-section" id="statsSection">
+        <div class="section-title">Stats</div>
+        <div class="stats-grid">
+          <div class="stat-row" data-stat="Mobility">
+            <div class="stat-label">
+              <span class="stat-icon mobility"></span>
+              <span class="stat-name" data-stat="Mobility">Weapons</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Mobility"></div>
+            </div>
+            <div class="stat-value" data-stat="Mobility">0</div>
+            <div class="stat-tier" data-stat="Mobility">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Resilience">
+            <div class="stat-label">
+              <span class="stat-icon resilience"></span>
+              <span class="stat-name" data-stat="Resilience">Health</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Resilience"></div>
+            </div>
+            <div class="stat-value" data-stat="Resilience">0</div>
+            <div class="stat-tier" data-stat="Resilience">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Recovery">
+            <div class="stat-label">
+              <span class="stat-icon recovery"></span>
+              <span class="stat-name" data-stat="Recovery">Class</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Recovery"></div>
+            </div>
+            <div class="stat-value" data-stat="Recovery">0</div>
+            <div class="stat-tier" data-stat="Recovery">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Discipline">
+            <div class="stat-label">
+              <span class="stat-icon discipline"></span>
+              <span class="stat-name" data-stat="Discipline">Grenade</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Discipline"></div>
+            </div>
+            <div class="stat-value" data-stat="Discipline">0</div>
+            <div class="stat-tier" data-stat="Discipline">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Intellect">
+            <div class="stat-label">
+              <span class="stat-icon intellect"></span>
+              <span class="stat-name" data-stat="Intellect">Super</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Intellect"></div>
+            </div>
+            <div class="stat-value" data-stat="Intellect">0</div>
+            <div class="stat-tier" data-stat="Intellect">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Strength">
+            <div class="stat-label">
+              <span class="stat-icon strength"></span>
+              <span class="stat-name" data-stat="Strength">Melee</span>
+            </div>
+            <div class="stat-bar">
+              <div class="stat-fill" data-stat="Strength"></div>
+            </div>
+            <div class="stat-value" data-stat="Strength">0</div>
+            <div class="stat-tier" data-stat="Strength">T0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subclass Section (Combined with Artifacts) -->
+      <div class="subclass-section" id="subclassSection">
+        <!-- Left side: Subclass -->
+        <div class="subclass-display">
+          <div class="subclass-icon" id="subclassIcon"></div>
+          <div class="subclass-info">
+            <div class="subclass-name" id="subclassName">-</div>
+            <div class="subclass-type" id="subclassType">-</div>
+          </div>
+          
+          <!-- Aspects (inline in same row) -->
+          <div class="aspects-container" id="aspectsContainer">
+            <div class="aspects-label">Aspects</div>
+            <div class="aspects-grid" id="aspectsGrid"></div>
+          </div>
+          
+          <!-- Fragments (inline in same row) -->
+          <div class="fragments-container" id="fragmentsContainer">
+            <div class="fragments-label">Fragments</div>
+            <div class="fragments-grid" id="fragmentsGrid"></div>
+          </div>
+        </div>
+        
+        <!-- Right side: Artifacts (moved here) -->
+        <div class="artifact-section" id="artifactSection">
+          <div class="section-title">Artifacts Equipped</div>
+          <div class="artifact-mods-container" id="artifactModsContainer">
+            <!-- Only Artifact Mods (no champion mods) -->
+            <div class="artifact-mods-grid" id="artifactModsGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message" id="errorMessage" style="display:none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-text" id="errorText"></div>
+      </div>
+
+      <!-- Footer with Last Updated & DIM Link -->
+      <div class="widget-footer" id="widgetFooter">
+        <span class="last-updated-text" id="lastUpdated">Last updated: Never</span>
+        <span class="footer-separator">•</span>
+        <a href="#" class="dim-link" id="dimLink" target="_blank" style="display:none;">View in DIM</a>
+      </div>
+    </div>
+  </div>
+  </div> <!-- Close widget-viewport -->
+</div> <!-- Close widget-area -->
+  <script src="widget.js"></script>
+  <script>
+    // Demo adapter
+    window.fieldData = {
+      bungieInput: 'Marty#2689',
+      autoHide: 'false',
+      showWeapons: 'true',
+      showArmor: 'true',
+      showStats: 'true',
+      showSubclass: 'true',
+      showArtifact: 'true'
+    };
+    
+    // Update Bungie ID button
+    document.getElementById('updateBungieId').addEventListener('click', () => {
+      const newId = document.getElementById('bungieInput').value.trim();
+      if (newId) {
+        window.fieldData.bungieInput = newId;
+        document.getElementById('currentBungieId').textContent = newId;
+        if (window.fetchLoadout) window.fetchLoadout();
+      }
+    });
+    
+    // Refresh button
+    document.getElementById('refreshData').addEventListener('click', () => {
+      if (window.fetchLoadout) window.fetchLoadout();
+    });
+    
+    // View control buttons
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Remove active class from all buttons
+        document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+        // Add active to clicked button
+        btn.classList.add('active');
+        
+        // Get view mode
+        const view = btn.getAttribute('data-view');
+        
+        // Call the widget.js applyDisplayMode function for proper resizing
+        if (typeof window.applyDisplayMode === 'function') {
+          const mode = view === 'all' ? 'full' : view;
+          window.applyDisplayMode(mode);
+        } else {
+          // Fallback: manual show/hide (less sophisticated)
+          const sections = {
+            weapons: document.getElementById('weaponsSection'),
+            armor: document.getElementById('armorSection'),
+            stats: document.getElementById('statsSection'),
+            subclass: document.getElementById('subclassSection'),
+            artifact: document.getElementById('artifactSection')
+          };
+          
+          if (view === 'all') {
+            Object.values(sections).forEach(s => s && s.classList.remove('hidden'));
+          } else if (view === 'artifact') {
+            Object.entries(sections).forEach(([key, section]) => {
+              if (section) {
+                if (key === 'subclass' || key === 'artifact') {
+                  section.classList.remove('hidden');
+                } else {
+                  section.classList.add('hidden');
+                }
+              }
+            });
+            const subclassDisplay = document.querySelector('.subclass-display');
+            if (subclassDisplay) subclassDisplay.style.display = 'none';
+          } else {
+            Object.entries(sections).forEach(([key, section]) => {
+              if (section) {
+                if (key === view) {
+                  section.classList.remove('hidden');
+                  // If showing subclass, make sure subclass display is visible
+                  if (key === 'subclass') {
+                    const subclassDisplay = document.querySelector('.subclass-display');
+                    if (subclassDisplay) subclassDisplay.style.display = '';
+                  }
+                } else {
+                  section.classList.add('hidden');
+                }
+              }
+            });
+          }
+        }
+      });
+    });
+    
+    // Command buttons
+    document.querySelectorAll('[data-command]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const command = btn.getAttribute('data-command');
+        const commandMap = {
+          '!loadout': 'all',
+          '!weapons': 'weapons',
+          '!armor': 'armor',
+          '!stats': 'stats',
+          '!subclass': 'subclass',
+          '!artifact': 'artifact'
+        };
+        
+        const view = commandMap[command];
+        if (view) {
+          // Trigger the corresponding view button
+          const viewBtn = document.querySelector(`[data-view="${view}"]`);
+          if (viewBtn) viewBtn.click();
+        }
+      });
+    });
+    
+    // Update status and last update time
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      const result = originalFetch.apply(this, args);
+      result.then(() => {
+        document.getElementById('connectionStatus').textContent = 'Connected';
+        document.getElementById('connectionStatus').className = 'info-value status connected';
+        const now = new Date();
+        document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+      }).catch(() => {
+        document.getElementById('connectionStatus').textContent = 'Error';
+        document.getElementById('connectionStatus').className = 'info-value status error';
+      });
+      return result;
+    };
+    
+    // Trigger widget load
+    setTimeout(() => window.dispatchEvent(new CustomEvent('onWidgetLoad', { detail: { fieldData: window.fieldData } })), 100);
+  </script>
 </body>
 </html>
