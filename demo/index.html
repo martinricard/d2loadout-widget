@@ -162,7 +162,7 @@
     .refresh-btn {
       margin-top: 12px;
     }
-    /* Widget display area - matches StreamElements browser source container */
+    /* Widget display area */
     #widget-area {
       margin-left: 320px;
       flex: 1;
@@ -170,30 +170,31 @@
       align-items: center;
       justify-content: center;
       padding: 40px;
-      background: #000000; /* Black background like StreamElements */
+      background: #f5f5f5;
       min-height: 100vh;
       position: relative;
     }
     
-    /* StreamElements browser source container size */
+    /* StreamElements browser source container size - scale widget to fill */
     .widget-viewport {
       width: 854px;
       height: 547px;
-      background: #000000;
+      background: transparent;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px solid rgba(206, 174, 51, 0.3);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
     }
     
-    /* Widget at natural size (760x500) - exactly as in StreamElements */
+    /* Widget scaled to fill the viewport (854/760 = 1.124x scale) */
     #d2-loadout-widget {
       width: 760px !important;
       max-width: 760px !important;
       height: 500px !important;
       margin: 0 auto;
+      transform: scale(1.124);
+      transform-origin: center center;
     }
     
     #d2-loadout-widget .widget-container {
