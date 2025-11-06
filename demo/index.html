@@ -526,7 +526,7 @@
 </div> <!-- Close widget-area -->
   <script src="widget.js"></script>
   <script>
-    // Demo adapter
+    // Demo adapter - EXACT StreamElements settings
     window.fieldData = {
       bungieInput: 'Marty#2689',
       autoHide: 'false',
@@ -535,7 +535,13 @@
       showStats: 'true',
       showSubclass: 'true',
       showArtifact: 'true',
-      fontSize: 14  // Match StreamElements default (not the CSS default of 11px)
+      // Match StreamElements styling
+      backgroundColor: 'rgba(36, 6, 73, 0)', // Transparent background from your screenshot
+      borderColor: '#2c2c2f',
+      textColor: '#ffffff',
+      exoticColor: '#CEAE33',
+      fontFamily: 'Roboto Condensed',
+      fontSize: 18  // Your StreamElements setting shows 18, not 14!
     };
     
     // Update Bungie ID button
