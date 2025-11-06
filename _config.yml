@@ -1,0 +1,17 @@
+# Jekyll configuration for GitHub Pages
+exclude:
+  - backend/
+  - node_modules/
+  - archive/
+  - cdn-deploy/
+  - widget/
+  - .git/
+  - .gitignore
+  - render.yaml
+  - README.md
+  - package.json
+  - package-lock.json
+
+# Only include the demo folder
+include:
+  - demo/

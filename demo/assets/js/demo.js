@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup event listeners
     setupBungieIdControl();
     setupViewControls();
+    setupCommandButtons();
     setupToggleControls();
     setupRefreshButton();
     
@@ -70,6 +71,50 @@ function setupViewControls() {
             
             // Apply view
             applyView(view);
+        });
+    });
+}
+
+// Setup command buttons (simulate chat commands)
+function setupCommandButtons() {
+    const commandButtons = document.querySelectorAll('[data-command]');
+    commandButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const command = btn.getAttribute('data-command');
+            console.log('[Demo] Simulating command:', command);
+            
+            // Map commands to views
+            const commandMap = {
+                '!loadout': 'all',
+                '!weapons': 'weapons',
+                '!armor': 'armor',
+                '!stats': 'stats',
+                '!subclass': 'subclass',
+                '!artifact': 'artifact'
+            };
+            
+            const view = commandMap[command];
+            if (view) {
+                // Update view buttons to match
+                const viewButtons = document.querySelectorAll('[data-view]');
+                viewButtons.forEach(b => {
+                    if (b.getAttribute('data-view') === view) {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+                
+                // Apply the view
+                currentView = view;
+                applyView(view);
+                
+                // Visual feedback
+                btn.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    btn.style.transform = '';
+                }, 200);
+            }
         });
     });
 }
