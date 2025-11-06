@@ -198,30 +198,62 @@
     #d2-loadout-widget .armor-slot {
       background: transparent !important; /* Remove gray rectangles */
       border: none !important;
-      padding: 2px 4px !important; /* Tighter spacing */
-    }
-    
-    #d2-loadout-widget .weapon-slot {
-      gap: 4px !important; /* Reduce gap between elements */
-    }
-    
-    #d2-loadout-widget .armor-slot {
-      gap: 3px !important;
-      padding: 2px 4px !important;
-    }
-    
-    /* Power numbers aligned to the right */
-    #d2-loadout-widget .weapon-power,
-    #d2-loadout-widget .armor-power {
-      margin-left: auto !important;
-      text-align: right !important;
-      min-width: 55px !important;
+      padding: 3px 4px !important; /* Tighter spacing */
+      gap: 4px !important;
     }
     
     /* More compact weapon/armor sections */
     #d2-loadout-widget .weapon-grid,
     #d2-loadout-widget .armor-grid {
-      gap: 2px !important; /* Tighter row spacing */
+      gap: 3px !important; /* Tighter row spacing */
+    }
+    
+    /* Weapon icons - slightly larger */
+    #d2-loadout-widget .weapon-icon {
+      width: 36px !important;
+      height: 36px !important;
+    }
+    
+    /* Armor icons - slightly larger */
+    #d2-loadout-widget .armor-icon {
+      width: 30px !important;
+      height: 30px !important;
+    }
+    
+    /* Weapon names - bigger, bolder */
+    #d2-loadout-widget .weapon-name {
+      font-size: 0.95em !important;
+      font-weight: 700 !important;
+    }
+    
+    /* Armor names - bigger, bolder */
+    #d2-loadout-widget .armor-name {
+      font-size: 0.95em !important;
+      font-weight: 700 !important;
+    }
+    
+    /* Weapon/Armor type text - smaller */
+    #d2-loadout-widget .weapon-type,
+    #d2-loadout-widget .armor-type {
+      font-size: 0.7em !important;
+    }
+    
+    /* Power numbers - bigger and right-aligned */
+    #d2-loadout-widget .weapon-power,
+    #d2-loadout-widget .armor-power {
+      margin-left: auto !important;
+      text-align: right !important;
+      min-width: 50px !important;
+      font-size: 1em !important;
+      font-weight: 700 !important;
+    }
+    
+    /* Reduce horizontal spacing in weapon/armor info */
+    #d2-loadout-widget .weapon-info,
+    #d2-loadout-widget .armor-info {
+      flex: 0 1 auto !important;
+      min-width: 0 !important;
+      max-width: 140px !important; /* Constrain width to make more compact */
     }
   </style>
 </head>
