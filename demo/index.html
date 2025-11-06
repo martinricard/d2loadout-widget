@@ -187,29 +187,10 @@
       overflow: visible;
     }
     
-    /* Widget at natural size - no scaling, just like StreamElements */
+    /* Scale widget 1.5x to match StreamElements display size */
     #d2-loadout-widget {
-      width: 760px !important;
-      max-width: 760px !important;
-      height: 500px !important;
-      margin: 0 auto;
-    }
-    
-    #d2-loadout-widget .widget-container {
-      width: 760px !important;
-      max-width: 760px !important;
-    }
-    
-    #d2-loadout-widget .loadout-widget {
-      width: 760px !important;
-      max-width: 760px !important;
-    }
-    
-    /* Force compact 3-column grid layout at all times */
-    #d2-loadout-widget .widget-container {
-      display: grid !important;
-      grid-template-columns: 280px 320px 160px !important;
-      grid-template-rows: auto auto auto !important;
+      transform: scale(1.5);
+      transform-origin: center center;
     }
   </style>
 </head>
