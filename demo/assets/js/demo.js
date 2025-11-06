@@ -5,7 +5,7 @@
 
 // Configuration
 let BUNGIE_ID = 'Marty#2689';
-const API_BASE = 'https://d2-loadout-widget-backend.onrender.com';
+const API_BASE = 'https://d2loadout-widget.onrender.com';
 
 // State
 let currentView = 'all';
