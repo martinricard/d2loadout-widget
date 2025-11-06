@@ -259,31 +259,42 @@ async function fetchLoadout() {
 
 // Render loadout data
 function renderLoadout(data) {
+    // Update Bungie ID display in Live Data panel
+    const bungieIdDisplay = document.querySelector('.panel-section .info-item .info-value');
+    if (bungieIdDisplay) {
+        bungieIdDisplay.textContent = data.displayName ? `${data.displayName}#${data.membershipId.slice(-4)}` : BUNGIE_ID;
+    }
+    
     // Render character header
     renderCharacterHeader(data.character);
     
+    // Get loadout data (API returns it nested under 'loadout')
+    const loadout = data.loadout || data;
+    
     // Render weapons
-    if (data.weapons) {
-        renderWeapons(data.weapons);
+    if (loadout.weapons) {
+        renderWeapons(loadout.weapons);
     }
     
     // Render armor
-    if (data.armor) {
-        renderArmor(data.armor);
+    if (loadout.armor) {
+        renderArmor(loadout.armor);
     }
     
     // Render stats
-    if (data.stats) {
-        renderStats(data.stats);
+    if (loadout.stats) {
+        renderStats(loadout.stats);
     }
     
     // Render subclass
-    if (data.subclass) {
-        renderSubclass(data.subclass);
+    if (loadout.subclass) {
+        renderSubclass(loadout.subclass);
     }
     
     // Render artifact
-    if (data.artifact && data.artifact.mods) {
+    if (loadout.artifactMods) {
+        renderArtifact(loadout.artifactMods);
+    } else if (data.artifact && data.artifact.mods) {
         renderArtifact(data.artifact.mods);
     }
 }
@@ -293,21 +304,23 @@ function renderCharacterHeader(character) {
     const header = document.querySelector('.character-header');
     if (!header) return;
     
-    // Update emblem background
-    if (character.emblemBackground) {
-        header.style.backgroundImage = `url(${character.emblemBackground})`;
+    // Update emblem background (API returns emblemBackgroundPath)
+    const emblemBg = character.emblemBackgroundPath || character.emblemBackground;
+    if (emblemBg) {
+        header.style.backgroundImage = `url(${emblemBg})`;
     }
     
-    // Update emblem icon
+    // Update emblem icon (API returns emblemPath)
     const emblem = header.querySelector('.character-emblem');
-    if (emblem && character.emblem) {
-        emblem.style.backgroundImage = `url(${character.emblem})`;
+    const emblemIcon = character.emblemPath || character.emblem;
+    if (emblem && emblemIcon) {
+        emblem.style.backgroundImage = `url(${emblemIcon})`;
     }
     
-    // Update character name
+    // Update character name (API returns class, not className)
     const nameElement = header.querySelector('.character-name');
     if (nameElement) {
-        nameElement.textContent = character.className || 'Guardian';
+        nameElement.textContent = character.class || character.className || 'Guardian';
         nameElement.classList.remove('loading');
     }
     
@@ -330,17 +343,25 @@ function renderWeapons(weapons) {
     
     grid.innerHTML = '';
     
-    weapons.forEach(weapon => {
+    // API returns weapons as object {kinetic, energy, power}, convert to array
+    const weaponArray = [];
+    if (weapons.kinetic) weaponArray.push(weapons.kinetic);
+    if (weapons.energy) weaponArray.push(weapons.energy);
+    if (weapons.power) weaponArray.push(weapons.power);
+    
+    weaponArray.forEach(weapon => {
+        if (!weapon) return;
+        
         const slot = document.createElement('div');
         slot.className = `weapon-slot${weapon.isExotic ? ' exotic' : ''}`;
         
         slot.innerHTML = `
-            <div class="weapon-icon" style="background-image: url(${weapon.icon})"></div>
+            <div class="weapon-icon" style="background-image: url(${weapon.iconUrl || weapon.icon})"></div>
             <div class="weapon-info">
                 <div class="weapon-name">${weapon.name}</div>
-                <div class="weapon-type">${weapon.type}</div>
+                <div class="weapon-type">${weapon.itemType || weapon.type}</div>
             </div>
-            <div class="weapon-power">${weapon.power}</div>
+            <div class="weapon-power">${weapon.primaryStat?.value || weapon.power || '0'}</div>
         `;
         
         grid.appendChild(slot);
@@ -354,17 +375,27 @@ function renderArmor(armor) {
     
     grid.innerHTML = '';
     
-    armor.forEach(piece => {
+    // API returns armor as object {helmet, arms, chest, legs, classItem}, convert to array
+    const armorArray = [];
+    if (armor.helmet) armorArray.push(armor.helmet);
+    if (armor.arms) armorArray.push(armor.arms);
+    if (armor.chest) armorArray.push(armor.chest);
+    if (armor.legs) armorArray.push(armor.legs);
+    if (armor.classItem) armorArray.push(armor.classItem);
+    
+    armorArray.forEach(piece => {
+        if (!piece) return;
+        
         const slot = document.createElement('div');
         slot.className = `armor-slot${piece.isExotic ? ' exotic' : ''}`;
         
         slot.innerHTML = `
-            <div class="armor-icon" style="background-image: url(${piece.icon})"></div>
+            <div class="armor-icon" style="background-image: url(${piece.iconUrl || piece.icon})"></div>
             <div class="armor-info">
                 <div class="armor-name">${piece.name}</div>
-                <div class="armor-type">${piece.type}</div>
+                <div class="armor-type">${piece.itemType || piece.type}</div>
             </div>
-            <div class="armor-power">${piece.power}</div>
+            <div class="armor-power">${piece.primaryStat?.value || piece.power || '0'}</div>
         `;
         
         grid.appendChild(slot);
