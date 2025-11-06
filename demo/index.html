@@ -192,6 +192,37 @@
       transform: scale(1.5);
       transform-origin: center center;
     }
+    
+    /* StreamElements-specific styling overrides */
+    #d2-loadout-widget .weapon-slot,
+    #d2-loadout-widget .armor-slot {
+      background: transparent !important; /* Remove gray rectangles */
+      border: none !important;
+      padding: 2px 4px !important; /* Tighter spacing */
+    }
+    
+    #d2-loadout-widget .weapon-slot {
+      gap: 4px !important; /* Reduce gap between elements */
+    }
+    
+    #d2-loadout-widget .armor-slot {
+      gap: 3px !important;
+      padding: 2px 4px !important;
+    }
+    
+    /* Power numbers aligned to the right */
+    #d2-loadout-widget .weapon-power,
+    #d2-loadout-widget .armor-power {
+      margin-left: auto !important;
+      text-align: right !important;
+      min-width: 55px !important;
+    }
+    
+    /* More compact weapon/armor sections */
+    #d2-loadout-widget .weapon-grid,
+    #d2-loadout-widget .armor-grid {
+      gap: 2px !important; /* Tighter row spacing */
+    }
   </style>
 </head>
 <body>
