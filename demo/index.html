@@ -175,7 +175,7 @@
       position: relative;
     }
     
-    /* StreamElements browser source container size - scale widget to fill */
+    /* StreamElements browser source container - full size */
     .widget-viewport {
       width: 854px;
       height: 547px;
@@ -184,27 +184,27 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      overflow: visible;
     }
     
-    /* Widget scaled to fill the viewport (854/760 = 1.124x scale) */
+    /* Scale widget significantly to match StreamElements appearance */
     #d2-loadout-widget {
       width: 760px !important;
-      max-width: 760px !important;
+      max-width: none !important;
       height: 500px !important;
       margin: 0 auto;
-      transform: scale(1.124);
+      transform: scale(1.5);
       transform-origin: center center;
     }
     
     #d2-loadout-widget .widget-container {
       width: 760px !important;
-      max-width: 760px !important;
+      max-width: none !important;
     }
     
     #d2-loadout-widget .loadout-widget {
       width: 760px !important;
-      max-width: 760px !important;
+      max-width: none !important;
     }
   </style>
 </head>
