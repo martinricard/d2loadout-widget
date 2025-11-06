@@ -190,7 +190,7 @@
     /* Scale widget to match StreamElements appearance - keep compact layout */
     #d2-loadout-widget {
       width: 760px !important;
-      max-width: none !important;
+      max-width: 760px !important;
       height: 500px !important;
       margin: 0 auto;
       transform: scale(1.5);
@@ -199,12 +199,19 @@
     
     #d2-loadout-widget .widget-container {
       width: 760px !important;
-      max-width: none !important;
+      max-width: 760px !important;
     }
     
     #d2-loadout-widget .loadout-widget {
       width: 760px !important;
-      max-width: none !important;
+      max-width: 760px !important;
+    }
+    
+    /* Force compact 3-column grid layout at all times */
+    #d2-loadout-widget .widget-container {
+      display: grid !important;
+      grid-template-columns: 280px 320px 160px !important;
+      grid-template-rows: auto auto auto !important;
     }
   </style>
 </head>
