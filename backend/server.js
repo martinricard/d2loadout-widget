@@ -6,12 +6,18 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Middleware - CORS configuration for all origins including GitHub Pages
 app.use(cors({
-  origin: '*', // Allow all origins for StreamElements compatibility
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: true, // Allow all origins (more permissive than '*' for credentials)
+  methods: ['GET', 'POST', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: false,
+  optionsSuccessStatus: 200
 }));
+
+// Handle preflight requests
+app.options('*', cors());
+
 app.use(express.json());
 
 // Bungie API Base URL
