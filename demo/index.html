@@ -192,6 +192,21 @@
       transform: scale(1.5);
       transform-origin: center center;
     }
+    
+    /* Center artifact section when displayed alone */
+    #d2-loadout-widget.artifact-only .subclass-section {
+      justify-content: center !important;
+      padding: 20px !important;
+    }
+    
+    #d2-loadout-widget.artifact-only .subclass-display {
+      display: none !important;
+    }
+    
+    #d2-loadout-widget.artifact-only .artifact-section {
+      margin: 0 auto !important;
+      text-align: center !important;
+    }
   </style>
 </head>
 <body>
@@ -569,6 +584,14 @@
         
         // Get view mode
         const view = btn.getAttribute('data-view');
+        
+        // Add/remove artifact-only class
+        const widgetElement = document.getElementById('d2-loadout-widget');
+        if (view === 'artifact') {
+          widgetElement.classList.add('artifact-only');
+        } else {
+          widgetElement.classList.remove('artifact-only');
+        }
         
         // Call the widget.js applyDisplayMode function for proper resizing
         if (typeof window.applyDisplayMode === 'function') {
