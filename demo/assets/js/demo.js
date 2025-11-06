@@ -211,7 +211,7 @@ async function fetchLoadout() {
     try {
         console.log('[Demo] Fetching loadout for:', BUNGIE_ID);
         
-        const response = await fetch(`${API_BASE}/api/loadout?bungieId=${encodeURIComponent(BUNGIE_ID)}`);
+        const response = await fetch(`${API_BASE}/api/loadout/${encodeURIComponent(BUNGIE_ID)}`);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
