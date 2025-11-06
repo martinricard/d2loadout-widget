@@ -2,25 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D2 Loadout Widget - Instructions</title>
+    
+    <!-- D2 Loadout Widget Loader with Timestamp Cache Busting -->
+    <script>
+    (function() {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.noticemesenpai.studio/d2-loadout/d2-loadout-loader.js?_t=' + Date.now();
+        script.async = true;
+        document.head.appendChild(script);
+    })();
+    </script>
+    
+    <!-- Setup Instructions & Privacy Policy Styles -->
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
+        .d2-instructions {
+            position: fixed;
+            top: 20px;
+            left: 20px;
             font-family: 'Roboto Condensed', 'Roboto', 'Arial', sans-serif;
-            background: transparent;
-            color: #ffffff;
-            display: flex;
-            align-items: flex-start;
-            justify-content: flex-start;
-        }
-
-        .instructions-container {
             background: 
                 linear-gradient(to bottom, 
                     rgba(16, 16, 20, 0.75) 0%, 
@@ -34,32 +33,37 @@
             border-radius: 8px;
             padding: 14px;
             width: 900px;
-            height: auto;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
             font-size: 12px;
-            position: relative;
+            z-index: 999999;
+            color: #ffffff;
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-gap: 14px;
         }
-
-        .header {
+        
+        .d2-instructions.hidden {
+            display: none;
+        }
+        
+        .d2-instructions .header {
             text-align: center;
             margin-bottom: 0.5em;
             padding-bottom: 0;
             grid-column: 1 / -1;
         }
-
-        .header h1 {
+        
+        .d2-instructions .header h1 {
             font-size: 1.3em;
             font-weight: 700;
             color: #ffffff;
             text-transform: uppercase;
             letter-spacing: 0.15em;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            margin: 0;
         }
-
-        .warning-box {
+        
+        .d2-instructions .warning-box {
             background: rgba(220, 53, 69, 0.25);
             border: 2px solid #dc3545;
             border-radius: 4px;
@@ -69,41 +73,40 @@
             line-height: 1.4;
             grid-column: 1 / -1;
         }
-
-        .warning-box strong {
+        
+        .d2-instructions .warning-box strong {
             color: #ff6b7a;
             font-size: 1.1em;
             font-weight: 700;
             display: block;
             margin-bottom: 0.3em;
         }
-
-        .section {
+        
+        .d2-instructions .section {
             margin-bottom: 0.8em;
         }
         
-        /* Specific grid placements for better space usage */
-        .section:nth-of-type(3) { /* Setup */
+        .d2-instructions .section:nth-of-type(3) { /* Setup */
             grid-column: 1 / -1;
         }
         
-        .section:nth-of-type(4) { /* Chat Commands */
+        .d2-instructions .section:nth-of-type(4) { /* Chat Commands */
             grid-column: 1;
         }
         
-        .section:nth-of-type(5) { /* Channel Points */
+        .d2-instructions .section:nth-of-type(5) { /* Channel Points */
             grid-column: 2;
         }
         
-        .section:nth-of-type(6) { /* Cooldown System */
+        .d2-instructions .section:nth-of-type(6) { /* Cooldown System */
             grid-column: 1;
         }
         
-        .section:nth-of-type(7) { /* DIM Link Feature */
+        .d2-instructions .section:nth-of-type(7) { /* DIM Link Feature */
             grid-column: 2;
         }
-
-        .section-title {
+        
+        .d2-instructions .section-title {
             font-size: 1em;
             font-weight: 600;
             color: #CEAE33;
@@ -111,12 +114,12 @@
             padding-bottom: 0.3em;
             border-bottom: 1px solid rgba(206, 174, 51, 0.3);
         }
-
-        .section-content {
+        
+        .d2-instructions .section-content {
             padding-left: 0;
         }
-
-        .info-box {
+        
+        .d2-instructions .info-box {
             background: rgba(44, 44, 47, 0.6);
             border-left: 3px solid #CEAE33;
             border-radius: 4px;
@@ -125,29 +128,29 @@
             font-size: 1em;
             line-height: 1.4;
         }
-
-        .info-box strong {
+        
+        .d2-instructions .info-box strong {
             color: #CEAE33;
             display: block;
             margin-bottom: 4px;
         }
-
-        .info-box a {
+        
+        .d2-instructions .info-box a {
             color: #CEAE33;
             text-decoration: none;
             font-weight: 500;
         }
-
-        .info-box a:hover {
+        
+        .d2-instructions .info-box a:hover {
             text-decoration: underline;
         }
-
-        .command-list {
+        
+        .d2-instructions .command-list {
             list-style: none;
             margin: 0.5em 0;
         }
-
-        .command-list li {
+        
+        .d2-instructions .command-list li {
             padding: 0.35em 0.5em;
             margin: 0.2em 0;
             background: rgba(206, 174, 51, 0.08);
@@ -155,18 +158,19 @@
             border-radius: 3px;
             font-size: 1em;
         }
-
-        .command-list li strong {
+        
+        .d2-instructions .command-list li strong {
             color: #CEAE33;
             margin-right: 8px;
         }
-
-        .step-list {
+        
+        .d2-instructions .step-list {
             list-style: none;
             counter-reset: step-counter;
+            margin: 0;
         }
-
-        .step-list li {
+        
+        .d2-instructions .step-list li {
             padding: 0.5em 0.6em 0.5em 2em;
             margin: 0.4em 0;
             background: rgba(44, 44, 47, 0.4);
@@ -175,8 +179,8 @@
             font-size: 1em;
             line-height: 1.5;
         }
-
-        .step-list li::before {
+        
+        .d2-instructions .step-list li::before {
             counter-increment: step-counter;
             content: counter(step-counter);
             position: absolute;
@@ -195,13 +199,13 @@
             font-size: 0.9em;
             line-height: 1;
         }
-
-        .highlight {
+        
+        .d2-instructions .highlight {
             color: #CEAE33;
             font-weight: 500;
         }
-
-        .note {
+        
+        .d2-instructions .note {
             background: rgba(206, 174, 51, 0.12);
             border: 1px solid rgba(206, 174, 51, 0.4);
             border-radius: 4px;
@@ -211,12 +215,12 @@
             line-height: 1.4;
             grid-column: 1 / -1;
         }
-
-        .note strong {
+        
+        .d2-instructions .note strong {
             color: #CEAE33;
         }
-
-        .footer {
+        
+        .d2-instructions .footer {
             text-align: center;
             margin-top: 0.8em;
             padding-top: 0.8em;
@@ -225,10 +229,102 @@
             color: #888888;
             grid-column: 1 / -1;
         }
+        
+        /* Privacy Policy Specific Styles */
+        .d2-instructions .privacy-section {
+            grid-column: 1 / -1;
+            margin-top: 1.5em;
+            padding-top: 1.5em;
+            border-top: 2px solid #2c2c2f;
+        }
+        
+        .d2-instructions .privacy-header {
+            text-align: center;
+            margin-bottom: 0.8em;
+        }
+        
+        .d2-instructions .privacy-header h2 {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin: 0 0 0.3em 0;
+        }
+        
+        .d2-instructions .privacy-header .last-update {
+            font-size: 0.8em;
+            color: #888888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .d2-instructions .privacy-intro {
+            margin-bottom: 0.8em;
+            line-height: 1.4;
+            color: #cccccc;
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+        
+        .d2-instructions .privacy-intro strong {
+            color: #CEAE33;
+        }
+        
+        .d2-instructions .data-list {
+            list-style: none;
+            margin: 0;
+            display: contents;
+        }
+        
+        .d2-instructions .data-list li {
+            padding: 0.7em;
+            margin: 0.6em 0;
+            background: rgba(44, 44, 47, 0.6);
+            border-left: 3px solid #CEAE33;
+            border-radius: 4px;
+            line-height: 1.5;
+        }
+        
+        .d2-instructions .data-list li strong {
+            color: #CEAE33;
+            display: block;
+            margin-bottom: 0.3em;
+            font-size: 1.05em;
+        }
+        
+        .d2-instructions .contact-box {
+            background: rgba(206, 174, 51, 0.12);
+            border: 1px solid rgba(206, 174, 51, 0.4);
+            border-radius: 4px;
+            padding: 0.8em;
+            line-height: 1.5;
+            text-align: center;
+            grid-column: 1 / -1;
+            margin-top: 0.8em;
+        }
+        
+        .d2-instructions .contact-box strong {
+            color: #CEAE33;
+            font-size: 1.05em;
+            display: block;
+            margin-bottom: 0.4em;
+        }
+        
+        .d2-instructions .contact-box a {
+            color: #CEAE33;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .d2-instructions .contact-box a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
-    <div class="instructions-container">
+    <!-- Setup Instructions Panel (toggled via fields.json) -->
+    <div id="d2-instructions" class="d2-instructions">
         <div class="header">
             <h1>How to Use</h1>
         </div>
@@ -316,9 +412,65 @@
             <strong>🐛 Bug Reports:</strong> Found an issue? Email <span class="highlight">contact@noticemesenpai.studio</span> with screenshots + console logs (F12 → Console tab) and describe what happened vs what you expected.
         </div>
 
+        <!-- Privacy Policy Section -->
+        <div class="privacy-section">
+            <div class="privacy-header">
+                <h2>Privacy Policy</h2>
+                <div class="last-update">Last Update: October 11, 2025</div>
+            </div>
+
+            <div class="privacy-intro">
+                <strong>D2 Loadout Widget</strong> is a free StreamElements widget and chat bot integration for Destiny 2 streamers. We explain how your data is used below.
+            </div>
+
+            <ul class="data-list">
+                <li>
+                    <strong>Bungie API</strong>
+                    We use the Bungie.net API to fetch your Destiny 2 loadout information. Your Bungie ID is passed through our server to make API requests, but is not stored or logged. No personal data is retained.
+                </li>
+                <li>
+                    <strong>TinyURL Service</strong>
+                    We generate shortened DIM (Destiny Item Manager) links for easy sharing in chat and overlays. TinyURL may log generated URLs for their service operations.
+                </li>
+                <li>
+                    <strong>Chat Commands</strong>
+                    Our bot responds to chat commands (e.g., !dimlink) to share your loadout link. The command uses your configured Bungie ID to fetch real-time data. No chat messages are stored.
+                </li>
+                <li>
+                    <strong>StreamElements</strong>
+                    This widget runs on StreamElements. Please refer to their privacy policy for information on data collection by the platform.
+                </li>
+                <li>
+                    <strong>Server Hosting</strong>
+                    Our backend is hosted on Render.com. Temporary logs may be created for debugging but contain no personal information and are automatically deleted after 7 days.
+                </li>
+            </ul>
+
+            <div class="contact-box">
+                <strong>Questions?</strong>
+                Contact us at <a href="mailto:contact@noticemesenpai.studio">contact@noticemesenpai.studio</a>
+            </div>
+        </div>
+
         <div class="footer">
             Made with love ❤️ by Studio Notice Me Senpai
         </div>
     </div>
+    
+    <!-- Instructions Toggle Script -->
+    <script>
+    // Wait for SE_API to be available
+    window.addEventListener('onWidgetLoad', function(obj) {
+        const showInstructions = obj.detail.fieldData.showInstructions;
+        const instructionsPanel = document.getElementById('d2-instructions');
+        
+        // Hide instructions if showInstructions is false or 'false' string
+        if (instructionsPanel && (showInstructions === false || showInstructions === 'false')) {
+            instructionsPanel.classList.add('hidden');
+        }
+    });
+    </script>
+    
+    <!-- Widget content will be injected here by d2-loadout-widget.js -->
 </body>
 </html>

@@ -449,3 +449,71 @@ https://d2loadout-widget.onrender.com/api/search/Marty%232689
 ---
 
 **Your Render URL**: https://d2loadout-widget.onrender.com ✅
+
+---
+
+## 🐛 Bug Reports & Support
+
+Found an issue? Help us improve the widget!
+
+### How to Report a Bug
+
+**Send to:** [Your preferred contact method - Discord, Email, GitHub Issues]
+
+**Include in your report:**
+
+1. **📸 Screenshot(s)**
+   - Widget display showing the issue
+   - StreamElements settings panel
+   - Browser console (F12 → Console tab)
+
+2. **📝 Description**
+   - What were you trying to do?
+   - What happened instead?
+   - When did this start happening?
+
+3. **⚙️ Your Setup**
+   - Browser: (Chrome, Firefox, etc.)
+   - Bungie Name or Membership ID (if comfortable sharing)
+   - Which sections are visible (weapons, armor, stats, etc.)
+
+4. **🔍 Console Logs (Important!)**
+   - Press F12 in your browser
+   - Click the "Console" tab
+   - Look for messages starting with `[D2 Loadout Widget]` or `[D2 Widget]`
+   - Take a screenshot or copy the text
+
+### Common Issues & Quick Fixes
+
+**Widget not loading?**
+- Check the browser console for errors (F12)
+- Verify your Bungie Name is entered correctly (include # and numbers)
+- Check that your Destiny 2 profile is set to public
+
+**DIM link showing ornaments/cosmetics?**
+- Take a screenshot of the link in DIM
+- Note which specific items shouldn't be there
+- This helps us add new filters quickly!
+
+**Stats not updating?**
+- Check the "Last updated" timestamp in the widget footer
+- Default refresh is 60 seconds - may need to wait
+- Verify Bungie API isn't in maintenance: https://help.bungie.net/hc/en-us/articles/360049199271-Destiny-Server-and-Update-Status
+
+**Widget looks blurry?**
+- This can happen if window zoom is not 100%
+- Check your browser zoom level (Ctrl+0 to reset)
+- Ensure StreamElements canvas isn't being scaled
+
+### Feature Requests
+
+Have an idea? We'd love to hear it!
+
+- Describe what feature you'd like
+- Explain how it would help your stream
+- Include mockups/screenshots if you have them
+
+**Contact:** [Your preferred contact method]
+
+---
+

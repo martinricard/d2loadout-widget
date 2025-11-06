@@ -385,10 +385,27 @@ This project welcomes contributions from the Destiny 2 streaming community!
 ## 📞 Support
 
 - 📖 **Documentation**: Check [docs/](docs/) folder first
-- � **Installation Help**: [Installation Guide](docs/INSTALLATION_GUIDE.md)
-- �🐛 **Bug Reports**: [GitHub Issues](https://github.com/martinricard/d2loadout-widget/issues)
+- 🚀 **Installation Help**: [Installation Guide](docs/INSTALLATION_GUIDE.md)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/martinricard/d2loadout-widget/issues) or contact [your preferred method]
 - 💬 **Questions**: Open a Discussion on GitHub
 - 📝 **Changelog**: See [CHANGELOG.md](CHANGELOG.md) for version history
+
+### 🐛 Reporting Bugs
+
+Found an issue? Help us fix it quickly!
+
+**Include in your bug report:**
+1. **📸 Screenshots** - Widget display + browser console (F12 → Console)
+2. **📝 Description** - What happened vs what you expected
+3. **⚙️ Setup** - Browser, Bungie ID, visible sections
+4. **🔍 Console logs** - Look for `[D2 Loadout Widget]` or `[D2 Widget]` messages
+
+**Where to report:**
+- GitHub Issues: [github.com/martinricard/d2loadout-widget/issues](https://github.com/martinricard/d2loadout-widget/issues)
+- Email: [Your email if you want]
+- Discord: [Your Discord if you want]
+
+📖 **Full Bug Reporting Guide**: See [User Guide - Bug Reports](docs/USER_GUIDE.md#-bug-reports--support)
 
 ## 🔒 Security & Privacy
 
