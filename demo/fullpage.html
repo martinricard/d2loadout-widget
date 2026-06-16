@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D2 Loadout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --page-bg:      #0d0d11;
+      --surface:      #14141a;
+      --surface-2:    #1c1c24;
+      --surface-3:    #22222c;
+      --border:       #2a2a36;
+      --border-light: #353544;
+      --text:         #e8e8f0;
+      --text-muted:   #7a7a9a;
+      --text-dim:     #4a4a62;
+      --gold:         #f1d770;
+      --gold-dim:     #8a7a30;
+      --exotic:       #ceae33;
+      --exotic-bg:    rgba(206,174,51,0.08);
+      --exotic-border:rgba(206,174,51,0.25);
+      --cyan:         #00e8d3;
+      --red:          #e84545;
+      --font:         'Roboto Condensed', sans-serif;
+      --radius-sm:    4px;
+      --radius:       6px;
+      --radius-lg:    10px;
+    }
+
+    body {
+      background: var(--page-bg);
+      font-family: var(--font);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.4;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    #nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(13,13,17,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex; align-items: center; gap: 16px;
+      height: 52px;
+    }
+
+    .nav-logo {
+      font-size: 16px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: var(--gold);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .nav-logo span { color: var(--text-muted); font-weight: 400; }
+
+    .search-wrap {
+      flex: 1; max-width: 400px;
+      position: relative;
+    }
+
+    .search-wrap input {
+      width: 100%; background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--font); font-size: 13px;
+      padding: 7px 12px 7px 36px; outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-wrap input:focus { border-color: var(--gold); }
+    .search-wrap input::placeholder { color: var(--text-dim); }
+
+    .search-icon {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim); font-size: 15px; pointer-events: none;
+    }
+
+    .nav-btn {
+      background: var(--gold); color: #0d0d11;
+      font-family: var(--font); font-weight: 700; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      border: none; padding: 7px 16px;
+      border-radius: var(--radius); cursor: pointer;
+      flex-shrink: 0; transition: background 0.15s;
+    }
+
+    .nav-btn:hover { background: #ffe884; }
+
+    #nav-status {
+      font-size: 11px; color: var(--text-muted);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .nav-spacer { flex: 1; }
+
+    .obs-btn {
+      background: transparent; border: 1px solid var(--border-light);
+      color: var(--text-muted); font-family: var(--font);
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; padding: 6px 12px;
+      border-radius: var(--radius); cursor: pointer;
+      transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+
+    .obs-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── HERO BANNER ── */
+    #hero {
+      position: relative; overflow: hidden;
+      height: 160px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #hero-bg {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center 20%;
+      opacity: 0; transition: opacity 0.8s;
+    }
+
+    #hero-bg.loaded { opacity: 0.25; }
+
+    #hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, rgba(13,13,17,0.95) 0%, rgba(13,13,17,0.6) 50%, rgba(13,13,17,0.2) 100%);
+    }
+
+    #hero-content {
+      position: relative; z-index: 1;
+      height: 100%; display: flex; align-items: center;
+      padding: 0 32px; gap: 20px;
+    }
+
+    #hero-emblem {
+      width: 72px; height: 72px;
+      background-size: cover; background-position: center;
+      background-color: var(--surface-2);
+      border-radius: var(--radius);
+      border: 2px solid rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+
+    #hero-text { display: flex; flex-direction: column; gap: 6px; }
+
+    #hero-name {
+      font-size: 32px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      line-height: 1; color: #fff;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    }
+
+    #hero-name.loading { opacity: 0.5; animation: pulse 1.5s ease-in-out infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:0.9} }
+
+    #hero-meta {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    #hero-class { font-weight: 600; }
+
+    .hero-dot { opacity: 0.3; }
+
+    #hero-light {
+      color: var(--gold); font-weight: 700; font-size: 15px;
+    }
+
+    #hero-light::before { content: '✦ '; font-size: 10px; opacity: 0.8; }
+
+    #hero-updated {
+      font-size: 11px; color: var(--text-dim);
+      text-transform: none; letter-spacing: 0;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    #page {
+      max-width: 1200px; margin: 0 auto;
+      padding: 28px 24px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    #main-col { display: flex; flex-direction: column; gap: 20px; }
+    #side-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── SECTION CARDS ── */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .card-title {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--text-muted);
+    }
+
+    .card-body { padding: 12px 16px; }
+
+    /* ── ITEMS (weapons & armor share this) ── */
+    .item-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .item-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      transition: border-color 0.15s, background 0.15s;
+      cursor: default;
+    }
+
+    .item-row:hover { background: var(--surface-3); border-color: var(--border-light); }
+
+    .item-row.exotic { border-color: var(--exotic-border); background: var(--exotic-bg); }
+    .item-row.exotic:hover { background: rgba(206,174,51,0.12); }
+
+    .item-icon-wrap { position: relative; flex-shrink: 0; }
+
+    .item-icon {
+      width: 52px; height: 52px;
+      background-size: cover; background-position: center;
+      background-color: #000;
+      border-radius: var(--radius-sm);
+    }
+
+    .item-watermark {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      border-radius: var(--radius-sm);
+      pointer-events: none;
+    }
+
+    .item-slot-badge {
+      position: absolute; bottom: -4px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      background: var(--surface-3); color: var(--text-dim);
+      padding: 1px 5px; border-radius: 2px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .item-info { flex: 1; min-width: 0; padding-bottom: 2px; }
+
+    .item-name {
+      font-size: 14px; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .item-row.exotic .item-name { color: var(--exotic); }
+
+    .item-type {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .item-perks {
+      display: flex; gap: 4px; align-items: center;
+      margin-top: 5px; flex-wrap: wrap;
+    }
+
+    .perk-icon {
+      width: 22px; height: 22px;
+      background-size: cover; background-position: center;
+      border-radius: 3px; cursor: help;
+      transition: transform 0.12s; flex-shrink: 0;
+      position: relative;
+    }
+
+    .perk-icon:hover { transform: scale(1.3); z-index: 5; }
+
+    .perk-icon.enhanced::after {
+      content: '';
+      position: absolute; top: -3px; left: -2px;
+      width: 8px; height: 8px;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 22 59' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23F3D656' d='M21.773,18.883h-6.032c-0.736,0-1.333,0.597-1.333,1.333v38.377h-7V20.217c0-0.736-0.597-1.333-1.333-1.333H0.032C0.018,18.858,0.014,18.852,0,18.827L10.876,0c0.029,0,0.036,0,0.065,0l10.866,18.827C21.791,18.852,21.788,18.858,21.773,18.883z'/%3E%3C/svg%3E");
+      background-size: contain; background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    .mod-icon {
+      width: 22px; height: 22px;
+      background-size: cover; background-position: center;
+      border-radius: 3px; cursor: help;
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: transform 0.12s; flex-shrink: 0;
+    }
+
+    .mod-icon:hover { transform: scale(1.3); z-index: 5; }
+
+    .item-power {
+      font-size: 16px; font-weight: 700;
+      color: var(--text-muted); flex-shrink: 0;
+      text-align: right; min-width: 52px;
+    }
+
+    .item-power.pinnacle { color: var(--cyan); }
+    .item-power.pinnacle::after { content: ' +'; font-size: 11px; }
+
+    /* exotic class item perks */
+    .class-perks {
+      font-size: 11px; color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .class-perks .perk-sep { opacity: 0.35; margin: 0 3px; }
+
+    /* ── STATS ── */
+    .stats-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .stat-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .stat-icon-img {
+      width: 18px; height: 18px;
+      background-size: contain; background-position: center;
+      background-repeat: no-repeat; flex-shrink: 0; opacity: 0.85;
+    }
+
+    .stat-name {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); width: 60px; flex-shrink: 0;
+    }
+
+    .stat-bar-wrap {
+      flex: 1; height: 4px;
+      background: var(--surface-3);
+      border-radius: 2px; overflow: hidden;
+    }
+
+    .stat-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: var(--text-dim);
+      transition: width 0.4s ease;
+    }
+
+    .stat-bar-fill.t10  { background: #4a9eff; }
+    .stat-bar-fill.high { background: #5adf8c; }
+    .stat-bar-fill.mid  { background: #f1d770; }
+    .stat-bar-fill.low  { background: var(--text-dim); }
+
+    .stat-val {
+      font-size: 14px; font-weight: 700;
+      color: var(--text); width: 30px; text-align: right; flex-shrink: 0;
+    }
+
+    .stat-tier {
+      font-size: 10px; font-weight: 700;
+      color: var(--text-dim); width: 20px; flex-shrink: 0;
+      text-align: right;
+    }
+
+    /* ── SUBCLASS ── */
+    .subclass-row {
+      display: flex; align-items: flex-start; gap: 16px;
+    }
+
+    .subclass-left {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px; flex-shrink: 0;
+    }
+
+    .subclass-icon {
+      width: 56px; height: 56px;
+      background-size: cover; background-position: center;
+      background-color: var(--surface-2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-light);
+    }
+
+    .subclass-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); text-align: center;
+      max-width: 60px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .subclass-abilities {
+      flex: 1; display: flex; flex-direction: column; gap: 12px;
+    }
+
+    .ability-group { display: flex; flex-direction: column; gap: 6px; }
+
+    .ability-group-label {
+      font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+
+    .ability-icons { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    .ability-item {
+      position: relative;
+      width: 40px; height: 40px;
+      background-size: cover; background-position: center;
+      background-color: var(--surface-2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      cursor: help;
+      transition: border-color 0.15s, transform 0.12s;
+      flex-shrink: 0;
+    }
+
+    .ability-item:hover {
+      border-color: rgba(255,255,255,0.35);
+      transform: scale(1.1); z-index: 5;
+    }
+
+    .ability-item.fragment { width: 34px; height: 34px; }
+
+    /* shared tooltip — uses ::before for text, ::after for arrow
+       .enhanced perk icons already use ::after for the glyph so we suppress arrow there */
+    [data-tip] { position: relative; }
+    [data-tip]:hover::before {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #0d0d14; border: 1px solid var(--border-light);
+      color: var(--text); font-size: 11px; font-weight: 600;
+      padding: 5px 10px; border-radius: var(--radius-sm);
+      white-space: nowrap; z-index: 1000; pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+    }
+    [data-tip]:hover::after {
+      content: '';
+      position: absolute;
+      bottom: calc(100% + 2px); left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--border-light);
+      z-index: 1001; pointer-events: none;
+    }
+    /* .enhanced uses ::after for the arrow glyph — hide tooltip arrow there */
+    .perk-icon.enhanced:hover::after { display: none; }
+
+    /* ── SET BONUSES ── */
+    .set-bonus-row {
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .set-bonus-header {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .set-bonus-icon {
+      width: 24px; height: 24px;
+      background-size: cover; background-position: center;
+      background-color: var(--surface-3);
+      border-radius: 3px; flex-shrink: 0;
+    }
+    .set-bonus-meta {
+      display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;
+    }
+    .set-bonus-name {
+      font-size: 12px; font-weight: 700;
+      color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .set-bonus-pieces {
+      font-size: 10px; font-weight: 600;
+      color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .set-bonus-desc {
+      font-size: 11px; color: var(--text-muted); line-height: 1.5;
+      margin-top: 2px;
+    }
+
+    /* ── ARTIFACT ── */
+    .artifact-mods {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+
+    .artifact-mod {
+      position: relative;
+      width: 40px; height: 40px;
+      background-size: cover; background-position: center;
+      background-color: var(--surface-3);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      cursor: help;
+      transition: border-color 0.15s, transform 0.12s;
+      flex-shrink: 0;
+    }
+
+    .artifact-mod:hover {
+      border-color: rgba(255,255,255,0.3);
+      transform: scale(1.08); z-index: 5;
+    }
+
+    /* ── DIM LINK / FOOTER ── */
+    #page-footer {
+      max-width: 1200px; margin: 0 auto;
+      padding: 16px 24px 32px;
+      display: flex; align-items: center; gap: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    #dim-link-wrap { display: flex; align-items: center; gap: 8px; }
+
+    #dim-link {
+      color: var(--gold); font-weight: 600; font-size: 13px;
+      text-decoration: none; transition: color 0.15s;
+    }
+
+    #dim-link:hover { color: #ffe884; text-decoration: underline; }
+
+    .dim-label {
+      font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    #last-updated {
+      font-size: 11px; color: var(--text-dim);
+      margin-left: auto;
+    }
+
+    /* ── ERROR ── */
+    #error-banner {
+      max-width: 1200px; margin: 16px auto 0;
+      padding: 0 24px;
+    }
+
+    .error-box {
+      background: rgba(232,69,69,0.1);
+      border: 1px solid rgba(232,69,69,0.3);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      color: #f08080; font-size: 13px; font-weight: 500;
+    }
+
+    /* ── EMPTY STATE ── */
+    #empty-state {
+      grid-column: 1 / -1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 24px; gap: 16px; text-align: center;
+    }
+
+    .empty-icon { font-size: 48px; opacity: 0.2; }
+
+    .empty-title {
+      font-size: 20px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .empty-sub { font-size: 13px; color: var(--text-dim); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--surface-2); border: 1px solid var(--border-light);
+      color: var(--text); padding: 9px 18px;
+      border-radius: var(--radius); font-size: 12px; font-weight: 600;
+      z-index: 9999; opacity: 0; pointer-events: none;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── OBS MODE ── */
+    body.obs-mode { background: transparent !important; }
+    body.obs-mode #nav,
+    body.obs-mode #page-footer,
+    body.obs-mode #error-banner { display: none !important; }
+    body.obs-mode #hero { margin-top: 0; }
+    body.obs-mode #page { max-width: none; padding: 16px; }
+
+    /* ── UTIL ── */
+    .hidden { display: none !important; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      #page { grid-template-columns: 1fr; }
+      #side-col { order: -1; }
+      #hero-name { font-size: 22px; }
+      #hero-emblem { width: 52px; height: 52px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <span class="nav-logo">D2 <span>Loadout</span></span>
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="bungie-input" placeholder="Bungie ID — e.g. Guardian#1234" />
+  </div>
+  <button class="nav-btn" onclick="applyAndFetch()">Load</button>
+  <span id="nav-status"></span>
+  <div class="nav-spacer"></div>
+  <button class="obs-btn" onclick="copyObsUrl()">📋 OBS URL</button>
+</nav>
+
+<!-- HERO BANNER -->
+<div id="hero">
+  <div id="hero-bg"></div>
+  <div id="hero-overlay"></div>
+  <div id="hero-content">
+    <div id="hero-emblem"></div>
+    <div id="hero-text">
+      <div id="hero-name" class="loading">Enter a Bungie ID to load your loadout</div>
+      <div id="hero-meta">
+        <span id="hero-class"></span>
+        <span class="hero-dot" id="hero-dot" style="display:none">•</span>
+        <span id="hero-light"></span>
+        <span id="hero-updated"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ERROR -->
+<div id="error-banner" style="display:none">
+  <div class="error-box" id="error-text"></div>
+</div>
+
+<!-- PAGE GRID -->
+<div id="page">
+
+  <!-- EMPTY STATE -->
+  <div id="empty-state">
+    <div class="empty-icon">⚔</div>
+    <div class="empty-title">No Guardian Loaded</div>
+    <div class="empty-sub">Enter your Bungie ID in the search bar above and hit Load</div>
+  </div>
+
+  <!-- MAIN COL -->
+  <div id="main-col" class="hidden">
+
+    <!-- WEAPONS -->
+    <div class="section-card" id="weapons-card">
+      <div class="card-header">
+        <span class="card-title">Weapons</span>
+      </div>
+      <div class="card-body">
+        <div class="item-list">
+          <div class="item-row" id="slot-kinetic">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Kinetic</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-energy">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Energy</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-power">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Power</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARMOR -->
+    <div class="section-card" id="armor-card">
+      <div class="card-header">
+        <span class="card-title">Armor</span>
+      </div>
+      <div class="card-body">
+        <div class="item-list">
+          <div class="item-row" id="slot-helmet">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Helmet</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks class-exotic-perks" style="display:none"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-arms">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Arms</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks class-exotic-perks" style="display:none"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-chest">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Chest</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks class-exotic-perks" style="display:none"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-legs">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Legs</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="item-perks class-exotic-perks" style="display:none"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+          <div class="item-row" id="slot-class">
+            <div class="item-icon-wrap">
+              <div class="item-icon"></div>
+              <div class="item-slot-badge">Class Item</div>
+            </div>
+            <div class="item-info">
+              <div class="item-name">—</div>
+              <div class="item-type"></div>
+              <div class="class-perks" id="class-exotic-perks" style="display:none"></div>
+            </div>
+            <div class="item-power"></div>
+          </div>
+        </div>
+        <!-- Armor Set Bonuses -->
+        <div id="set-bonus-section" style="display:none; border-top: 1px solid var(--border);">
+          <div class="card-header" style="border-bottom:none; padding-bottom:8px;">
+            <span class="card-title">Armor Set Bonuses</span>
+          </div>
+          <div class="card-body" style="padding-top:4px;">
+            <div id="set-bonus-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBCLASS -->
+    <div class="section-card" id="subclass-card">
+      <div class="card-header">
+        <span class="card-title">Subclass</span>
+      </div>
+      <div class="card-body">
+        <div class="subclass-row">
+          <div class="subclass-left">
+            <div class="subclass-icon" id="subclass-icon"></div>
+            <div class="subclass-label" id="subclass-name">—</div>
+          </div>
+          <div class="subclass-abilities">
+            <div class="ability-group" id="aspects-group">
+              <div class="ability-group-label">Aspects</div>
+              <div class="ability-icons" id="aspects-grid"></div>
+            </div>
+            <div class="ability-group" id="fragments-group">
+              <div class="ability-group-label">Fragments</div>
+              <div class="ability-icons" id="fragments-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARTIFACT -->
+    <div class="section-card" id="artifact-card">
+      <div class="card-header">
+        <span class="card-title">Artifact Mods Equipped</span>
+      </div>
+      <div class="card-body">
+        <div class="artifact-mods" id="artifact-mods-grid"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-col -->
+
+  <!-- SIDE COL -->
+  <div id="side-col" class="hidden">
+
+    <!-- STATS -->
+    <div class="section-card" id="stats-card">
+      <div class="card-header">
+        <span class="card-title">Character Stats</span>
+      </div>
+      <div class="card-body">
+        <div class="stats-list">
+          <div class="stat-row" data-stat="Mobility">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Weapons</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Resilience">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Health</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Recovery">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Class</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Discipline">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Grenade</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Intellect">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Super</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+          <div class="stat-row" data-stat="Strength">
+            <div class="stat-icon-img"></div>
+            <div class="stat-name">Melee</div>
+            <div class="stat-bar-wrap"><div class="stat-bar-fill low" style="width:0%"></div></div>
+            <div class="stat-val">0</div>
+            <div class="stat-tier">T0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /side-col -->
+
+</div><!-- /page -->
+
+<!-- FOOTER -->
+<div id="page-footer">
+  <div id="dim-link-wrap" style="display:none">
+    <span class="dim-label">DIM</span>
+    <a href="#" id="dim-link" target="_blank"></a>
+  </div>
+  <span id="last-updated"></span>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  /* ── CONFIG ── */
+  let cfg = {
+    bungieInput: '',
+    refreshRate: 60,
+    showWeapons: 'true',
+    showArmor: 'true',
+    showStats: 'true',
+    showSubclass: 'true',
+    showArtifact: 'true',
+    showPerks: 'true',
+    showDIMLink: 'true',
+    dimLinkRotating: 'true',
+    dimLinkMessage: 'Copy this link to your browser',
+    exoticPerksDisplay: 'text',
+  };
+
+  let refreshInterval = null;
+  let isFirstLoad = true;
+
+  /* ── URL PARAMS ── */
+  function readUrlParams() {
+    const p = new URLSearchParams(window.location.search);
+    const map = { b:'bungieInput', r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
+      stats:'showStats', subclass:'showSubclass', artifact:'showArtifact',
+      perks:'showPerks', dimlink:'showDIMLink' };
+    for (const [k, v] of Object.entries(map)) if (p.has(k)) cfg[v] = p.get(k);
+    if (p.has('obs') || p.has('overlay')) document.body.classList.add('obs-mode');
+    if (cfg.bungieInput) document.getElementById('bungie-input').value = cfg.bungieInput;
+  }
+
+  function buildObsUrl() {
+    const base = location.origin + location.pathname;
+    return `${base}?${new URLSearchParams({ b:cfg.bungieInput, r:cfg.refreshRate,
+      weapons:cfg.showWeapons, armor:cfg.showArmor, stats:cfg.showStats,
+      subclass:cfg.showSubclass, artifact:cfg.showArtifact,
+      perks:cfg.showPerks, dimlink:cfg.showDIMLink, obs:'1' })}`;
+  }
+
+  function copyObsUrl() {
+    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
+    navigator.clipboard.writeText(buildObsUrl())
+      .then(() => showToast('OBS URL copied — paste as Browser Source'));
+  }
+
+  /* ── FETCH ── */
+  function applyAndFetch() {
+    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
+    if (refreshInterval) clearInterval(refreshInterval);
+    fetchLoadout();
+  }
+
+  async function fetchLoadout() {
+    const id = cfg.bungieInput;
+    if (!id) { setStatus('Enter a Bungie ID above'); return; }
+
+    setStatus('Loading…');
+
+    try {
+      if (isFirstLoad) {
+        const n = document.getElementById('hero-name');
+        n.textContent = 'Loading…'; n.classList.add('loading');
+      }
+
+      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}`);
+      if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.message || `API Error ${res.status}`); }
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to fetch loadout');
+
+      hideError();
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('main-col').classList.remove('hidden');
+      document.getElementById('side-col').classList.remove('hidden');
+
+      displayLoadout(data);
+      isFirstLoad = false;
+
+      const now = new Date();
+      document.getElementById('last-updated').textContent = `Updated ${now.toLocaleTimeString()}`;
+      setStatus(`✓ Loaded`);
+    } catch(err) {
+      showError(err.message || 'Failed to fetch loadout data');
+      setStatus('⚠ Error');
+    }
+
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(fetchLoadout, cfg.refreshRate * 1000);
+  }
+
+  function setStatus(msg) { document.getElementById('nav-status').textContent = msg; }
+
+  /* ── DISPLAY ── */
+  function displayLoadout(data) {
+    // Hero
+    const heroName = document.getElementById('hero-name');
+    heroName.textContent = data.displayName || 'Guardian';
+    heroName.classList.remove('loading');
+
+    document.getElementById('hero-class').textContent = data.character?.class || '';
+    const light = data.character?.light;
+    const heroLight = document.getElementById('hero-light');
+    if (light) { heroLight.textContent = light; document.getElementById('hero-dot').style.display = ''; }
+    else { heroLight.textContent = ''; document.getElementById('hero-dot').style.display = 'none'; }
+
+    if (data.character?.emblemPath) {
+      document.getElementById('hero-emblem').style.backgroundImage = `url('${data.character.emblemPath}')`;
+      const bg = document.getElementById('hero-bg');
+      bg.style.backgroundImage = `url('${data.character.emblemBackgroundPath || data.character.emblemPath}')`;
+      setTimeout(() => bg.classList.add('loaded'), 50);
+    }
+
+    if (data.loadout?.weapons && cfg.showWeapons !== 'false') {
+      fillWeapon('slot-kinetic', data.loadout.weapons.kinetic, 'Kinetic');
+      fillWeapon('slot-energy', data.loadout.weapons.energy, 'Energy');
+      fillWeapon('slot-power', data.loadout.weapons.power, 'Power');
+    }
+
+    if (data.loadout?.armor && cfg.showArmor !== 'false') {
+      fillArmor('slot-helmet', data.loadout.armor.helmet, 'Helmet');
+      fillArmor('slot-arms', data.loadout.armor.arms, 'Arms');
+      fillArmor('slot-chest', data.loadout.armor.chest, 'Chest');
+      fillArmor('slot-legs', data.loadout.armor.legs, 'Legs');
+      fillArmor('slot-class', data.loadout.armor.classItem, 'Class Item');
+    }
+
+    if (data.loadout?.armorSetBonuses && cfg.showArmor !== 'false') fillSetBonuses(data.loadout.armorSetBonuses);
+    if (data.loadout?.stats && cfg.showStats !== 'false') fillStats(data.loadout.stats);
+    if (data.loadout?.subclass && cfg.showSubclass !== 'false') fillSubclass(data.loadout.subclass);
+    if (cfg.showArtifact !== 'false') fillArtifact(data.artifact, data.loadout?.artifactMods);
+    if (cfg.showDIMLink !== 'false') fillDimLink(data.dimLink);
+
+    const toggle = (id, show) => document.getElementById(id)?.classList.toggle('hidden', !show);
+    toggle('weapons-card', cfg.showWeapons !== 'false');
+    toggle('armor-card', cfg.showArmor !== 'false');
+    toggle('stats-card', cfg.showStats !== 'false');
+    toggle('subclass-card', cfg.showSubclass !== 'false');
+  }
+
+  /* ── WEAPON ── */
+  function fillWeapon(slotId, d, slotName) {
+    const row = document.getElementById(slotId);
+    if (!row) return;
+    if (!d) { row.querySelector('.item-name').textContent = '—'; return; }
+
+    row.querySelector('.item-name').textContent = d.name || 'Unknown';
+    row.querySelector('.item-type').textContent = d.itemType || slotName;
+    row.classList.toggle('exotic', !!d.isExotic);
+
+    const icon = row.querySelector('.item-icon');
+    if (d.iconUrl) icon.style.backgroundImage = `url('${d.iconUrl}')`;
+    row.querySelectorAll('.item-watermark').forEach(e => e.remove());
+    if (d.iconWatermark) {
+      const wm = document.createElement('div');
+      wm.className = 'item-watermark';
+      wm.style.backgroundImage = `url('https://www.bungie.net${d.iconWatermark}')`;
+      icon.parentElement.appendChild(wm);
+    }
+
+    const powerEl = row.querySelector('.item-power');
+    const pv = d.primaryStat?.value;
+    if (pv) {
+      const n = parseInt(pv);
+      if (n > 200) { powerEl.textContent = n; powerEl.className = 'item-power pinnacle'; }
+      else { powerEl.textContent = pv; powerEl.className = 'item-power'; }
+    } else { powerEl.textContent = ''; powerEl.className = 'item-power'; }
+
+    const perksEl = row.querySelector('.item-perks');
+    perksEl.innerHTML = '';
+    if (cfg.showPerks !== 'false' && d.weaponPerks?.length) {
+      const hasEnhanced = d.weaponTier != null && d.weaponTier >= 1;
+      d.weaponPerks.forEach(perk => {
+        if (!perk.iconUrl) return;
+        const el = document.createElement('div');
+        el.className = perk.isMod ? 'mod-icon' : 'perk-icon';
+        if ((perk.isEnhanced || hasEnhanced) && !perk.isMod) el.classList.add('enhanced');
+        el.style.backgroundImage = `url('${perk.iconUrl}')`;
+        el.setAttribute('data-tip', perk.name);
+        perksEl.appendChild(el);
+      });
+    }
+  }
+
+  /* ── ARMOR ── */
+  function fillArmor(slotId, d, slotName) {
+    const row = document.getElementById(slotId);
+    if (!row) return;
+    if (!d) { row.querySelector('.item-name').textContent = '—'; return; }
+
+    row.querySelector('.item-name').textContent = d.name || 'Unknown';
+    row.querySelector('.item-type').textContent = d.itemType || slotName;
+    row.classList.toggle('exotic', !!d.isExotic);
+
+    const icon = row.querySelector('.item-icon');
+    if (d.iconUrl) icon.style.backgroundImage = `url('${d.iconUrl}')`;
+    row.querySelectorAll('.item-watermark').forEach(e => e.remove());
+    if (d.iconWatermark) {
+      const wm = document.createElement('div');
+      wm.className = 'item-watermark';
+      wm.style.backgroundImage = `url('https://www.bungie.net${d.iconWatermark}')`;
+      icon.parentElement.appendChild(wm);
+    }
+
+    const powerEl = row.querySelector('.item-power');
+    const pv = d.primaryStat?.value;
+    if (pv) {
+      const n = parseInt(pv);
+      if (n > 200) { powerEl.textContent = n; powerEl.className = 'item-power pinnacle'; }
+      else { powerEl.textContent = pv; powerEl.className = 'item-power'; }
+    } else { powerEl.textContent = ''; powerEl.className = 'item-power'; }
+
+    if (slotId === 'slot-class') {
+      const ep = document.getElementById('class-exotic-perks');
+      ep.innerHTML = '';
+      if (d.exoticPerks?.length) {
+        ep.style.display = '';
+        d.exoticPerks.forEach((perk, i) => {
+          const span = document.createElement('span');
+          span.textContent = perk.name.replace(/^Spirit of\s+/i, '');
+          span.title = `${perk.name}\n${perk.description}`;
+          ep.appendChild(span);
+          if (i < d.exoticPerks.length - 1) {
+            const sep = document.createElement('span');
+            sep.className = 'perk-sep'; sep.textContent = '•';
+            ep.appendChild(sep);
+          }
+        });
+      } else { ep.style.display = 'none'; }
+    }
+  }
+
+  /* ── SET BONUSES ── */
+  function fillSetBonuses(bonuses) {
+    const section = document.getElementById('set-bonus-section');
+    const list = document.getElementById('set-bonus-list');
+    list.innerHTML = '';
+
+    const items = Array.isArray(bonuses) ? bonuses : Object.values(bonuses || {});
+
+    if (!items.length) { section.style.display = 'none'; return; }
+
+    items.forEach(bonus => {
+      const name = bonus.name || bonus.setName || '';
+      const desc = bonus.description || bonus.perkDescription || '';
+      const iconUrl = bonus.iconUrl || bonus.perkIconUrl || '';
+      const pieces = bonus.pieces || bonus.requiredPieces || bonus.piecesRequired || '';
+
+      if (!name && !desc) return;
+
+      const row = document.createElement('div');
+      row.className = 'set-bonus-row';
+
+      const header = document.createElement('div');
+      header.className = 'set-bonus-header';
+
+      if (iconUrl) {
+        const icon = document.createElement('div');
+        icon.className = 'set-bonus-icon';
+        icon.style.backgroundImage = `url('${iconUrl}')`;
+        header.appendChild(icon);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'set-bonus-meta';
+
+      if (name) {
+        const nameEl = document.createElement('div');
+        nameEl.className = 'set-bonus-name';
+        nameEl.textContent = name;
+        meta.appendChild(nameEl);
+      }
+
+      if (pieces) {
+        const piecesEl = document.createElement('div');
+        piecesEl.className = 'set-bonus-pieces';
+        piecesEl.textContent = `${pieces} Piece Bonus`;
+        meta.appendChild(piecesEl);
+      }
+
+      header.appendChild(meta);
+      row.appendChild(header);
+
+      if (desc) {
+        const descEl = document.createElement('div');
+        descEl.className = 'set-bonus-desc';
+        descEl.textContent = desc;
+        row.appendChild(descEl);
+      }
+
+      list.appendChild(row);
+    });
+
+    section.style.display = list.children.length ? '' : 'none';
+  }
+
+  /* ── STATS ── */
+  function fillStats(stats) {
+    const icons = {
+      Mobility:   'https://www.bungie.net/common/destiny2_content/icons/bc69675acdae9e6b9a68a02fb4d62e07.png',
+      Resilience: 'https://www.bungie.net/common/destiny2_content/icons/717b8b218cc14325a54869bef21d2964.png',
+      Recovery:   'https://www.bungie.net/common/destiny2_content/icons/7eb845acb5b3a4a9b7e0b2f05f5c43f1.png',
+      Discipline: 'https://www.bungie.net/common/destiny2_content/icons/065cdaabef560e5808e821cefaeaa22c.png',
+      Intellect:  'https://www.bungie.net/common/destiny2_content/icons/585ae4ede9c3da96b34086fccccdc8cd.png',
+      Strength:   'https://www.bungie.net/common/destiny2_content/icons/fa534aca76d7f2d7e7b4ba4df4271b42.png',
+    };
+
+    document.querySelectorAll('.stat-row[data-stat]').forEach(row => {
+      const stat = row.dataset.stat;
+      const val = stats[stat] || 0;
+      const tier = Math.floor(val / 10);
+      const pct = Math.min((val / 200) * 100, 100);
+
+      row.querySelector('.stat-val').textContent = val;
+      row.querySelector('.stat-tier').textContent = `T${tier}`;
+
+      const fill = row.querySelector('.stat-bar-fill');
+      fill.style.width = pct + '%';
+      fill.className = 'stat-bar-fill ' + (tier >= 10 ? 't10' : val >= 80 ? 'high' : val >= 50 ? 'mid' : 'low');
+
+      const img = row.querySelector('.stat-icon-img');
+      if (icons[stat]) img.style.backgroundImage = `url('${icons[stat]}')`;
+    });
+  }
+
+  /* ── SUBCLASS ── */
+  function fillSubclass(d) {
+    if (!d) return;
+    const name = (d.name || '').replace(/\s+(Warlock|Titan|Hunter)$/i, '');
+    document.getElementById('subclass-name').textContent = name;
+    if (d.iconUrl) document.getElementById('subclass-icon').style.backgroundImage = `url('${d.iconUrl}')`;
+
+    const aspectsGrid = document.getElementById('aspects-grid');
+    const fragmentsGrid = document.getElementById('fragments-grid');
+    aspectsGrid.innerHTML = ''; fragmentsGrid.innerHTML = '';
+
+    if (d.aspects?.length) {
+      d.aspects.forEach(a => {
+        const el = document.createElement('div');
+        el.className = 'ability-item';
+        if (a.iconUrl) el.style.backgroundImage = `url('${a.iconUrl}')`;
+        el.setAttribute('data-tip', a.name);
+        aspectsGrid.appendChild(el);
+      });
+      document.getElementById('aspects-group').style.display = '';
+    } else { document.getElementById('aspects-group').style.display = 'none'; }
+
+    if (d.fragments?.length) {
+      d.fragments.forEach(f => {
+        const el = document.createElement('div');
+        el.className = 'ability-item fragment';
+        if (f.iconUrl) el.style.backgroundImage = `url('${f.iconUrl}')`;
+        el.setAttribute('data-tip', f.name);
+        fragmentsGrid.appendChild(el);
+      });
+      document.getElementById('fragments-group').style.display = '';
+    } else { document.getElementById('fragments-group').style.display = 'none'; }
+  }
+
+  /* ── ARTIFACT ── */
+  function fillArtifact(artifactData, artifactMods) {
+    const card = document.getElementById('artifact-card');
+    const grid = document.getElementById('artifact-mods-grid');
+
+    let mods = artifactMods || [];
+    let visible = mods.filter(m => m.isVisible === true);
+    if (!visible.length && mods.length) visible = mods.filter(m => !m.isChampionMod);
+    if (!visible.length && mods.length) visible = mods;
+
+    if (!visible.length) { card.classList.add('hidden'); return; }
+
+    card.classList.remove('hidden');
+    grid.innerHTML = '';
+    visible.forEach(mod => {
+      const el = document.createElement('div');
+      el.className = 'artifact-mod';
+      if (mod.iconUrl) el.style.backgroundImage = `url('${mod.iconUrl}')`;
+      const tipText = mod.description ? `${mod.name || 'Mod'} — ${mod.description}` : (mod.name || 'Mod');
+      el.setAttribute('data-tip', tipText.length > 80 ? mod.name || 'Mod' : tipText);
+      el.title = mod.description ? `${mod.name}\n${mod.description}` : mod.name;
+      grid.appendChild(el);
+    });
+  }
+
+  /* ── DIM LINK ── */
+  function fillDimLink(url) {
+    const wrap = document.getElementById('dim-link-wrap');
+    const link = document.getElementById('dim-link');
+    if (!url) { wrap.style.display = 'none'; return; }
+    wrap.style.display = '';
+    link.href = url;
+
+    let display = url;
+    const tiny = url.match(/tinyurl\.com\/([^/?]+)/);
+    const bitly = url.match(/bit\.ly\/([^/?]+)/);
+    const dimgg = url.match(/dim\.gg\/([^/]+)/);
+    if (tiny)       display = `tinyurl.com/${tiny[1]}`;
+    else if (bitly) display = `bit.ly/${bitly[1]}`;
+    else if (dimgg) display = `dim.gg/${dimgg[1]}`;
+    else if (url.includes('app.destinyitemmanager.com')) display = 'Open in DIM';
+
+    link.textContent = display;
+  }
+
+  /* ── ERROR ── */
+  function showError(msg) {
+    const b = document.getElementById('error-banner');
+    document.getElementById('error-text').textContent = msg;
+    b.style.display = '';
+  }
+
+  function hideError() { document.getElementById('error-banner').style.display = 'none'; }
+
+  /* ── TOAST ── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  document.getElementById('bungie-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') applyAndFetch();
+  });
+
+  readUrlParams();
+  if (cfg.bungieInput) fetchLoadout();
+</script>
+</body>
+</html>

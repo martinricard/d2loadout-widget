@@ -686,6 +686,9 @@ function displayArmor(slotId, armorData, slotName) {
     slot.querySelector('.armor-type').textContent = slotName;
     slot.querySelector('.armor-power').textContent = '';
     slot.querySelector('.armor-icon').style.backgroundImage = '';
+    if (slot.querySelector('.armor-perks')) {
+      slot.querySelector('.armor-perks').innerHTML = '';
+    }
     if (slot.querySelector('.exotic-perks')) {
       slot.querySelector('.exotic-perks').innerHTML = '';
     }
@@ -743,6 +746,23 @@ function displayArmor(slotId, armorData, slotName) {
     slot.classList.add('exotic');
   } else {
     slot.classList.remove('exotic');
+  }
+  
+  // Display visible armor perks (set bonuses, intrinsic armor perks, etc.)
+  const armorPerksContainer = slot.querySelector('.armor-perks');
+  if (armorPerksContainer) {
+    armorPerksContainer.innerHTML = '';
+    if (armorData.perks && armorData.perks.length > 0) {
+      armorData.perks.forEach(perk => {
+        if (perk.iconUrl) {
+          const perkIcon = document.createElement('div');
+          perkIcon.className = 'armor-perk-icon';
+          perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
+          perkIcon.title = `${perk.name || 'Unknown Perk'}\n${perk.description || ''}`;
+          armorPerksContainer.appendChild(perkIcon);
+        }
+      });
+    }
   }
   
   // Display exotic class item perks (if this is the class item slot)

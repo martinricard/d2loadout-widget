@@ -13,12 +13,13 @@
       display: flex;
       margin: 0;
       font-family: 'Roboto Condensed', sans-serif;
-      background: #ffffff !important;
+      background: #0d0d11;
+      color: #e8e8f0;
     }
     .demo-panel {
       width: 320px;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #fff;
+      background: linear-gradient(180deg, #12121b 0%, #1e1e2a 100%);
+      color: #e8e8f0;
       padding: 30px 24px;
       position: fixed;
       left: 0;
@@ -26,7 +27,62 @@
       height: 100vh;
       overflow-y: auto;
       z-index: 10000;
-      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 8px 0 40px rgba(0, 0, 0, 0.35);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      transition: width 0.25s ease, padding 0.25s ease, opacity 0.25s ease;
+    }
+    .demo-panel.collapsed {
+      width: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .demo-panel.collapsed .panel-header,
+    .demo-panel.collapsed .panel-section {
+      display: none;
+    }
+    .sidebar-toggle-handle {
+      position: fixed;
+      top: 20px;
+      left: 16px;
+      z-index: 10001;
+      display: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: rgba(26, 26, 46, 0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .sidebar-toggle-handle:hover {
+      transform: translateX(2px);
+    }
+    body.sidebar-hidden .sidebar-toggle-handle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+    body.sidebar-hidden #widget-area {
+      margin-left: 0 !important;
+      width: 100% !important;
+      padding: 24px 32px 40px !important;
+    }
+    body.sidebar-hidden .widget-viewport {
+      width: 100% !important;
+      min-height: calc(100vh - 40px) !important;
+    }
+    body.sidebar-hidden #widget-area {
+      margin-left: 0 !important;
+      width: 100% !important;
+      padding: 24px 32px 40px !important;
+    }
+    body.sidebar-hidden .widget-viewport {
+      width: 100% !important;
+      min-height: calc(100vh - 40px) !important;
     }
     #widget-area {
       margin-left: 320px;
@@ -51,6 +107,20 @@
       margin-bottom: 32px;
       padding-bottom: 24px;
       border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .panel-header .panel-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .panel-header .panel-actions .demo-btn {
+      padding: 10px 14px;
+      font-size: 12px;
+      gap: 6px;
     }
     .panel-header h1 {
       font-size: 26px;
@@ -163,22 +233,36 @@
       margin-top: 12px;
     }
     /* Widget display area */
-    #widget-area {
+    #widget-area.widget-view {
       margin-left: 320px;
-      flex: 1;
+      padding: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px;
-      background: #f5f5f5;
       min-height: 100vh;
+      background: #f5f5f5;
       position: relative;
     }
-    
+
+    #widget-area.fullpage-view {
+      margin-left: 320px;
+      padding: 20px;
+      min-height: 100vh;
+      width: calc(100% - 320px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      background: #0d0d11;
+      position: relative;
+      overflow: auto;
+    }
+
     /* StreamElements browser source container - full size */
     .widget-viewport {
       width: 854px;
       height: 547px;
+      max-width: 100%;
+      max-height: 100%;
       background: transparent;
       position: relative;
       display: flex;
@@ -186,11 +270,50 @@
       justify-content: center;
       overflow: visible;
     }
-    
+
+    .fullpage-frame {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      min-height: calc(100vh - 40px);
+      background: #0d0d11;
+    }
+
+    #widget-area.fullpage-view .widget-viewport {
+      width: 100%;
+      height: 100%;
+      max-width: 1200px;
+      min-height: calc(100vh - 40px);
+      align-items: stretch;
+      justify-content: center;
+    }
+
     /* Scale widget 1.5x to match StreamElements display size */
     #d2-loadout-widget {
       transform: scale(1.5);
       transform-origin: center center;
+      width: 760px;
+      max-width: 760px;
+    }
+
+    #d2-loadout-widget.fullpage {
+      transform: none;
+      width: 100%;
+      max-width: none;
+      min-height: calc(100vh - 80px);
+    }
+
+    #d2-loadout-widget.fullpage .widget-container {
+      width: 100% !important;
+      max-width: none !important;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* Center artifact section when displayed alone */
+    #d2-loadout-widget.artifact-only .subclass-section {
+      justify-content: center !important;
+      padding: 20px !important;
     }
     
     /* Center artifact section when displayed alone */
@@ -212,8 +335,16 @@
 <body>
   <div class="demo-panel">
     <div class="panel-header">
-      <h1>D2 Loadout Widget</h1>
-      <p class="subtitle">Live Demo</p>
+      <div>
+        <h1>D2 Loadout Widget</h1>
+        <p class="subtitle">Live Demo</p>
+      </div>
+      <div class="panel-actions">
+        <button class="demo-btn" id="toggleSidebarButton">
+          <span class="btn-icon">⬅️</span>
+          Hide Panel
+        </button>
+      </div>
     </div>
 
     <div class="panel-section">
@@ -252,6 +383,19 @@
         <button class="demo-btn" data-view="artifact">
           <span class="btn-icon">🔮</span>
           Artifact Only
+        </button>
+      </div>
+    </div>
+    <div class="panel-section">
+      <h3>Display Mode</h3>
+      <div class="control-group">
+        <button class="demo-btn active" data-layout="widget">
+          <span class="btn-icon">🪟</span>
+          Widget View
+        </button>
+        <button class="demo-btn" data-layout="fullpage">
+          <span class="btn-icon">🌐</span>
+          Full Page View
         </button>
       </div>
     </div>
@@ -308,9 +452,14 @@
       </button>
     </div>
   </div>
-  <div id="widget-area">
+  <button id="sidebarHandle" class="sidebar-toggle-handle hidden">
+    <span class="btn-icon">➡️</span>
+    Show Panel
+  </button>
+  <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -572,6 +721,30 @@
     document.getElementById('refreshData').addEventListener('click', () => {
       if (window.fetchLoadout) window.fetchLoadout();
     });
+
+    // Sidebar toggle
+    const toggleSidebarButton = document.getElementById('toggleSidebarButton');
+    const sidebarHandle = document.getElementById('sidebarHandle');
+    const toggleSidebar = (hide) => {
+      const body = document.body;
+      const panel = document.querySelector('.demo-panel');
+      body.classList.toggle('sidebar-hidden', hide);
+      panel.classList.toggle('collapsed', hide);
+      if (hide) {
+        toggleSidebarButton.innerHTML = '<span class="btn-icon">➡️</span> Show Panel';
+        sidebarHandle.classList.remove('hidden');
+      } else {
+        toggleSidebarButton.innerHTML = '<span class="btn-icon">⬅️</span> Hide Panel';
+        sidebarHandle.classList.add('hidden');
+      }
+    };
+    toggleSidebarButton.addEventListener('click', () => {
+      const isHidden = document.body.classList.contains('sidebar-hidden');
+      toggleSidebar(!isHidden);
+    });
+    sidebarHandle.addEventListener('click', () => {
+      toggleSidebar(false);
+    });
     
     // View control buttons
     document.querySelectorAll('[data-view]').forEach(btn => {
@@ -636,6 +809,33 @@
               }
             });
           }
+        }
+      });
+    });
+
+    // Display mode buttons
+    document.querySelectorAll('[data-layout]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-layout]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const mode = btn.getAttribute('data-layout');
+        const widgetArea = document.getElementById('widget-area');
+        const widgetElement = document.getElementById('d2-loadout-widget');
+        const fullpageFrame = document.getElementById('fullpageFrame');
+
+        if (mode === 'fullpage') {
+          widgetArea.classList.add('fullpage-view');
+          widgetArea.classList.remove('widget-view');
+          widgetElement.classList.add('fullpage');
+          widgetElement.style.display = 'none';
+          if (fullpageFrame) fullpageFrame.style.display = 'block';
+        } else {
+          widgetArea.classList.add('widget-view');
+          widgetArea.classList.remove('fullpage-view');
+          widgetElement.classList.remove('fullpage');
+          widgetElement.style.display = 'block';
+          if (fullpageFrame) fullpageFrame.style.display = 'none';
         }
       });
     });
