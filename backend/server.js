@@ -34,6 +34,20 @@ const manifestCache = {
   TTL: 3600000 // 1 hour
 };
 
+function ensureManifestCacheFresh() {
+  const now = Date.now();
+  if (!manifestCache.lastUpdate || (now - manifestCache.lastUpdate) > manifestCache.TTL) {
+    if (manifestCache.lastUpdate) {
+      console.log('[Manifest] Cache expired. Clearing manifest data to fetch latest game definitions.');
+    }
+    manifestCache.items.clear();
+    manifestCache.stats.clear();
+    manifestCache.plugs.clear();
+    manifestCache.artifacts.clear();
+    manifestCache.lastUpdate = now;
+  }
+}
+
 // Bucket hashes for item slots
 const BUCKET_HASHES = {
   KINETIC: 1498876634,
@@ -459,6 +473,8 @@ function getPlatformName(membershipType) {
 
 // Fetch item definition from Bungie manifest
 async function fetchItemDefinition(itemHash) {
+  ensureManifestCacheFresh();
+
   // Check cache first
   if (manifestCache.items.has(itemHash)) {
     return manifestCache.items.get(itemHash);
@@ -484,6 +500,8 @@ async function fetchItemDefinition(itemHash) {
 
 // Fetch plug (mod/perk) definition from Bungie manifest
 async function fetchPlugDefinition(plugHash) {
+  ensureManifestCacheFresh();
+
   // Check cache first
   if (manifestCache.plugs.has(plugHash)) {
     return manifestCache.plugs.get(plugHash);
@@ -511,7 +529,9 @@ async function fetchPlugDefinition(plugHash) {
       name: definition.displayProperties?.name || 'Unknown Mod',
       description: definition.displayProperties?.description || '',
       icon: iconPath,
-      iconUrl: iconPath ? `https://www.bungie.net${iconPath}` : null
+      iconUrl: iconPath ? `https://www.bungie.net${iconPath}` : null,
+      itemType: definition.itemType,
+      itemTypeDisplayName: definition.itemTypeDisplayName || ''
     };
     
     // Cache the result
@@ -526,6 +546,8 @@ async function fetchPlugDefinition(plugHash) {
 
 // Fetch seasonal artifact definition and get all artifact mod hashes
 async function fetchArtifactModHashes(artifactHash) {
+  ensureManifestCacheFresh();
+
   // Check cache first
   if (manifestCache.artifacts.has(artifactHash)) {
     return manifestCache.artifacts.get(artifactHash);
