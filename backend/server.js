@@ -529,7 +529,11 @@ async function fetchPlugDefinition(plugHash) {
       name: definition.displayProperties?.name || 'Unknown Mod',
       description: definition.displayProperties?.description || '',
       icon: iconPath,
-      iconUrl: iconPath ? `https://www.bungie.net${iconPath}` : null,
+      iconUrl: iconPath
+        ? iconPath.startsWith('http')
+          ? iconPath
+          : `https://www.bungie.net${iconPath}`
+        : null,
       itemType: definition.itemType,
       itemTypeDisplayName: definition.itemTypeDisplayName || ''
     };

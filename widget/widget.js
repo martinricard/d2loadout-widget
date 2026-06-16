@@ -43,12 +43,11 @@ function setupAutoHide() {
   if (autoHide) {
     // Wait for widget to render, then get actual height
     setTimeout(() => {
-      const widgetHeight = widgetContainer.offsetHeight;
+      const widgetHeight = widgetContainer.offsetHeight || 500;
       console.log('[D2 Widget] Widget height:', widgetHeight, 'px');
       
-      // Initially hide the widget - slide down to bottom of 500px container
-      // Calculate how far down to move: 500px (container height) - current top position
-      widgetContainer.style.transform = `translateY(500px)`;
+      // Initially hide the widget using actual widget height
+      widgetContainer.style.transform = `translateY(${widgetHeight}px)`;
       widgetContainer.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
       console.log('[D2 Widget] Auto-hide enabled - widget hidden at bottom');
     }, 100);
@@ -227,8 +226,9 @@ function hideWidget() {
     widgetWrapper.classList.add('feathered');
   }
   
-  // Slide down to bottom of 500px container
-  widgetContainer.style.transform = `translateY(500px)`;
+  // Slide down based on current widget height
+  const hideDistance = widgetContainer.offsetHeight || 500;
+  widgetContainer.style.transform = `translateY(${hideDistance}px)`;
   
   // Clear timeout
   if (autoHideTimeout) {
@@ -754,12 +754,19 @@ function displayArmor(slotId, armorData, slotName) {
     armorPerksContainer.innerHTML = '';
     if (armorData.perks && armorData.perks.length > 0) {
       armorData.perks.forEach(perk => {
-        if (perk.iconUrl) {
+        const iconUrl = perk.iconUrl || (perk.icon ? (perk.icon.startsWith('http') ? perk.icon : `https://www.bungie.net${perk.icon}`) : null);
+        if (iconUrl) {
           const perkIcon = document.createElement('div');
           perkIcon.className = 'armor-perk-icon';
-          perkIcon.style.backgroundImage = `url('${perk.iconUrl}')`;
+          perkIcon.style.backgroundImage = `url('${iconUrl}')`;
           perkIcon.title = `${perk.name || 'Unknown Perk'}\n${perk.description || ''}`;
           armorPerksContainer.appendChild(perkIcon);
+        } else {
+          const perkText = document.createElement('span');
+          perkText.className = 'armor-perk-text';
+          perkText.textContent = perk.name || 'Perk';
+          perkText.title = `${perk.name || 'Unknown Perk'}\n${perk.description || ''}`;
+          armorPerksContainer.appendChild(perkText);
         }
       });
     }
