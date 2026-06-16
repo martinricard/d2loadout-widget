@@ -745,6 +745,26 @@ function displayArmor(slotId, armorData, slotName) {
     slot.classList.remove('exotic');
   }
   
+  // Display visible armor perks (set bonuses, intrinsic armor perks, etc.)
+  const armorPerksContainer = slot.querySelector('.armor-perks');
+  if (armorPerksContainer) {
+    armorPerksContainer.innerHTML = '';
+    if (armorData.perks && armorData.perks.length > 0) {
+      armorData.perks.forEach(perk => {
+        const iconUrl = perk.iconUrl || (perk.icon ? `https://www.bungie.net${perk.icon}` : null);
+        if (iconUrl) {
+          const perkIcon = document.createElement('div');
+          perkIcon.className = 'armor-perk-icon';
+          perkIcon.style.backgroundImage = `url('${iconUrl}')`;
+          perkIcon.title = `${perk.name || 'Unknown Perk'}\n${perk.description || ''}`;
+          armorPerksContainer.appendChild(perkIcon);
+        } else {
+          console.warn(`[${slotName}] Armor perk missing icon URL:`, perk);
+        }
+      });
+    }
+  }
+  
   // Display exotic class item perks (if this is the class item slot)
   const exoticPerksContainer = slot.querySelector('.exotic-perks');
   if (exoticPerksContainer) {

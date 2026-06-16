@@ -629,8 +629,11 @@ async function processEquipmentItem(itemData, itemComponents) {
           isEnabled: socket.isEnabled || false
         });
         
-        // Only add visible sockets to perks list
-        if (socket.isVisible) {
+        // Add visible or enabled armor sockets to perks list.
+        // Some armor perks are not marked visible in the socket metadata,
+        // but they still represent equipped armor stats/perks.
+        const shouldIncludePerk = socket.isVisible || (isArmor && socket.isEnabled);
+        if (shouldIncludePerk) {
           const plugDef = await fetchPlugDefinition(socket.plugHash);
           if (plugDef) {
             perksAndMods.push({
@@ -653,6 +656,11 @@ async function processEquipmentItem(itemData, itemComponents) {
     
     const isWeapon = definition.itemType === 3; // DestinyItemType.Weapon = 3
     const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
+    const isArmor = itemData.bucketHash === BUCKET_HASHES.HELMET ||
+                    itemData.bucketHash === BUCKET_HASHES.ARMS ||
+                    itemData.bucketHash === BUCKET_HASHES.CHEST ||
+                    itemData.bucketHash === BUCKET_HASHES.LEGS ||
+                    itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
     const isExotic = definition.inventory?.tierType === 6;
     
     // Extract weapon perks - Only the first TWO main perks (columns 4-5, socket indexes 3-4)
@@ -1069,6 +1077,8 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
               'paragon',            // Class ability archetype
             ];
             const isExcludedByName = EXCLUDED_MOD_NAMES.some(pattern => modName.toLowerCase().includes(pattern));
+            const isOrnamentByCategoryIdentifier = plugDef?.plug?.plugCategoryIdentifier?.toLowerCase().includes('ornament');
+            const isOrnamentByName = /ornament|transmog|appearance|holofoil|holographic|skin|mask/i.test(modName);
             
             // Exclude old stat mods by pattern (+X stat)
             const isOldStatMod = modName.match(/^\+\d+\s+(super|melee|grenade|weapons|health|class)/i);
@@ -1076,9 +1086,9 @@ async function generateDIMLink(displayName, classType, equipment, itemComponents
             // Exclude if it's a "tuning" socket (balanced tuning mods are OK, but empty tuning sockets are not)
             const isEmptyTuning = modName.toLowerCase().includes('tuning') && modName.toLowerCase().includes('empty');
             
-            // Skip early if excluded by category or name (before checking item type)
-            if (isExcluded || isExcludedByName || isOldStatMod || isEmptyTuning) {
-              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName}, oldStatMod: ${!!isOldStatMod}, emptyTuning: ${isEmptyTuning})`);
+            // Skip early if excluded by category, name, or ornament detection (before checking item type)
+            if (isExcluded || isExcludedByName || isOrnamentByCategoryIdentifier || isOrnamentByName || isOldStatMod || isEmptyTuning) {
+              console.log(`[DIM Link] ⏭️  Skipping socket ${i}: ${socket.plugHash} (excluded - category: ${plugCategoryHash}, name: ${modName}, ornamentIdentifier: ${isOrnamentByCategoryIdentifier}, ornamentName: ${isOrnamentByName}, oldStatMod: ${!!isOldStatMod}, emptyTuning: ${isEmptyTuning})`);
               continue;
             }
             

@@ -70,6 +70,7 @@
       margin-left: 0 !important;
       width: 100% !important;
       padding: 24px 32px 40px !important;
+      background: transparent !important;
     }
     body.sidebar-hidden .widget-viewport {
       width: 100% !important;
@@ -79,6 +80,7 @@
       margin-left: 0 !important;
       width: 100% !important;
       padding: 24px 32px 40px !important;
+      background: transparent !important;
     }
     body.sidebar-hidden .widget-viewport {
       width: 100% !important;
@@ -91,12 +93,13 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #ffffff;
+      background: transparent;
     }
     /* Match StreamElements window size */
     #d2-loadout-widget {
-      width: 927px;
-      height: 562px;
+      width: 854px;
+      max-width: 100%;
+      min-height: 547px;
       overflow: hidden;
     }
     #d2-loadout-widget .widget-container {
@@ -240,7 +243,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #f5f5f5;
+      background: transparent;
       position: relative;
     }
 
@@ -264,11 +267,22 @@
       max-width: 100%;
       max-height: 100%;
       background: transparent;
+      border: none;
+      border-radius: 0;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: visible;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    #d2-loadout-widget {
+      width: 854px;
+      max-width: 100%;
+      min-height: 547px;
+      transform: none;
+      overflow: hidden;
     }
 
     .fullpage-frame {
@@ -287,14 +301,15 @@
       min-height: calc(100vh - 40px);
       align-items: stretch;
       justify-content: center;
+      overflow: visible;
     }
 
-    /* Scale widget 1.5x to match StreamElements display size */
     #d2-loadout-widget {
-      transform: scale(1.5);
-      transform-origin: center center;
-      width: 760px;
-      max-width: 760px;
+      width: 854px;
+      max-width: 100%;
+      min-height: 547px;
+      transform: none;
+      overflow: hidden;
     }
 
     #d2-loadout-widget.fullpage {
@@ -529,6 +544,7 @@
               <div class="armor-type">Helmet</div>
             </div>
             <div class="armor-power"></div>
+            <div class="armor-perks"></div>
           </div>
           <div class="armor-slot" id="armsSlot">
             <div class="armor-icon"></div>
@@ -537,6 +553,7 @@
               <div class="armor-type">Arms</div>
             </div>
             <div class="armor-power"></div>
+            <div class="armor-perks"></div>
           </div>
           <div class="armor-slot" id="chestSlot">
             <div class="armor-icon"></div>
@@ -545,6 +562,7 @@
               <div class="armor-type">Chest</div>
             </div>
             <div class="armor-power"></div>
+            <div class="armor-perks"></div>
           </div>
           <div class="armor-slot" id="legsSlot">
             <div class="armor-icon"></div>
@@ -553,6 +571,7 @@
               <div class="armor-type">Legs</div>
             </div>
             <div class="armor-power"></div>
+            <div class="armor-perks"></div>
           </div>
           <div class="armor-slot" id="classItemSlot">
             <div class="armor-icon"></div>
@@ -561,6 +580,7 @@
               <div class="armor-type">Class Item</div>
             </div>
             <div class="armor-power"></div>
+            <div class="armor-perks"></div>
             <div class="exotic-perks"></div>
           </div>
         </div>
@@ -722,6 +742,34 @@
       if (window.fetchLoadout) window.fetchLoadout();
     });
 
+    const DEMO_PREFS_KEY = 'd2loadoutDemoPrefs';
+
+    const saveDemoPrefs = () => {
+      const activeView = document.querySelector('[data-view].active')?.getAttribute('data-view') || 'all';
+      const activeLayout = document.querySelector('[data-layout].active')?.getAttribute('data-layout') || 'widget';
+      const sidebarHidden = document.body.classList.contains('sidebar-hidden');
+      localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden }));
+    };
+
+    const applyDemoPrefs = () => {
+      try {
+        const prefs = JSON.parse(localStorage.getItem(DEMO_PREFS_KEY) || '{}');
+        if (prefs.activeView) {
+          const viewBtn = document.querySelector(`[data-view="${prefs.activeView}"]`);
+          if (viewBtn) viewBtn.click();
+        }
+        if (typeof prefs.sidebarHidden === 'boolean') {
+          toggleSidebar(prefs.sidebarHidden);
+        }
+        if (prefs.activeLayout) {
+          const layoutBtn = document.querySelector(`[data-layout="${prefs.activeLayout}"]`);
+          if (layoutBtn) layoutBtn.click();
+        }
+      } catch (error) {
+        console.warn('Failed to load demo preferences:', error);
+      }
+    };
+
     // Sidebar toggle
     const toggleSidebarButton = document.getElementById('toggleSidebarButton');
     const sidebarHandle = document.getElementById('sidebarHandle');
@@ -737,6 +785,7 @@
         toggleSidebarButton.innerHTML = '<span class="btn-icon">⬅️</span> Hide Panel';
         sidebarHandle.classList.add('hidden');
       }
+      saveDemoPrefs();
     };
     toggleSidebarButton.addEventListener('click', () => {
       const isHidden = document.body.classList.contains('sidebar-hidden');
@@ -810,6 +859,7 @@
             });
           }
         }
+        saveDemoPrefs();
       });
     });
 
@@ -837,6 +887,7 @@
           widgetElement.style.display = 'block';
           if (fullpageFrame) fullpageFrame.style.display = 'none';
         }
+        saveDemoPrefs();
       });
     });
     
@@ -862,6 +913,8 @@
       });
     });
     
+    applyDemoPrefs();
+
     // Update status and last update time
     const originalFetch = window.fetch;
     window.fetch = function(...args) {

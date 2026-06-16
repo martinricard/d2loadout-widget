@@ -520,6 +520,23 @@ body {
   background: #25252a;
 }
 
+.armor-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.armor-perk-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 .armor-slot.exotic {
   background: var(--bg-color);
   border: 1px solid transparent;
