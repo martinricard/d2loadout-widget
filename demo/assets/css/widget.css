@@ -36,8 +36,6 @@ body {
   max-width: 760px;
   margin: 0 auto;
   position: relative;
-  overflow: hidden; /* Ensure hidden content doesn't show */
-  height: 500px; /* Match container height to create proper clipping */
 }
 
 /* Feathered edge effect */
@@ -578,6 +576,29 @@ body {
 .armor-power.pinnacle-power {
   color: #00e8d3;
   font-weight: 900;
+}
+
+.armor-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.armor-perk-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.armor-perk-text {
+  font-size: 0.7em;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .exotic-perks {

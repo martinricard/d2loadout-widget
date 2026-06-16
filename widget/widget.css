@@ -36,8 +36,8 @@ body {
   max-width: 760px;
   margin: 0 auto;
   position: relative;
-  overflow: hidden; /* Ensure hidden content doesn't show */
-  height: 500px; /* Match container height to create proper clipping */
+  overflow: visible;
+  min-height: 500px;
 }
 
 /* Feathered edge effect */
@@ -505,7 +505,7 @@ body {
 
 .armor-slot {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   padding: 3px 5px;
   background: var(--bg-color);
@@ -640,6 +640,15 @@ body {
 
 .exotic-perk-text:hover {
   opacity: 1;
+}
+
+.armor-perk-text {
+  font-size: 0.65em;
+  color: var(--text-muted);
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.04);
+  white-space: nowrap;
 }
 
 .exotic-perk-separator {
