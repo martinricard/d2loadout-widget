@@ -631,9 +631,22 @@ async function processEquipmentItem(itemData, itemComponents) {
         
         // Only add visible sockets to perks list
         if (socket.isVisible) {
-          perksAndMods.push({
-            plugHash: socket.plugHash
-          });
+          const plugDef = await fetchPlugDefinition(socket.plugHash);
+          if (plugDef) {
+            perksAndMods.push({
+              hash: socket.plugHash,
+              name: plugDef.name,
+              description: plugDef.description,
+              icon: plugDef.icon,
+              iconUrl: plugDef.iconUrl,
+              itemType: plugDef.itemType,
+              itemTypeDisplayName: plugDef.itemTypeDisplayName
+            });
+          } else {
+            perksAndMods.push({
+              hash: socket.plugHash
+            });
+          }
         }
       }
     }
@@ -843,7 +856,7 @@ async function processEquipmentItem(itemData, itemComponents) {
     damageType: instance.damageType || 0,
     primaryStat: instance.primaryStat || null,
     stats: stats.stats || {},
-    perks: perksAndMods.slice(0, 5), // Legacy perks list
+    perks: perksAndMods, // Visible perks and set bonus sockets
     weaponPerks: weaponPerkData, // New: properly filtered weapon perks
     exoticPerks: exoticPerkData, // New: exotic class item perks
     sockets: allSockets, // Store ALL sockets for artifact mod detection
