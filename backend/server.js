@@ -618,6 +618,15 @@ async function processEquipmentItem(itemData, itemComponents) {
   const weaponPerks = [];
   const exoticClassItemPerks = [];
   
+  const isWeapon = definition.itemType === 3; // DestinyItemType.Weapon = 3
+  const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
+  const isArmor = itemData.bucketHash === BUCKET_HASHES.HELMET ||
+                  itemData.bucketHash === BUCKET_HASHES.ARMS ||
+                  itemData.bucketHash === BUCKET_HASHES.CHEST ||
+                  itemData.bucketHash === BUCKET_HASHES.LEGS ||
+                  itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
+  const isExotic = definition.inventory?.tierType === 6;
+
   if (sockets.sockets) {
     for (let i = 0; i < sockets.sockets.length; i++) {
       const socket = sockets.sockets[i];
@@ -653,15 +662,6 @@ async function processEquipmentItem(itemData, itemComponents) {
         }
       }
     }
-    
-    const isWeapon = definition.itemType === 3; // DestinyItemType.Weapon = 3
-    const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
-    const isArmor = itemData.bucketHash === BUCKET_HASHES.HELMET ||
-                    itemData.bucketHash === BUCKET_HASHES.ARMS ||
-                    itemData.bucketHash === BUCKET_HASHES.CHEST ||
-                    itemData.bucketHash === BUCKET_HASHES.LEGS ||
-                    itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
-    const isExotic = definition.inventory?.tierType === 6;
     
     // Extract weapon perks - Only the first TWO main perks (columns 4-5, socket indexes 3-4)
     if (isWeapon && definition.sockets?.socketEntries) {
