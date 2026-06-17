@@ -542,6 +542,9 @@ function displayLoadout(data) {
     displayArmor('chestSlot', data.loadout.armor.chest, 'Chest');
     displayArmor('legsSlot', data.loadout.armor.legs, 'Legs');
     displayArmor('classItemSlot', data.loadout.armor.classItem, 'Class Item');
+    displayArmorSetBonuses(data.loadout.armorSetBonuses);
+  } else {
+    displayArmorSetBonuses([]);
   }
   
   // Stats
@@ -749,8 +752,9 @@ function displayArmor(slotId, armorData, slotName) {
   const armorPerksContainer = slot.querySelector('.armor-perks');
   if (armorPerksContainer) {
     armorPerksContainer.innerHTML = '';
-    if (armorData.perks && armorData.perks.length > 0) {
-      armorData.perks.forEach(perk => {
+    const visiblePerks = (armorData.perks || []).filter(perk => !(perk.setName || perk.source === 'armorSetBonus'));
+    if (visiblePerks.length > 0) {
+      visiblePerks.forEach(perk => {
         const iconUrl = perk.iconUrl || (perk.icon ? (perk.icon.startsWith('http') ? perk.icon : `https://www.bungie.net${perk.icon}`) : null);
         const bonusLabel = perk.setName && perk.pieces
           ? `${perk.setName} ${perk.pieces} Piece | ${perk.name || 'Perk'}`
@@ -814,6 +818,57 @@ function displayArmor(slotId, armorData, slotName) {
       console.log(`[${slotName}] No exotic perks found`);
     }
   }
+}
+
+// Display unique active armor set bonuses once for the whole armor section
+function displayArmorSetBonuses(bonuses) {
+  const armorSection = document.getElementById('armorSection');
+  if (!armorSection) return;
+
+  let container = document.getElementById('armorSetBonuses');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'armorSetBonuses';
+    container.className = 'armor-set-bonuses';
+    const title = armorSection.querySelector('.section-title');
+    if (title) {
+      title.insertAdjacentElement('afterend', container);
+    } else {
+      armorSection.prepend(container);
+    }
+  }
+
+  container.innerHTML = '';
+
+  const items = Array.isArray(bonuses) ? bonuses : Object.values(bonuses || {});
+  const uniqueBonuses = new Map();
+  items.forEach(bonus => {
+    const iconUrl = bonus.iconUrl || bonus.perkIconUrl || (bonus.icon ? (bonus.icon.startsWith('http') ? bonus.icon : `https://www.bungie.net${bonus.icon}`) : null);
+    if (!iconUrl) return;
+
+    const pieces = bonus.pieces || bonus.requiredPieces || bonus.piecesRequired || '';
+    const key = `${bonus.setKey || bonus.setName || 'set'}:${pieces}:${bonus.hash || bonus.name || iconUrl}`;
+    if (!uniqueBonuses.has(key)) {
+      uniqueBonuses.set(key, { ...bonus, iconUrl, pieces });
+    }
+  });
+
+  [...uniqueBonuses.values()]
+    .sort((a, b) => {
+      const setCompare = (a.setName || '').localeCompare(b.setName || '');
+      return setCompare || ((a.pieces || 0) - (b.pieces || 0));
+    })
+    .forEach(bonus => {
+      const name = bonus.name || bonus.setName || 'Armor Set Bonus';
+      const label = bonus.setName && bonus.pieces
+        ? `${bonus.setName} ${bonus.pieces} Piece | ${name}`
+        : name;
+      const icon = document.createElement('div');
+      icon.className = 'armor-perk-icon armor-set-bonus-icon';
+      icon.style.backgroundImage = `url('${bonus.iconUrl}')`;
+      icon.title = `${label}\n${bonus.description || bonus.perkDescription || ''}`;
+      container.appendChild(icon);
+    });
 }
 
 // Display character stats

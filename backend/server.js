@@ -30,6 +30,8 @@ const manifestCache = {
   stats: new Map(),
   plugs: new Map(),
   sandboxPerks: new Map(),
+  itemSets: new Map(),
+  itemSetsLoaded: false,
   artifacts: new Map(),
   lastUpdate: null,
   TTL: 3600000 // 1 hour
@@ -45,6 +47,8 @@ function ensureManifestCacheFresh() {
     manifestCache.stats.clear();
     manifestCache.plugs.clear();
     manifestCache.sandboxPerks.clear();
+    manifestCache.itemSets.clear();
+    manifestCache.itemSetsLoaded = false;
     manifestCache.artifacts.clear();
     manifestCache.lastUpdate = now;
   }
@@ -85,7 +89,8 @@ const ARMOR_SET_BONUS_FALLBACKS = [
     setName: 'Lustrous',
     itemNamePattern: /^Lustrous\b/i,
     bonuses: [
-      { pieces: 2, sandboxPerkHash: 4048287940 } // Photogalvanic
+      { pieces: 2, sandboxPerkHash: 4048287940 }, // Photogalvanic
+      { pieces: 4, sandboxPerkHash: 4048287941 } // Cauterize
     ]
   },
   {
@@ -93,7 +98,8 @@ const ARMOR_SET_BONUS_FALLBACKS = [
     setName: 'Techsec',
     itemNamePattern: /^Te?chsec\b/i,
     bonuses: [
-      { pieces: 2, sandboxPerkHash: 1130213040 } // Wrecker
+      { pieces: 2, sandboxPerkHash: 1130213040 }, // Wrecker
+      { pieces: 4, sandboxPerkHash: 1130213041 } // Concussive Rounds
     ]
   }
 ];
@@ -628,6 +634,62 @@ async function fetchSandboxPerkDefinition(perkHash) {
   }
 }
 
+async function fetchEquipableItemSetDefinitions() {
+  ensureManifestCacheFresh();
+
+  if (manifestCache.itemSetsLoaded) {
+    return manifestCache.itemSets;
+  }
+
+  try {
+    const manifestResponse = await axios.get(`${BUNGIE_API_BASE}/Destiny2/Manifest/`, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+    const itemSetPath = manifestResponse.data.Response?.jsonWorldComponentContentPaths?.en?.DestinyEquipableItemSetDefinition;
+
+    if (!itemSetPath) {
+      manifestCache.itemSetsLoaded = true;
+      return manifestCache.itemSets;
+    }
+
+    const itemSetResponse = await axios.get(`https://www.bungie.net${itemSetPath}`);
+    const itemSetDefinitions = itemSetResponse.data || {};
+
+    manifestCache.itemSets.clear();
+
+    for (const itemSet of Object.values(itemSetDefinitions)) {
+      const setName = itemSet.displayProperties?.name || '';
+      const bonuses = (itemSet.setPerks || [])
+        .filter(perk => perk.requiredSetCount && perk.sandboxPerkHash)
+        .map(perk => ({
+          pieces: perk.requiredSetCount,
+          sandboxPerkHash: perk.sandboxPerkHash
+        }));
+
+      if (!setName || bonuses.length === 0) {
+        continue;
+      }
+
+      const setDefinition = {
+        key: normalizeArmorSetKey(setName),
+        setName,
+        bonuses
+      };
+
+      for (const itemHash of itemSet.setItems || []) {
+        manifestCache.itemSets.set(Number(itemHash), setDefinition);
+      }
+    }
+
+    manifestCache.itemSetsLoaded = true;
+    return manifestCache.itemSets;
+  } catch (error) {
+    console.error('[Armor Set Bonuses] Failed to fetch equipable item set definitions:', error.message);
+    manifestCache.itemSetsLoaded = true;
+    return manifestCache.itemSets;
+  }
+}
+
 // Fetch seasonal artifact definition and get all artifact mod hashes
 async function fetchArtifactModHashes(artifactHash) {
   ensureManifestCacheFresh();
@@ -710,10 +772,10 @@ function getArmorSetDefinition(armorItem) {
   return ARMOR_SET_BONUS_FALLBACKS.find(setDef => setDef.itemNamePattern.test(itemName)) || null;
 }
 
-function getArmorSetInfo(armorItem) {
-  const fallback = getArmorSetDefinition(armorItem);
-  const setName = armorItem?.armorSetName || fallback?.setName || getArmorSetNameFromItemName(armorItem?.name);
-  const setKey = armorItem?.armorSetKey || fallback?.key || normalizeArmorSetKey(setName);
+function getArmorSetInfo(armorItem, itemSetDefinition = null) {
+  const fallback = itemSetDefinition || getArmorSetDefinition(armorItem);
+  const setName = fallback?.setName || armorItem?.armorSetName || getArmorSetNameFromItemName(armorItem?.name);
+  const setKey = fallback?.key || armorItem?.armorSetKey || normalizeArmorSetKey(setName);
   return { setName, setKey, fallback };
 }
 
@@ -837,10 +899,12 @@ function addArmorSetBonusCandidate(candidates, seenKeys, candidate) {
 }
 
 async function getActiveArmorSetBonuses(armorItems) {
+  const itemSetDefinitions = await fetchEquipableItemSetDefinitions();
   const groups = new Map();
 
   for (const armorItem of armorItems.filter(Boolean)) {
-    const armorSetInfo = getArmorSetInfo(armorItem);
+    const itemSetDefinition = itemSetDefinitions.get(Number(armorItem.hash)) || null;
+    const armorSetInfo = getArmorSetInfo(armorItem, itemSetDefinition);
     if (!armorSetInfo.setKey || !armorSetInfo.setName) {
       continue;
     }
@@ -886,7 +950,6 @@ async function getActiveArmorSetBonuses(armorItems) {
           equippedItems: [...group.equippedItems]
         });
       }
-      continue;
     }
 
     if (!group.fallback) {
@@ -895,6 +958,11 @@ async function getActiveArmorSetBonuses(armorItems) {
 
     for (const bonusDef of group.fallback.bonuses) {
       if (group.pieces < bonusDef.pieces) {
+        continue;
+      }
+
+      const key = `${bonusDef.sandboxPerkHash}:${bonusDef.pieces}`;
+      if (candidateMap.has(key)) {
         continue;
       }
 
@@ -925,18 +993,8 @@ async function getActiveArmorSetBonuses(armorItems) {
 }
 
 function applyArmorSetBonusesToArmor(armorItems, armorSetBonuses) {
-  const bonusesBySet = new Map();
-
-  for (const bonus of armorSetBonuses) {
-    if (!bonusesBySet.has(bonus.setKey)) {
-      bonusesBySet.set(bonus.setKey, []);
-    }
-    bonusesBySet.get(bonus.setKey).push(bonus);
-  }
-
   for (const armorItem of armorItems.filter(Boolean)) {
-    const armorSetInfo = getArmorSetInfo(armorItem);
-    armorItem.perks = armorSetInfo.setKey ? (bonusesBySet.get(armorSetInfo.setKey) || []) : [];
+    armorItem.perks = [];
   }
 }
 

@@ -529,6 +529,18 @@ body {
   width: calc(100% - 30px);
 }
 
+.armor-set-bonuses {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 0 4px 30px;
+  width: calc(100% - 30px);
+}
+
+.armor-set-bonuses:not(:empty) {
+  display: flex;
+}
+
 .armor-perk-icon {
   width: 20px;
   height: 20px;
