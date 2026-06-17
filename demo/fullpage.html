@@ -463,35 +463,16 @@
 
     /* ── SET BONUSES ── */
     .set-bonus-row {
-      display: flex; flex-direction: column; gap: 4px;
-      padding: 10px 12px;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    .set-bonus-header {
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center;
     }
     .set-bonus-icon {
-      width: 24px; height: 24px;
+      width: 32px; height: 32px;
       background-size: cover; background-position: center;
       background-color: var(--surface-3);
-      border-radius: 3px; flex-shrink: 0;
-    }
-    .set-bonus-meta {
-      display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;
-    }
-    .set-bonus-name {
-      font-size: 12px; font-weight: 700;
-      color: var(--text); text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .set-bonus-pieces {
-      font-size: 10px; font-weight: 600;
-      color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px;
-    }
-    .set-bonus-desc {
-      font-size: 11px; color: var(--text-muted); line-height: 1.5;
-      margin-top: 2px;
+      border-radius: 50%; flex-shrink: 0;
+      border: 1px solid rgba(123,207,255,0.75);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.45);
+      cursor: help;
     }
 
     /* ── ARTIFACT ── */
@@ -780,7 +761,7 @@
             <span class="card-title">Armor Set Bonuses</span>
           </div>
           <div class="card-body" style="padding-top:4px;">
-            <div id="set-bonus-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+            <div id="set-bonus-list" style="display:flex; flex-direction:row; flex-wrap:wrap; gap:8px;"></div>
           </div>
         </div>
       </div>
@@ -1141,47 +1122,16 @@
       const iconUrl = bonus.iconUrl || bonus.perkIconUrl || '';
       const pieces = bonus.pieces || bonus.requiredPieces || bonus.piecesRequired || '';
 
-      if (!name && !desc) return;
+      if (!iconUrl) return;
 
       const row = document.createElement('div');
       row.className = 'set-bonus-row';
+      row.title = `${pieces ? `${pieces} Piece | ` : ''}${name}${desc ? '\n' + desc : ''}`;
 
-      const header = document.createElement('div');
-      header.className = 'set-bonus-header';
-
-      if (iconUrl) {
-        const icon = document.createElement('div');
-        icon.className = 'set-bonus-icon';
-        icon.style.backgroundImage = `url('${iconUrl}')`;
-        header.appendChild(icon);
-      }
-
-      const meta = document.createElement('div');
-      meta.className = 'set-bonus-meta';
-
-      if (name) {
-        const nameEl = document.createElement('div');
-        nameEl.className = 'set-bonus-name';
-        nameEl.textContent = name;
-        meta.appendChild(nameEl);
-      }
-
-      if (pieces) {
-        const piecesEl = document.createElement('div');
-        piecesEl.className = 'set-bonus-pieces';
-        piecesEl.textContent = `${pieces} Piece Bonus`;
-        meta.appendChild(piecesEl);
-      }
-
-      header.appendChild(meta);
-      row.appendChild(header);
-
-      if (desc) {
-        const descEl = document.createElement('div');
-        descEl.className = 'set-bonus-desc';
-        descEl.textContent = desc;
-        row.appendChild(descEl);
-      }
+      const icon = document.createElement('div');
+      icon.className = 'set-bonus-icon';
+      icon.style.backgroundImage = `url('${iconUrl}')`;
+      row.appendChild(icon);
 
       list.appendChild(row);
     });
