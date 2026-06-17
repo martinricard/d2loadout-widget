@@ -29,6 +29,7 @@ const manifestCache = {
   items: new Map(),
   stats: new Map(),
   plugs: new Map(),
+  sandboxPerks: new Map(),
   artifacts: new Map(),
   lastUpdate: null,
   TTL: 3600000 // 1 hour
@@ -43,6 +44,7 @@ function ensureManifestCacheFresh() {
     manifestCache.items.clear();
     manifestCache.stats.clear();
     manifestCache.plugs.clear();
+    manifestCache.sandboxPerks.clear();
     manifestCache.artifacts.clear();
     manifestCache.lastUpdate = now;
   }
@@ -76,7 +78,25 @@ const ARMOR_MOD_SOCKET_TYPES = new Set([
 ]);
 
 const ARMOR_MOD_ITEM_TYPES = new Set([19, 20]); // Current and legacy armor mod item types
-const ARMOR_SET_BONUS_THRESHOLDS = [2, 4];
+
+const ARMOR_SET_BONUS_DEFINITIONS = [
+  {
+    key: 'lustrous',
+    setName: 'Lustrous',
+    itemNamePattern: /^Lustrous\b/i,
+    bonuses: [
+      { pieces: 2, sandboxPerkHash: 4048287940 } // Photogalvanic
+    ]
+  },
+  {
+    key: 'techsec',
+    setName: 'Techsec',
+    itemNamePattern: /^Te?chsec\b/i,
+    bonuses: [
+      { pieces: 2, sandboxPerkHash: 1130213040 } // Wrecker
+    ]
+  }
+];
 
 // Stat hashes for armor (The Final Shape - corrected mapping based on actual API data)
 const STAT_HASHES = {
@@ -567,6 +587,43 @@ async function fetchPlugDefinition(plugHash) {
   }
 }
 
+// Fetch sandbox perk definition from Bungie manifest.
+// Armor set bonuses such as Photogalvanic/Wrecker live here, not in item sockets.
+async function fetchSandboxPerkDefinition(perkHash) {
+  ensureManifestCacheFresh();
+
+  if (manifestCache.sandboxPerks.has(perkHash)) {
+    return manifestCache.sandboxPerks.get(perkHash);
+  }
+
+  try {
+    const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkHash}/`;
+    const response = await axios.get(url, {
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    });
+
+    const definition = response.data.Response;
+    const iconPath = definition.displayProperties?.icon || '';
+    const perkData = {
+      hash: perkHash,
+      name: definition.displayProperties?.name || 'Unknown Perk',
+      description: definition.displayProperties?.description || '',
+      icon: iconPath,
+      iconUrl: iconPath
+        ? iconPath.startsWith('http')
+          ? iconPath
+          : `https://www.bungie.net${iconPath}`
+        : null
+    };
+
+    manifestCache.sandboxPerks.set(perkHash, perkData);
+    return perkData;
+  } catch (error) {
+    console.error(`Failed to fetch sandbox perk definition for ${perkHash}:`, error.message);
+    return null;
+  }
+}
+
 // Fetch seasonal artifact definition and get all artifact mod hashes
 async function fetchArtifactModHashes(artifactHash) {
   ensureManifestCacheFresh();
@@ -627,112 +684,51 @@ function isArmorModPlug(plugDef) {
   return !!plugDef?.itemType && ARMOR_MOD_ITEM_TYPES.has(plugDef.itemType);
 }
 
-function normalizeSetBonusName(name) {
-  return (name || '')
-    .toLowerCase()
-    .replace(/\b[24][-\s]?piece\b/g, '')
-    .replace(/\bbonus\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+function getArmorSetDefinition(armorItem) {
+  const itemName = armorItem?.name || '';
+  return ARMOR_SET_BONUS_DEFINITIONS.find(setDef => setDef.itemNamePattern.test(itemName)) || null;
 }
 
-function getExplicitSetBonusThresholds(perk) {
-  const text = `${perk?.name || ''} ${perk?.description || ''}`.toLowerCase();
-  const thresholds = new Set();
-  const regexes = [
-    /\b([24])[-\s]?piece\b/g,
-    /\bwear(?:ing)?\s+([24])\s+pieces?\b/g,
-    /\b([24])\s+pieces?\b/g
-  ];
-
-  for (const regex of regexes) {
-    let match;
-    while ((match = regex.exec(text)) !== null) {
-      const threshold = Number(match[1]);
-      if (ARMOR_SET_BONUS_THRESHOLDS.includes(threshold)) {
-        thresholds.add(threshold);
-      }
-    }
-  }
-
-  return [...thresholds].sort((a, b) => a - b);
-}
-
-function isArmorSetBonusPerk(perk) {
-  if (!perk || !perk.name || isArmorModPlug(perk)) {
-    return false;
-  }
-
-  const text = [
-    perk.name,
-    perk.description,
-    perk.itemTypeDisplayName,
-    perk.plugCategoryIdentifier
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  if (!text) {
-    return false;
-  }
-
-  if (/\b(spirit of|ornament|shader|empty|upgrade armor|tuning)\b/.test(text)) {
-    return false;
-  }
-
-  return /\b(set bonus|armor set|[24][-\s]?piece|pieces?|wear(?:ing)?)\b/.test(text);
-}
-
-function getActiveArmorSetBonuses(armorItems) {
+async function getActiveArmorSetBonuses(armorItems) {
   const groups = new Map();
 
   for (const armorItem of armorItems.filter(Boolean)) {
-    const seenOnItem = new Set();
-
-    for (const perk of armorItem.perks || []) {
-      if (!isArmorSetBonusPerk(perk)) {
-        continue;
-      }
-
-      const normalizedName = normalizeSetBonusName(perk.name);
-      const groupKey = perk.hash ? `hash:${perk.hash}` : `name:${normalizedName}`;
-      if (seenOnItem.has(groupKey)) {
-        continue;
-      }
-      seenOnItem.add(groupKey);
-
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, {
-          perk,
-          pieces: 0,
-          equippedItems: new Set()
-        });
-      }
-
-      const group = groups.get(groupKey);
-      group.pieces += 1;
-      group.equippedItems.add(armorItem.name);
+    const setDef = getArmorSetDefinition(armorItem);
+    if (!setDef) {
+      continue;
     }
+
+    if (!groups.has(setDef.key)) {
+      groups.set(setDef.key, {
+        setDef,
+        pieces: 0,
+        equippedItems: new Set()
+      });
+    }
+
+    const group = groups.get(setDef.key);
+    group.pieces += 1;
+    group.equippedItems.add(armorItem.name);
   }
 
   const activeBonuses = [];
 
   for (const group of groups.values()) {
-    const explicitThresholds = getExplicitSetBonusThresholds(group.perk);
-    const thresholds = explicitThresholds.length
-      ? explicitThresholds
-      : ARMOR_SET_BONUS_THRESHOLDS;
+    for (const bonusDef of group.setDef.bonuses) {
+      if (group.pieces < bonusDef.pieces) {
+        continue;
+      }
 
-    for (const threshold of thresholds) {
-      if (group.pieces < threshold) {
+      const perk = await fetchSandboxPerkDefinition(bonusDef.sandboxPerkHash);
+      if (!perk) {
         continue;
       }
 
       activeBonuses.push({
-        hash: group.perk.hash,
-        name: group.perk.name,
-        description: group.perk.description,
-        icon: group.perk.icon,
-        iconUrl: group.perk.iconUrl,
-        pieces: threshold,
+        ...perk,
+        setKey: group.setDef.key,
+        setName: group.setDef.setName,
+        pieces: bonusDef.pieces,
         equippedPieces: group.pieces,
         equippedItems: [...group.equippedItems]
       });
@@ -745,6 +741,22 @@ function getActiveArmorSetBonuses(armorItems) {
     }
     return a.pieces - b.pieces;
   });
+}
+
+function applyArmorSetBonusesToArmor(armorItems, armorSetBonuses) {
+  const bonusesBySet = new Map();
+
+  for (const bonus of armorSetBonuses) {
+    if (!bonusesBySet.has(bonus.setKey)) {
+      bonusesBySet.set(bonus.setKey, []);
+    }
+    bonusesBySet.get(bonus.setKey).push(bonus);
+  }
+
+  for (const armorItem of armorItems.filter(Boolean)) {
+    const setDef = getArmorSetDefinition(armorItem);
+    armorItem.perks = setDef ? (bonusesBySet.get(setDef.key) || []) : [];
+  }
 }
 
 // Process a single equipment item
@@ -792,9 +804,9 @@ async function processEquipmentItem(itemData, itemComponents) {
         
         const plugDef = await fetchPlugDefinition(socket.plugHash);
 
-        // Add visible or enabled armor sockets to perks list.
-        // Exclude armor mod sockets and legacy armor mod plug types.
-        const shouldIncludePerk = (socket.isVisible || (isArmor && socket.isEnabled)) && !isArmorModSocket(socketDef) && !isArmorModPlug(plugDef);
+        // Armor set bonuses are derived from equipped set pieces below.
+        // Do not treat normal armor sockets as perks; they include mods, shaders, and ornaments.
+        const shouldIncludePerk = !isArmor && socket.isVisible && !isArmorModSocket(socketDef) && !isArmorModPlug(plugDef);
         if (shouldIncludePerk) {
           if (plugDef) {
             perksAndMods.push({
@@ -804,7 +816,10 @@ async function processEquipmentItem(itemData, itemComponents) {
               icon: plugDef.icon,
               iconUrl: plugDef.iconUrl,
               itemType: plugDef.itemType,
-              itemTypeDisplayName: plugDef.itemTypeDisplayName
+              itemTypeDisplayName: plugDef.itemTypeDisplayName,
+              plugCategoryHash: plugDef.plugCategoryHash,
+              plugCategoryIdentifier: plugDef.plugCategoryIdentifier,
+              itemCategoryHashes: plugDef.itemCategoryHashes
             });
           } else {
             perksAndMods.push({
@@ -1498,13 +1513,15 @@ async function processLoadout(characterId, equipment, itemComponents, characterD
     console.warn('[STATS] ⚠️ Warning: characterData or characterData.stats not available, stats will be empty');
   }
   
-  const armorSetBonuses = getActiveArmorSetBonuses([
+  const armorItems = [
     helmetData,
     armsData,
     chestData,
     legsData,
     classItemData
-  ]);
+  ];
+  const armorSetBonuses = await getActiveArmorSetBonuses(armorItems);
+  applyArmorSetBonusesToArmor(armorItems, armorSetBonuses);
 
   return {
     weapons: {
