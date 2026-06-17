@@ -1107,19 +1107,110 @@
   }
 
   /* ── SET BONUSES ── */
+  const ARMOR_SET_BONUS_FALLBACKS = {
+    lustrous: {
+      setKey: 'lustrous',
+      setName: 'Lustrous',
+      bonuses: [
+        {
+          hash: 4048287940,
+          name: 'Photogalvanic',
+          description: 'Receiving healing temporarily grants your Solar weapons increased flinch resistance, handling, and reload speed.',
+          icon: '/common/destiny2_content/icons/3c9918529fb85eb95b151c2461b63b9c.png',
+          pieces: 2
+        },
+        {
+          hash: 4048287941,
+          name: 'Cauterize',
+          description: 'Rapid Solar final blows heal you.',
+          icon: '/common/destiny2_content/icons/fb229a054586415903e6539ea363f63a.png',
+          pieces: 4
+        }
+      ]
+    },
+    techsec: {
+      setKey: 'techsec',
+      setName: 'Techsec',
+      bonuses: [
+        {
+          hash: 1130213040,
+          name: 'Wrecker',
+          description: 'You deal significantly increased Kinetic damage to combatant shields, overshields, vehicles, and constructs. Constructs include barricades, turrets, Stasis crystals, and other objects created in the field.',
+          icon: '/common/destiny2_content/icons/bd2c44c6cb6a7f2a168a90be278aa8c4.png',
+          pieces: 2
+        },
+        {
+          hash: 1130213041,
+          name: 'Concussive Rounds',
+          description: 'Defeating powerful combatants or breaking a combatant shield with Kinetic damage releases a disorienting Kinetic shockwave.',
+          icon: '/common/destiny2_content/icons/56a10b99ed0b4b28d33696ec828b29b5.png',
+          pieces: 4
+        }
+      ]
+    }
+  };
+
+  function normalizeSetBonusKey(setName) {
+    return (setName || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function withActiveSetBonusFallbacks(bonuses) {
+    const items = Array.isArray(bonuses) ? [...bonuses] : Object.values(bonuses || {});
+    const seen = new Set(items.map(bonus => {
+      const setKey = bonus.setKey || normalizeSetBonusKey(bonus.setName);
+      const pieces = bonus.pieces || bonus.requiredPieces || bonus.piecesRequired || '';
+      return `${setKey}:${pieces}:${bonus.hash || bonus.name || ''}`;
+    }));
+
+    items.forEach(bonus => {
+      const setKey = bonus.setKey || normalizeSetBonusKey(bonus.setName);
+      const fallback = ARMOR_SET_BONUS_FALLBACKS[setKey];
+      const equippedPieces = bonus.equippedPieces || bonus.equippedSetCount || bonus.activePieces || 0;
+      if (!fallback || !equippedPieces) return;
+
+      fallback.bonuses.forEach(fallbackBonus => {
+        if (equippedPieces < fallbackBonus.pieces) return;
+
+        const key = `${fallback.setKey}:${fallbackBonus.pieces}:${fallbackBonus.hash}`;
+        if (seen.has(key)) return;
+
+        seen.add(key);
+        items.push({
+          ...fallbackBonus,
+          setKey: fallback.setKey,
+          setName: fallback.setName,
+          requiredPieces: fallbackBonus.pieces,
+          equippedPieces,
+          source: 'armorSetBonusFallback',
+          iconUrl: `https://www.bungie.net${fallbackBonus.icon}`
+        });
+      });
+    });
+
+    return items.sort((a, b) => {
+      const setCompare = (a.setName || '').localeCompare(b.setName || '');
+      const aPieces = a.pieces || a.requiredPieces || a.piecesRequired || 0;
+      const bPieces = b.pieces || b.requiredPieces || b.piecesRequired || 0;
+      return setCompare || (aPieces - bPieces);
+    });
+  }
+
   function fillSetBonuses(bonuses) {
     const section = document.getElementById('set-bonus-section');
     const list = document.getElementById('set-bonus-list');
     list.innerHTML = '';
 
-    const items = Array.isArray(bonuses) ? bonuses : Object.values(bonuses || {});
+    const items = withActiveSetBonusFallbacks(bonuses);
 
     if (!items.length) { section.style.display = 'none'; return; }
 
     items.forEach(bonus => {
       const name = bonus.name || bonus.setName || '';
       const desc = bonus.description || bonus.perkDescription || '';
-      const iconUrl = bonus.iconUrl || bonus.perkIconUrl || '';
+      const iconUrl = bonus.iconUrl || bonus.perkIconUrl || (bonus.icon ? `https://www.bungie.net${bonus.icon}` : '');
       const pieces = bonus.pieces || bonus.requiredPieces || bonus.piecesRequired || '';
 
       if (!iconUrl) return;
