@@ -830,11 +830,11 @@ function displayArmorSetBonuses(bonuses) {
     container = document.createElement('div');
     container.id = 'armorSetBonuses';
     container.className = 'armor-set-bonuses';
-    const title = armorSection.querySelector('.section-title');
-    if (title) {
-      title.insertAdjacentElement('afterend', container);
+    const armorGrid = armorSection.querySelector('.armor-grid');
+    if (armorGrid) {
+      armorGrid.insertAdjacentElement('afterend', container);
     } else {
-      armorSection.prepend(container);
+      armorSection.appendChild(container);
     }
   }
 
@@ -852,6 +852,8 @@ function displayArmorSetBonuses(bonuses) {
       uniqueBonuses.set(key, { ...bonus, iconUrl, pieces });
     }
   });
+
+  armorSection.classList.toggle('has-armor-set-bonuses', uniqueBonuses.size > 0);
 
   [...uniqueBonuses.values()]
     .sort((a, b) => {

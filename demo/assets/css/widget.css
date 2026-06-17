@@ -495,6 +495,10 @@ body {
 }
 
 /* ========== ARMOR SECTION ========== */
+.armor-section {
+  position: relative;
+}
+
 .armor-grid {
   display: flex;
   flex-direction: column;
@@ -591,12 +595,28 @@ body {
   display: none;
   flex-wrap: wrap;
   gap: 4px;
-  margin: 0 0 4px 30px;
+  margin: 6px 0 0 30px;
   width: calc(100% - 30px);
+  align-items: center;
 }
 
 .armor-set-bonuses:not(:empty) {
   display: flex;
+}
+
+.widget-container:not(.layout-standard):not(.layout-full) .armor-section.has-armor-set-bonuses .armor-grid {
+  padding-right: 30px;
+}
+
+.widget-container:not(.layout-standard):not(.layout-full) .armor-set-bonuses:not(:empty) {
+  position: absolute;
+  top: 24px;
+  right: 8px;
+  width: 24px;
+  margin: 0;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .armor-perk-icon {
