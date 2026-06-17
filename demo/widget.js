@@ -751,16 +751,15 @@ function displayArmor(slotId, armorData, slotName) {
     armorPerksContainer.innerHTML = '';
     if (armorData.perks && armorData.perks.length > 0) {
       armorData.perks.forEach(perk => {
-        const iconUrl = perk.iconUrl || (perk.icon ? `https://www.bungie.net${perk.icon}` : null);
-        if (iconUrl) {
-          const perkIcon = document.createElement('div');
-          perkIcon.className = 'armor-perk-icon';
-          perkIcon.style.backgroundImage = `url('${iconUrl}')`;
-          perkIcon.title = `${perk.name || 'Unknown Perk'}\n${perk.description || ''}`;
-          armorPerksContainer.appendChild(perkIcon);
-        } else {
-          console.warn(`[${slotName}] Armor perk missing icon URL:`, perk);
-        }
+        const iconUrl = perk.iconUrl || (perk.icon ? (perk.icon.startsWith('http') ? perk.icon : `https://www.bungie.net${perk.icon}`) : null);
+        const bonusLabel = perk.setName && perk.pieces
+          ? `${perk.setName} ${perk.pieces} Piece | ${perk.name || 'Perk'}`
+          : (perk.name || 'Perk');
+        const perkEl = document.createElement('div');
+        perkEl.className = perk.setName ? 'armor-perk-icon armor-set-bonus-icon' : 'armor-perk-icon';
+        perkEl.title = `${bonusLabel}\n${perk.description || ''}`;
+        if (iconUrl) perkEl.style.backgroundImage = `url('${iconUrl}')`;
+        armorPerksContainer.appendChild(perkEl);
       });
     }
   }

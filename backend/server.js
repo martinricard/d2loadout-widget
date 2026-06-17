@@ -79,7 +79,7 @@ const ARMOR_MOD_SOCKET_TYPES = new Set([
 
 const ARMOR_MOD_ITEM_TYPES = new Set([19, 20]); // Current and legacy armor mod item types
 
-const ARMOR_SET_BONUS_DEFINITIONS = [
+const ARMOR_SET_BONUS_FALLBACKS = [
   {
     key: 'lustrous',
     setName: 'Lustrous',
@@ -97,6 +97,8 @@ const ARMOR_SET_BONUS_DEFINITIONS = [
     ]
   }
 ];
+
+const ARMOR_SLOT_SUFFIX_PATTERN = /\s+(helm|helmet|casque|mask|cowl|hood|cover|gauntlets|grips|gloves|arms|grasps|wraps|plate|vest|robes|chest|jacket|vestment|boots|greaves|strides|slacks|legs|treads|mark|cloak|bond|class item)$/i;
 
 // Stat hashes for armor (The Final Shape - corrected mapping based on actual API data)
 const STAT_HASHES = {
@@ -574,7 +576,9 @@ async function fetchPlugDefinition(plugHash) {
       itemTypeDisplayName: definition.itemTypeDisplayName || '',
       plugCategoryHash: definition.plug?.plugCategoryHash || null,
       plugCategoryIdentifier: definition.plug?.plugCategoryIdentifier || '',
-      itemCategoryHashes: definition.itemCategoryHashes || []
+      itemCategoryHashes: definition.itemCategoryHashes || [],
+      perks: definition.perks || [],
+      traitIds: definition.traitIds || []
     };
     
     // Cache the result
@@ -684,37 +688,212 @@ function isArmorModPlug(plugDef) {
   return !!plugDef?.itemType && ARMOR_MOD_ITEM_TYPES.has(plugDef.itemType);
 }
 
+function normalizeArmorSetKey(setName) {
+  return (setName || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getArmorSetNameFromItemName(itemName) {
+  const cleanName = (itemName || '').trim();
+  if (!cleanName) {
+    return '';
+  }
+
+  const withoutSlot = cleanName.replace(ARMOR_SLOT_SUFFIX_PATTERN, '').trim();
+  return withoutSlot || cleanName;
+}
+
 function getArmorSetDefinition(armorItem) {
   const itemName = armorItem?.name || '';
-  return ARMOR_SET_BONUS_DEFINITIONS.find(setDef => setDef.itemNamePattern.test(itemName)) || null;
+  return ARMOR_SET_BONUS_FALLBACKS.find(setDef => setDef.itemNamePattern.test(itemName)) || null;
+}
+
+function getArmorSetInfo(armorItem) {
+  const fallback = getArmorSetDefinition(armorItem);
+  const setName = armorItem?.armorSetName || fallback?.setName || getArmorSetNameFromItemName(armorItem?.name);
+  const setKey = armorItem?.armorSetKey || fallback?.key || normalizeArmorSetKey(setName);
+  return { setName, setKey, fallback };
+}
+
+function parseRequiredPieces(...texts) {
+  const text = texts.filter(Boolean).join(' ');
+  if (!text) {
+    return null;
+  }
+
+  const pieceMatch = text.match(/\b([2-5])\s*[- ]?\s*pieces?\b/i);
+  if (pieceMatch) {
+    return parseInt(pieceMatch[1], 10);
+  }
+
+  const setBonusMatch = text.match(/\bset[_\s-]?bonus[_\s-]?([2-5])\b/i);
+  return setBonusMatch ? parseInt(setBonusMatch[1], 10) : null;
+}
+
+function cleanArmorSetBonusName(name) {
+  return (name || '')
+    .replace(/^\s*[2-5]\s*[- ]?\s*pieces?\s*(?:bonus)?\s*(?:[|:-]\s*)?/i, '')
+    .trim();
+}
+
+async function buildArmorSetBonusCandidate(perkEntry, armorSetInfo, source = {}) {
+  const perkHash = perkEntry?.perkHash || perkEntry?.hash;
+  if (!perkHash) {
+    return null;
+  }
+
+  const perk = await fetchSandboxPerkDefinition(perkHash);
+  if (!perk) {
+    return null;
+  }
+
+  const pieces = parseRequiredPieces(
+    perkEntry.requirementDisplayString,
+    source.name,
+    source.description,
+    source.category,
+    source.identifier
+  );
+
+  if (!pieces) {
+    return null;
+  }
+
+  return {
+    ...perk,
+    setKey: armorSetInfo.setKey,
+    setName: armorSetInfo.setName,
+    pieces,
+    requiredPieces: pieces,
+    source: 'armorSetBonus',
+    sourceHash: source.hash || null
+  };
+}
+
+function buildArmorSetBonusPlugCandidate(plugDef, armorSetInfo, source = {}) {
+  if (!plugDef || !armorSetInfo.setKey || !armorSetInfo.setName) {
+    return null;
+  }
+
+  const pieces = parseRequiredPieces(
+    plugDef.name,
+    plugDef.description,
+    plugDef.plugCategoryIdentifier,
+    Array.isArray(plugDef.traitIds) ? plugDef.traitIds.join(' ') : '',
+    source.identifier
+  );
+
+  if (!pieces) {
+    return null;
+  }
+
+  const name = cleanArmorSetBonusName(plugDef.name) || plugDef.name || 'Armor Set Bonus';
+
+  return {
+    hash: source.hash || null,
+    name,
+    description: plugDef.description || '',
+    icon: plugDef.icon || '',
+    iconUrl: plugDef.iconUrl || null,
+    setKey: armorSetInfo.setKey,
+    setName: armorSetInfo.setName,
+    pieces,
+    requiredPieces: pieces,
+    source: 'armorSetBonus',
+    sourceHash: source.hash || null
+  };
+}
+
+async function collectArmorSetBonusCandidates(perks, armorSetInfo, source = {}) {
+  if (!Array.isArray(perks) || !armorSetInfo.setKey || !armorSetInfo.setName) {
+    return [];
+  }
+
+  const candidates = [];
+  for (const perkEntry of perks) {
+    const candidate = await buildArmorSetBonusCandidate(perkEntry, armorSetInfo, source);
+    if (candidate) {
+      candidates.push(candidate);
+    }
+  }
+
+  return candidates;
+}
+
+function addArmorSetBonusCandidate(candidates, seenKeys, candidate) {
+  if (!candidate) {
+    return;
+  }
+
+  const key = `${candidate.setKey}:${candidate.pieces}:${candidate.hash || candidate.name}`;
+  if (seenKeys.has(key)) {
+    return;
+  }
+
+  seenKeys.add(key);
+  candidates.push(candidate);
 }
 
 async function getActiveArmorSetBonuses(armorItems) {
   const groups = new Map();
 
   for (const armorItem of armorItems.filter(Boolean)) {
-    const setDef = getArmorSetDefinition(armorItem);
-    if (!setDef) {
+    const armorSetInfo = getArmorSetInfo(armorItem);
+    if (!armorSetInfo.setKey || !armorSetInfo.setName) {
       continue;
     }
 
-    if (!groups.has(setDef.key)) {
-      groups.set(setDef.key, {
-        setDef,
+    if (!groups.has(armorSetInfo.setKey)) {
+      groups.set(armorSetInfo.setKey, {
+        setKey: armorSetInfo.setKey,
+        setName: armorSetInfo.setName,
+        fallback: armorSetInfo.fallback,
         pieces: 0,
-        equippedItems: new Set()
+        equippedItems: new Set(),
+        candidates: []
       });
     }
 
-    const group = groups.get(setDef.key);
+    const group = groups.get(armorSetInfo.setKey);
     group.pieces += 1;
     group.equippedItems.add(armorItem.name);
+    if (Array.isArray(armorItem.armorSetBonusCandidates)) {
+      group.candidates.push(...armorItem.armorSetBonusCandidates);
+    }
   }
 
   const activeBonuses = [];
 
   for (const group of groups.values()) {
-    for (const bonusDef of group.setDef.bonuses) {
+    const candidateMap = new Map();
+    for (const candidate of group.candidates) {
+      if (!candidate?.pieces || group.pieces < candidate.pieces) {
+        continue;
+      }
+
+      const key = `${candidate.hash || candidate.name}:${candidate.pieces}`;
+      candidateMap.set(key, candidate);
+    }
+
+    const activeCandidates = [...candidateMap.values()];
+    if (activeCandidates.length > 0) {
+      for (const candidate of activeCandidates.sort((a, b) => a.pieces - b.pieces)) {
+        activeBonuses.push({
+          ...candidate,
+          equippedPieces: group.pieces,
+          equippedItems: [...group.equippedItems]
+        });
+      }
+      continue;
+    }
+
+    if (!group.fallback) {
+      continue;
+    }
+
+    for (const bonusDef of group.fallback.bonuses) {
       if (group.pieces < bonusDef.pieces) {
         continue;
       }
@@ -726,20 +905,22 @@ async function getActiveArmorSetBonuses(armorItems) {
 
       activeBonuses.push({
         ...perk,
-        setKey: group.setDef.key,
-        setName: group.setDef.setName,
+        setKey: group.fallback.key,
+        setName: group.fallback.setName,
         pieces: bonusDef.pieces,
+        requiredPieces: bonusDef.pieces,
         equippedPieces: group.pieces,
-        equippedItems: [...group.equippedItems]
+        equippedItems: [...group.equippedItems],
+        source: 'armorSetBonus'
       });
     }
   }
 
   return activeBonuses.sort((a, b) => {
-    if (a.name !== b.name) {
-      return a.name.localeCompare(b.name);
+    if (a.setName !== b.setName) {
+      return a.setName.localeCompare(b.setName);
     }
-    return a.pieces - b.pieces;
+    return b.pieces - a.pieces;
   });
 }
 
@@ -754,8 +935,8 @@ function applyArmorSetBonusesToArmor(armorItems, armorSetBonuses) {
   }
 
   for (const armorItem of armorItems.filter(Boolean)) {
-    const setDef = getArmorSetDefinition(armorItem);
-    armorItem.perks = setDef ? (bonusesBySet.get(setDef.key) || []) : [];
+    const armorSetInfo = getArmorSetInfo(armorItem);
+    armorItem.perks = armorSetInfo.setKey ? (bonusesBySet.get(armorSetInfo.setKey) || []) : [];
   }
 }
 
@@ -787,8 +968,24 @@ async function processEquipmentItem(itemData, itemComponents) {
   
   const isWeapon = definition.itemType === 3; // DestinyItemType.Weapon = 3
   const isClassItem = itemData.bucketHash === BUCKET_HASHES.CLASS_ITEM;
-  const isArmor = isArmorBucket(itemData.bucketHash);
+    const isArmor = isArmorBucket(itemData.bucketHash);
   const isExotic = definition.inventory?.tierType === 6;
+  const armorSetInfo = isArmor ? getArmorSetInfo({ name: definition.displayProperties?.name || '' }) : {};
+  const armorSetBonusCandidates = [];
+  const armorSetBonusCandidateKeys = new Set();
+
+  if (isArmor) {
+    const definitionCandidates = await collectArmorSetBonusCandidates(definition.perks || [], armorSetInfo, {
+      hash: itemHash,
+      name: definition.displayProperties?.name || '',
+      description: definition.displayProperties?.description || '',
+      identifier: Array.isArray(definition.traitIds) ? definition.traitIds.join(' ') : ''
+    });
+
+    for (const candidate of definitionCandidates) {
+      addArmorSetBonusCandidate(armorSetBonusCandidates, armorSetBonusCandidateKeys, candidate);
+    }
+  }
 
   if (sockets.sockets) {
     for (let i = 0; i < sockets.sockets.length; i++) {
@@ -803,6 +1000,26 @@ async function processEquipmentItem(itemData, itemComponents) {
         });
         
         const plugDef = await fetchPlugDefinition(socket.plugHash);
+
+        if (isArmor && plugDef) {
+          const plugCandidate = buildArmorSetBonusPlugCandidate(plugDef, armorSetInfo, {
+            hash: socket.plugHash,
+            identifier: plugDef.plugCategoryIdentifier
+          });
+          addArmorSetBonusCandidate(armorSetBonusCandidates, armorSetBonusCandidateKeys, plugCandidate);
+
+          const plugPerkCandidates = await collectArmorSetBonusCandidates(plugDef.perks || [], armorSetInfo, {
+            hash: socket.plugHash,
+            name: plugDef.name,
+            description: plugDef.description,
+            category: plugDef.plugCategoryIdentifier,
+            identifier: Array.isArray(plugDef.traitIds) ? plugDef.traitIds.join(' ') : ''
+          });
+
+          for (const candidate of plugPerkCandidates) {
+            addArmorSetBonusCandidate(armorSetBonusCandidates, armorSetBonusCandidateKeys, candidate);
+          }
+        }
 
         // Armor set bonuses are derived from equipped set pieces below.
         // Do not treat normal armor sockets as perks; they include mods, shaders, and ornaments.
@@ -1035,6 +1252,9 @@ async function processEquipmentItem(itemData, itemComponents) {
     weaponPerks: weaponPerkData, // New: properly filtered weapon perks
     exoticPerks: exoticPerkData, // New: exotic class item perks
     sockets: allSockets, // Store ALL sockets for artifact mod detection
+    armorSetKey: armorSetInfo.setKey || null,
+    armorSetName: armorSetInfo.setName || null,
+    armorSetBonusCandidates,
     energy: instance.energy || null,
     // Add item state and quality for masterwork/holofoil overlays
     state: itemData.state || 0,

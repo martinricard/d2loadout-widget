@@ -100,7 +100,7 @@
       width: 854px;
       max-width: 100%;
       min-height: 547px;
-      overflow: hidden;
+      overflow: visible;
     }
     #d2-loadout-widget .widget-container {
       width: 100%;
@@ -263,17 +263,17 @@
     /* StreamElements browser source container - full size */
     .widget-viewport {
       width: 854px;
-      height: 547px;
+      height: auto;
       max-width: 100%;
-      max-height: 100%;
+      min-height: 547px;
       background: transparent;
       border: none;
       border-radius: 0;
       position: relative;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      overflow: hidden;
+      overflow: visible;
       box-shadow: none;
     }
 
@@ -282,7 +282,7 @@
       max-width: 100%;
       min-height: 547px;
       transform: none;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .fullpage-frame {
@@ -309,7 +309,7 @@
       max-width: 100%;
       min-height: 547px;
       transform: none;
-      overflow: hidden;
+      overflow: visible;
     }
 
     #d2-loadout-widget.fullpage {
