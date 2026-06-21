@@ -23,6 +23,7 @@ app.use(express.json());
 
 // Bungie API Base URL
 const BUNGIE_API_BASE = 'https://www.bungie.net/Platform';
+const BUNGIE_REQUEST_TIMEOUT_MS = 15000;
 
 const DESTINY_PLATFORM_ALIASES = {
   auto: -1,
@@ -255,7 +256,8 @@ app.get('/api/search/:displayName', async (req, res) => {
     const response = await axios.get(searchUrl, {
       headers: {
         'X-API-Key': process.env.BUNGIE_API_KEY
-      }
+      },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     
     const players = response.data.Response;
@@ -342,7 +344,8 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
     // It's a Bungie name, search for it first
     const searchUrl = `${BUNGIE_API_BASE}/Destiny2/SearchDestinyPlayer/-1/${encodeURIComponent(platformOrName)}/`;
     const searchResponse = await axios.get(searchUrl, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     
     const players = searchResponse.data.Response;
@@ -362,7 +365,8 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
   const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
   
   const response = await axios.get(profileUrl, {
-    headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+    headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+    timeout: BUNGIE_REQUEST_TIMEOUT_MS
   });
   
   const data = response.data.Response;

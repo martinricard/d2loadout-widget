@@ -922,6 +922,9 @@
 
   let refreshInterval = null;
   let isFirstLoad = true;
+  let loadoutAbortController = null;
+  let loadoutRequestId = 0;
+  const LOADOUT_FETCH_TIMEOUT_MS = 20000;
 
   const FULLPAGE_PREFS_KEY = 'd2loadoutFullpagePrefs';
   const DEMO_PREFS_KEY = 'd2loadoutDemoPrefs';
@@ -1071,6 +1074,17 @@
     const id = cfg.bungieInput;
     if (!id) { setStatus('Enter a Bungie ID above'); return; }
 
+    const requestId = ++loadoutRequestId;
+    if (loadoutAbortController) {
+      loadoutAbortController.abort();
+    }
+
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    loadoutAbortController = controller;
+    const timeoutId = controller
+      ? setTimeout(() => controller.abort(), LOADOUT_FETCH_TIMEOUT_MS)
+      : null;
+
     setStatus('Loading…');
 
     try {
@@ -1084,10 +1098,12 @@
         params.set('membershipType', cfg.membershipType);
       }
 
-      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`);
+      const fetchOptions = controller ? { signal: controller.signal } : {};
+      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`, fetchOptions);
       if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.message || `API Error ${res.status}`); }
 
       const data = await res.json();
+      if (requestId !== loadoutRequestId) return;
       if (!data.success) throw new Error(data.message || 'Failed to fetch loadout');
 
       hideError();
@@ -1102,12 +1118,22 @@
       document.getElementById('last-updated').textContent = `Updated ${now.toLocaleTimeString()}`;
       setStatus(`✓ Loaded`);
     } catch(err) {
-      showError(err.message || 'Failed to fetch loadout data');
-      setStatus('⚠ Error');
-    }
+      if (requestId !== loadoutRequestId) return;
 
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(fetchLoadout, cfg.refreshRate * 1000);
+      const message = err.name === 'AbortError'
+        ? 'Loadout request timed out. Try a different platform or refresh again.'
+        : (err.message || 'Failed to fetch loadout data');
+      showError(message);
+      setStatus('⚠ Error');
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+
+      if (requestId !== loadoutRequestId) return;
+      loadoutAbortController = null;
+
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(fetchLoadout, cfg.refreshRate * 1000);
+    }
   }
 
   function setStatus(msg) { document.getElementById('nav-status').textContent = msg; }

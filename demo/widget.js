@@ -10,6 +10,9 @@ let isFirstLoad = true;
 let autoHideTimeout = null;
 let lastCommandTime = 0;
 let maintenanceCheckInterval = null;
+let loadoutAbortController = null;
+let loadoutRequestId = 0;
+const LOADOUT_FETCH_TIMEOUT_MS = 20000;
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -458,6 +461,17 @@ async function fetchLoadout() {
     showError('Please enter your Bungie name in widget settings (e.g., Marty#2689)');
     return;
   }
+
+  const requestId = ++loadoutRequestId;
+  if (loadoutAbortController) {
+    loadoutAbortController.abort();
+  }
+
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  loadoutAbortController = controller;
+  const timeoutId = controller
+    ? setTimeout(() => controller.abort(), LOADOUT_FETCH_TIMEOUT_MS)
+    : null;
   
   try {
     console.log(`[D2 Loadout Widget] Fetching loadout for: ${bungieId}`);
@@ -469,7 +483,8 @@ async function fetchLoadout() {
     }
     
     const apiUrl = buildLoadoutApiUrl(bungieId);
-    const response = await fetch(apiUrl);
+    const fetchOptions = controller ? { signal: controller.signal } : {};
+    const response = await fetch(apiUrl, fetchOptions);
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -477,6 +492,10 @@ async function fetchLoadout() {
     }
     
     const data = await response.json();
+
+    if (requestId !== loadoutRequestId) {
+      return;
+    }
     
     if (!data.success) {
       throw new Error(data.message || 'Failed to fetch loadout');
@@ -500,14 +519,27 @@ async function fetchLoadout() {
     updateDIMLink(data.dimLink);
     
   } catch (error) {
+    if (requestId !== loadoutRequestId) {
+      return;
+    }
+
     console.error('[D2 Loadout Widget] Error fetching loadout:', error);
-    showError(error.message || 'Failed to fetch loadout data');
+    const message = error.name === 'AbortError'
+      ? 'Loadout request timed out. Try a different platform or refresh again.'
+      : (error.message || 'Failed to fetch loadout data');
+    showError(message);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (requestId === loadoutRequestId) {
+      loadoutAbortController = null;
+
+      // Setup refresh interval (moved to end like comp widget)
+      const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(fetchLoadout, refreshRate);
+    }
   }
-  
-  // Setup refresh interval (moved to end like comp widget)
-  const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
-  if (refreshInterval) clearInterval(refreshInterval);
-  refreshInterval = setInterval(fetchLoadout, refreshRate);
 }
 
 // Display loadout data

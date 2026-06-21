@@ -829,7 +829,7 @@
       }
     };
 
-    const updateFullpageFrame = () => {
+    const updateFullpageFrame = (force = false) => {
       const frame = document.getElementById('fullpageFrame');
       if (!frame) return;
 
@@ -840,6 +840,12 @@
       }
 
       const nextSrc = `fullpage.html${params.toString() ? `?${params.toString()}` : ''}`;
+      const isFullpageActive = document.getElementById('widget-area')?.classList.contains('fullpage-view');
+      if (!force && !isFullpageActive) {
+        frame.dataset.src = nextSrc;
+        return;
+      }
+
       if (frame.getAttribute('src') !== nextSrc) {
         frame.setAttribute('src', nextSrc);
       }
@@ -1035,11 +1041,11 @@
         const fullpageFrame = document.getElementById('fullpageFrame');
 
         if (mode === 'fullpage') {
-          updateFullpageFrame();
           widgetArea.classList.add('fullpage-view');
           widgetArea.classList.remove('widget-view');
           widgetElement.classList.add('fullpage');
           widgetElement.style.display = 'none';
+          updateFullpageFrame(true);
           if (fullpageFrame) fullpageFrame.style.display = 'block';
         } else {
           widgetArea.classList.add('widget-view');
