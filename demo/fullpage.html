@@ -610,7 +610,8 @@
   <span class="nav-logo">D2 <span>Loadout</span></span>
   <div class="search-wrap">
     <span class="search-icon">⌕</span>
-    <input type="text" id="bungie-input" placeholder="Bungie ID — e.g. Guardian#1234" />
+    <input type="text" id="bungie-input" placeholder="Bungie ID — e.g. Guardian#1234" list="bungie-history-list" />
+    <datalist id="bungie-history-list"></datalist>
   </div>
   <select id="platform-select" aria-label="Destiny Platform">
     <option value="-1">Auto</option>
@@ -917,9 +918,115 @@
   let refreshInterval = null;
   let isFirstLoad = true;
 
+  const FULLPAGE_PREFS_KEY = 'd2loadoutFullpagePrefs';
+  const DEMO_PREFS_KEY = 'd2loadoutDemoPrefs';
+  const BUNGIE_HISTORY_KEY = 'd2loadoutDemoBungieHistory';
+  const BUNGIE_HISTORY_LIMIT = 12;
+  const PLATFORM_LABELS = {
+    '-1': 'Auto',
+    '1': 'Xbox',
+    '2': 'PlayStation',
+    '3': 'Steam',
+    '6': 'Epic Games'
+  };
+
+  function readStoredPrefs() {
+    try {
+      const demoPrefs = JSON.parse(localStorage.getItem(DEMO_PREFS_KEY) || '{}');
+      const fullpagePrefs = JSON.parse(localStorage.getItem(FULLPAGE_PREFS_KEY) || '{}');
+      return {
+        ...demoPrefs,
+        ...Object.fromEntries(Object.entries(fullpagePrefs).filter(([, value]) => value))
+      };
+    } catch (error) {
+      console.warn('Failed to load demo preferences:', error);
+      return {};
+    }
+  }
+
+  function saveStoredPrefs() {
+    localStorage.setItem(FULLPAGE_PREFS_KEY, JSON.stringify({
+      bungieInput: cfg.bungieInput,
+      membershipType: cfg.membershipType
+    }));
+  }
+
+  function getBungieHistory() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(BUNGIE_HISTORY_KEY) || '[]');
+      if (!Array.isArray(parsed)) return [];
+
+      return parsed
+        .map(entry => typeof entry === 'string'
+          ? { id: entry, membershipType: '-1', lastUsed: 0 }
+          : {
+              id: String(entry.id || '').trim(),
+              membershipType: String(entry.membershipType || '-1'),
+              lastUsed: Number(entry.lastUsed || 0)
+            })
+        .filter(entry => entry.id);
+    } catch (error) {
+      console.warn('Failed to load Bungie ID history:', error);
+      return [];
+    }
+  }
+
+  function renderBungieHistory() {
+    const list = document.getElementById('bungie-history-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    getBungieHistory().forEach(entry => {
+      const option = document.createElement('option');
+      option.value = entry.id;
+      option.label = PLATFORM_LABELS[entry.membershipType] || 'Auto';
+      list.appendChild(option);
+    });
+  }
+
+  function rememberBungieId(id, membershipType) {
+    const normalizedId = String(id || '').trim();
+    if (!normalizedId) return;
+
+    const normalizedPlatform = String(membershipType || '-1');
+    const history = getBungieHistory()
+      .filter(entry => entry.id.toLowerCase() !== normalizedId.toLowerCase());
+
+    history.unshift({
+      id: normalizedId,
+      membershipType: PLATFORM_LABELS[normalizedPlatform] ? normalizedPlatform : '-1',
+      lastUsed: Date.now()
+    });
+
+    localStorage.setItem(BUNGIE_HISTORY_KEY, JSON.stringify(history.slice(0, BUNGIE_HISTORY_LIMIT)));
+    renderBungieHistory();
+  }
+
+  function syncIdentityFromControls() {
+    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
+    cfg.membershipType = document.getElementById('platform-select').value || '-1';
+  }
+
+  function applyKnownPlatformForBungieId() {
+    const input = document.getElementById('bungie-input');
+    const select = document.getElementById('platform-select');
+    const match = getBungieHistory().find(entry => entry.id.toLowerCase() === input.value.trim().toLowerCase());
+    if (match && PLATFORM_LABELS[match.membershipType]) {
+      select.value = match.membershipType;
+      syncIdentityFromControls();
+      saveStoredPrefs();
+    }
+  }
+
   /* ── URL PARAMS ── */
   function readUrlParams() {
     const p = new URLSearchParams(window.location.search);
+    const storedPrefs = readStoredPrefs();
+    if (!p.has('b') && storedPrefs.bungieInput) cfg.bungieInput = storedPrefs.bungieInput;
+    if (!p.has('platform') && !p.has('membershipType') && storedPrefs.membershipType) {
+      cfg.membershipType = storedPrefs.membershipType;
+    }
+
     const map = { b:'bungieInput', platform:'membershipType', membershipType:'membershipType', r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
       stats:'showStats', subclass:'showSubclass', artifact:'showArtifact',
       perks:'showPerks', dimlink:'showDIMLink' };
@@ -927,6 +1034,7 @@
     if (p.has('obs') || p.has('overlay')) document.body.classList.add('obs-mode');
     if (cfg.bungieInput) document.getElementById('bungie-input').value = cfg.bungieInput;
     document.getElementById('platform-select').value = cfg.membershipType || '-1';
+    renderBungieHistory();
   }
 
   function buildObsUrl() {
@@ -938,16 +1046,18 @@
   }
 
   function copyObsUrl() {
-    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
-    cfg.membershipType = document.getElementById('platform-select').value || '-1';
+    syncIdentityFromControls();
+    rememberBungieId(cfg.bungieInput, cfg.membershipType);
+    saveStoredPrefs();
     navigator.clipboard.writeText(buildObsUrl())
       .then(() => showToast('OBS URL copied — paste as Browser Source'));
   }
 
   /* ── FETCH ── */
   function applyAndFetch() {
-    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
-    cfg.membershipType = document.getElementById('platform-select').value || '-1';
+    syncIdentityFromControls();
+    rememberBungieId(cfg.bungieInput, cfg.membershipType);
+    saveStoredPrefs();
     if (refreshInterval) clearInterval(refreshInterval);
     fetchLoadout();
   }
@@ -1386,6 +1496,22 @@
 
   document.getElementById('bungie-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') applyAndFetch();
+  });
+
+  document.getElementById('bungie-input').addEventListener('change', () => {
+    applyKnownPlatformForBungieId();
+    syncIdentityFromControls();
+    saveStoredPrefs();
+  });
+
+  document.getElementById('platform-select').addEventListener('change', () => {
+    syncIdentityFromControls();
+    saveStoredPrefs();
+  });
+
+  window.addEventListener('beforeunload', () => {
+    syncIdentityFromControls();
+    saveStoredPrefs();
   });
 
   readUrlParams();
