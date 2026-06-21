@@ -184,7 +184,8 @@
     .btn-icon {
       font-size: 18px;
     }
-    .demo-panel input {
+    .demo-panel input,
+    .demo-panel select {
       width: 100%;
       padding: 10px 12px;
       margin: 8px 0;
@@ -196,7 +197,11 @@
       font-family: 'Roboto Condensed', sans-serif;
       font-size: 14px;
     }
-    .demo-panel input:focus {
+    .demo-panel select {
+      cursor: pointer;
+    }
+    .demo-panel input:focus,
+    .demo-panel select:focus {
       outline: none;
       border-color: rgba(206, 174, 51, 0.5);
       background: rgba(255,255,255,0.08);
@@ -366,6 +371,14 @@
       <h3>Configuration</h3>
       <label>Bungie ID:</label>
       <input type="text" id="bungieInput" value="Marty#2689" placeholder="Guardian#1234">
+      <label>Destiny Platform:</label>
+      <select id="membershipType">
+        <option value="-1">Auto</option>
+        <option value="1">Xbox</option>
+        <option value="2">PlayStation</option>
+        <option value="3">Steam</option>
+        <option value="6">Epic Games</option>
+      </select>
       <button class="demo-btn" id="updateBungieId">
         <span class="btn-icon">🔄</span>
         Update & Refresh
@@ -451,6 +464,10 @@
         <div class="info-item">
           <span class="info-label">Bungie ID:</span>
           <span class="info-value" id="currentBungieId">Marty#2689</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Platform:</span>
+          <span class="info-value" id="currentPlatform">Auto</span>
         </div>
         <div class="info-item">
           <span class="info-label">Status:</span>
@@ -713,6 +730,7 @@
     // Demo configuration
     window.fieldData = {
       bungieInput: 'Marty#2689',
+      membershipType: '-1',
       autoHide: 'false',
       showWeapons: 'true',
       showArmor: 'true',
@@ -726,19 +744,62 @@
       fontFamily: 'Roboto Condensed',
       fontSize: 18
     };
-    
-    // Update Bungie ID button
-    document.getElementById('updateBungieId').addEventListener('click', () => {
+
+    const PLATFORM_LABELS = {
+      '-1': 'Auto',
+      '1': 'Xbox',
+      '2': 'PlayStation',
+      '3': 'Steam',
+      '6': 'Epic Games'
+    };
+
+    const updateFullpageFrame = () => {
+      const frame = document.getElementById('fullpageFrame');
+      if (!frame) return;
+
+      const params = new URLSearchParams();
+      if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
+      if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
+        params.set('platform', window.fieldData.membershipType);
+      }
+
+      const nextSrc = `fullpage.html${params.toString() ? `?${params.toString()}` : ''}`;
+      if (frame.getAttribute('src') !== nextSrc) {
+        frame.setAttribute('src', nextSrc);
+      }
+    };
+
+    const syncDemoIdentityFields = () => {
       const newId = document.getElementById('bungieInput').value.trim();
+      const membershipType = document.getElementById('membershipType').value || '-1';
+
       if (newId) {
         window.fieldData.bungieInput = newId;
         document.getElementById('currentBungieId').textContent = newId;
+      }
+
+      window.fieldData.membershipType = membershipType;
+      document.getElementById('currentPlatform').textContent = PLATFORM_LABELS[membershipType] || 'Auto';
+      updateFullpageFrame();
+    };
+
+    // Update Bungie ID button
+    document.getElementById('updateBungieId').addEventListener('click', () => {
+      syncDemoIdentityFields();
+      saveDemoPrefs();
+      if (window.fieldData.bungieInput) {
         if (window.fetchLoadout) window.fetchLoadout();
       }
+    });
+
+    document.getElementById('membershipType').addEventListener('change', () => {
+      syncDemoIdentityFields();
+      saveDemoPrefs();
     });
     
     // Refresh button
     document.getElementById('refreshData').addEventListener('click', () => {
+      syncDemoIdentityFields();
       if (window.fetchLoadout) window.fetchLoadout();
     });
 
@@ -748,12 +809,21 @@
       const activeView = document.querySelector('[data-view].active')?.getAttribute('data-view') || 'all';
       const activeLayout = document.querySelector('[data-layout].active')?.getAttribute('data-layout') || 'widget';
       const sidebarHidden = document.body.classList.contains('sidebar-hidden');
-      localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden }));
+      const bungieInput = document.getElementById('bungieInput')?.value.trim() || window.fieldData.bungieInput;
+      const membershipType = document.getElementById('membershipType')?.value || window.fieldData.membershipType || '-1';
+      localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden, bungieInput, membershipType }));
     };
 
     const applyDemoPrefs = () => {
       try {
         const prefs = JSON.parse(localStorage.getItem(DEMO_PREFS_KEY) || '{}');
+        if (prefs.bungieInput) {
+          document.getElementById('bungieInput').value = prefs.bungieInput;
+        }
+        if (prefs.membershipType && PLATFORM_LABELS[prefs.membershipType]) {
+          document.getElementById('membershipType').value = prefs.membershipType;
+        }
+        syncDemoIdentityFields();
         if (prefs.activeView) {
           const viewBtn = document.querySelector(`[data-view="${prefs.activeView}"]`);
           if (viewBtn) viewBtn.click();
@@ -875,6 +945,7 @@
         const fullpageFrame = document.getElementById('fullpageFrame');
 
         if (mode === 'fullpage') {
+          updateFullpageFrame();
           widgetArea.classList.add('fullpage-view');
           widgetArea.classList.remove('widget-view');
           widgetElement.classList.add('fullpage');

@@ -78,6 +78,20 @@
     .search-wrap input:focus { border-color: var(--gold); }
     .search-wrap input::placeholder { color: var(--text-dim); }
 
+    #platform-select {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 7px 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #platform-select:focus { border-color: var(--gold); }
+
     .search-icon {
       position: absolute; left: 10px; top: 50%;
       transform: translateY(-50%);
@@ -598,6 +612,13 @@
     <span class="search-icon">⌕</span>
     <input type="text" id="bungie-input" placeholder="Bungie ID — e.g. Guardian#1234" />
   </div>
+  <select id="platform-select" aria-label="Destiny Platform">
+    <option value="-1">Auto</option>
+    <option value="1">Xbox</option>
+    <option value="2">PlayStation</option>
+    <option value="3">Steam</option>
+    <option value="6">Epic Games</option>
+  </select>
   <button class="nav-btn" onclick="applyAndFetch()">Load</button>
   <span id="nav-status"></span>
   <div class="nav-spacer"></div>
@@ -879,6 +900,7 @@
   /* ── CONFIG ── */
   let cfg = {
     bungieInput: '',
+    membershipType: '-1',
     refreshRate: 60,
     showWeapons: 'true',
     showArmor: 'true',
@@ -898,12 +920,13 @@
   /* ── URL PARAMS ── */
   function readUrlParams() {
     const p = new URLSearchParams(window.location.search);
-    const map = { b:'bungieInput', r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
+    const map = { b:'bungieInput', platform:'membershipType', membershipType:'membershipType', r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
       stats:'showStats', subclass:'showSubclass', artifact:'showArtifact',
       perks:'showPerks', dimlink:'showDIMLink' };
     for (const [k, v] of Object.entries(map)) if (p.has(k)) cfg[v] = p.get(k);
     if (p.has('obs') || p.has('overlay')) document.body.classList.add('obs-mode');
     if (cfg.bungieInput) document.getElementById('bungie-input').value = cfg.bungieInput;
+    document.getElementById('platform-select').value = cfg.membershipType || '-1';
   }
 
   function buildObsUrl() {
@@ -911,11 +934,12 @@
     return `${base}?${new URLSearchParams({ b:cfg.bungieInput, r:cfg.refreshRate,
       weapons:cfg.showWeapons, armor:cfg.showArmor, stats:cfg.showStats,
       subclass:cfg.showSubclass, artifact:cfg.showArtifact,
-      perks:cfg.showPerks, dimlink:cfg.showDIMLink, obs:'1' })}`;
+      perks:cfg.showPerks, dimlink:cfg.showDIMLink, platform:cfg.membershipType, obs:'1' })}`;
   }
 
   function copyObsUrl() {
     cfg.bungieInput = document.getElementById('bungie-input').value.trim();
+    cfg.membershipType = document.getElementById('platform-select').value || '-1';
     navigator.clipboard.writeText(buildObsUrl())
       .then(() => showToast('OBS URL copied — paste as Browser Source'));
   }
@@ -923,6 +947,7 @@
   /* ── FETCH ── */
   function applyAndFetch() {
     cfg.bungieInput = document.getElementById('bungie-input').value.trim();
+    cfg.membershipType = document.getElementById('platform-select').value || '-1';
     if (refreshInterval) clearInterval(refreshInterval);
     fetchLoadout();
   }
@@ -939,7 +964,12 @@
         n.textContent = 'Loading…'; n.classList.add('loading');
       }
 
-      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}`);
+      const params = new URLSearchParams({ t: String(Date.now()) });
+      if (cfg.membershipType && cfg.membershipType !== '-1') {
+        params.set('membershipType', cfg.membershipType);
+      }
+
+      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`);
       if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.message || `API Error ${res.status}`); }
 
       const data = await res.json();

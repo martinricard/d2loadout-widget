@@ -24,6 +24,34 @@ app.use(express.json());
 // Bungie API Base URL
 const BUNGIE_API_BASE = 'https://www.bungie.net/Platform';
 
+const DESTINY_PLATFORM_ALIASES = {
+  auto: -1,
+  any: -1,
+  all: -1,
+  '-1': -1,
+  xbox: 1,
+  xbl: 1,
+  '1': 1,
+  playstation: 2,
+  psn: 2,
+  ps: 2,
+  ps4: 2,
+  ps5: 2,
+  '2': 2,
+  steam: 3,
+  pc: 3,
+  '3': 3,
+  blizzard: 4,
+  battlenet: 4,
+  battle: 4,
+  '4': 4,
+  stadia: 5,
+  '5': 5,
+  epic: 6,
+  egs: 6,
+  '6': 6
+};
+
 // In-memory cache for manifest data (to reduce API calls)
 const manifestCache = {
   items: new Map(),
@@ -266,7 +294,45 @@ app.get('/api/search/:displayName', async (req, res) => {
 // ============================================================================
 // SHARED HELPER: Fetch full loadout data (used by both /api/loadout and /api/dimlink)
 // ============================================================================
-async function fetchLoadoutData(platformOrName, membershipIdOrTag) {
+function normalizeRequestedMembershipType(value) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return null;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  const membershipType = DESTINY_PLATFORM_ALIASES[normalized];
+
+  if (membershipType === -1) {
+    return null;
+  }
+
+  if (Number.isInteger(membershipType)) {
+    return membershipType;
+  }
+
+  throw new Error(`Unsupported platform "${value}". Use auto, xbox, playstation, steam, epic, or a Destiny membership type number.`);
+}
+
+function selectDestinyPlayer(players, requestedMembershipType, displayName) {
+  if (!requestedMembershipType) {
+    return players[0];
+  }
+
+  const selectedPlayer = players.find(player => Number(player.membershipType) === requestedMembershipType);
+  if (selectedPlayer) {
+    return selectedPlayer;
+  }
+
+  const requestedPlatform = getPlatformName(requestedMembershipType);
+  const availablePlatforms = players
+    .map(player => getPlatformName(Number(player.membershipType)))
+    .filter((platformName, index, platforms) => platformName && platforms.indexOf(platformName) === index)
+    .join(', ');
+
+  throw new Error(`${displayName} was found, but no ${requestedPlatform} account was returned. Available platforms: ${availablePlatforms || 'none'}.`);
+}
+
+async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType = null) {
   let platform = platformOrName;
   let membershipId = membershipIdOrTag;
   
@@ -284,9 +350,9 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag) {
       throw new Error(`No player found with Bungie name: ${platformOrName}`);
     }
     
-    // Use the first result (primary platform)
-    platform = players[0].membershipType;
-    membershipId = players[0].membershipId;
+    const selectedPlayer = selectDestinyPlayer(players, requestedMembershipType, platformOrName);
+    platform = selectedPlayer.membershipType;
+    membershipId = selectedPlayer.membershipId;
   }
   
   // Fetch profile with character equipment and stats
@@ -382,8 +448,10 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   }
   
   try {
+    const requestedMembershipType = normalizeRequestedMembershipType(req.query.membershipType || req.query.platform);
+
     // Use shared helper to fetch all data
-    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag);
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType);
     
     // Process the loadout
     const loadout = await processLoadout(
@@ -462,11 +530,12 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   try {
     const { platformOrName, membershipIdOrTag } = req.params;
     const format = req.query.format;
+    const requestedMembershipType = normalizeRequestedMembershipType(req.query.membershipType || req.query.platform);
     
     console.log(`[DIM Link] Request for: ${platformOrName}${membershipIdOrTag ? '/' + membershipIdOrTag : ''}`);
     
     // Use shared helper to fetch data and generate DIM link
-    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag);
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType);
     
     if (!loadoutData.dimLink) {
       return res.status(500).json({ 

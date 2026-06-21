@@ -434,6 +434,23 @@ async function checkMaintenanceStatus() {
 }
 
 // Fetch loadout data from API
+function getRequestedMembershipType() {
+  const membershipType = String(fieldData.membershipType || fieldData.platform || 'auto').trim();
+  return membershipType && membershipType !== '-1' && membershipType.toLowerCase() !== 'auto'
+    ? membershipType
+    : '';
+}
+
+function buildLoadoutApiUrl(bungieId) {
+  const params = new URLSearchParams({ t: String(Date.now()) });
+  const membershipType = getRequestedMembershipType();
+  if (membershipType) {
+    params.set('membershipType', membershipType);
+  }
+
+  return `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}?${params.toString()}`;
+}
+
 async function fetchLoadout() {
   const bungieId = (fieldData.bungieInput || '').trim();
   
@@ -451,9 +468,7 @@ async function fetchLoadout() {
       document.getElementById('characterName').classList.add('loading');
     }
     
-    // Add timestamp to force fresh DIM link generation (bypasses TinyURL cache)
-    const timestamp = Date.now();
-    const apiUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}?t=${timestamp}`;
+    const apiUrl = buildLoadoutApiUrl(bungieId);
     const response = await fetch(apiUrl);
     
     if (!response.ok) {

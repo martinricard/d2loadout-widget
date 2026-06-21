@@ -12,6 +12,19 @@
     "placeholder": "Marty#2689",
     "group": "🔗 Connection"
   },
+  "membershipType": {
+    "type": "dropdown",
+    "label": "Destiny Platform",
+    "value": "-1",
+    "options": {
+      "-1": "Auto",
+      "1": "Xbox",
+      "2": "PlayStation",
+      "3": "Steam",
+      "6": "Epic Games"
+    },
+    "group": "🔗 Connection"
+  },
   "refreshRate": {
     "type": "number",
     "label": "Refresh Rate (seconds)",
