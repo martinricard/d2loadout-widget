@@ -496,7 +496,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=platform-selection-2" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -730,7 +730,7 @@
   </div>
   </div> <!-- Close widget-viewport -->
 </div> <!-- Close widget-area -->
-  <script src="widget.js"></script>
+  <script src="widget.js?v=platform-selection-2"></script>
   <script>
     // Demo configuration
     window.fieldData = {
@@ -834,6 +834,7 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
+      params.set('v', 'platform-selection-2');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
@@ -877,7 +878,11 @@
 
     document.getElementById('membershipType').addEventListener('change', () => {
       syncDemoIdentityFields();
+      rememberCurrentBungieId();
       saveDemoPrefs();
+      if (window.fieldData.bungieInput) {
+        if (window.fetchLoadout) window.fetchLoadout();
+      }
     });
 
     document.getElementById('bungieInput').addEventListener('change', () => {

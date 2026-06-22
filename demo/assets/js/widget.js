@@ -1242,8 +1242,18 @@ function createArtifactModElement(mod) {
   return modDiv;
 }
 
+function clearLoadingState(fallbackText = 'Unable to load loadout') {
+  const characterName = document.getElementById('characterName');
+  if (characterName?.classList.contains('loading')) {
+    characterName.textContent = fallbackText;
+    characterName.classList.remove('loading');
+  }
+}
+
 // Show error message
 function showError(message) {
+  clearLoadingState();
+
   const errorElement = document.getElementById('errorMessage');
   const errorText = document.getElementById('errorText');
   

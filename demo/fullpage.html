@@ -1533,7 +1533,17 @@
   }
 
   /* ── ERROR ── */
+  function clearLoadingState(fallbackText = 'Unable to load loadout') {
+    const heroName = document.getElementById('hero-name');
+    if (heroName?.classList.contains('loading')) {
+      heroName.textContent = fallbackText;
+      heroName.classList.remove('loading');
+    }
+  }
+
   function showError(msg) {
+    clearLoadingState();
+
     const b = document.getElementById('error-banner');
     document.getElementById('error-text').textContent = msg;
     b.style.display = '';
@@ -1561,6 +1571,7 @@
   document.getElementById('platform-select').addEventListener('change', () => {
     syncIdentityFromControls();
     saveStoredPrefs();
+    if (cfg.bungieInput) fetchLoadout();
   });
 
   window.addEventListener('beforeunload', () => {
