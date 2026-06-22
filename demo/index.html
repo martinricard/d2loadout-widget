@@ -9,12 +9,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="widget.css">
   <style>
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       display: flex;
       margin: 0;
       font-family: 'Roboto Condensed', sans-serif;
       background: #0d0d11;
       color: #e8e8f0;
+      height: 100%;
+      overflow: hidden;
     }
     .demo-panel {
       width: 320px;
@@ -26,6 +32,7 @@
       top: 0;
       height: 100vh;
       overflow-y: auto;
+      scrollbar-gutter: stable;
       z-index: 10000;
       box-shadow: 8px 0 40px rgba(0, 0, 0, 0.35);
       border-right: 1px solid rgba(255,255,255,0.06);
@@ -93,7 +100,9 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      height: 100vh;
       background: transparent;
+      overflow: hidden;
     }
     /* Match StreamElements window size */
     #d2-loadout-widget {
@@ -260,13 +269,14 @@
       margin-left: 320px;
       padding: 20px;
       min-height: 100vh;
+      height: 100vh;
       width: calc(100% - 320px);
       display: flex;
       align-items: flex-start;
       justify-content: center;
       background: #0d0d11;
       position: relative;
-      overflow: auto;
+      overflow: hidden;
     }
 
     /* StreamElements browser source container - full size */
@@ -301,6 +311,12 @@
       border: 0;
       min-height: calc(100vh - 40px);
       background: #0d0d11;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .fullpage-frame::-webkit-scrollbar {
+      display: none;
     }
 
     #widget-area.fullpage-view .widget-viewport {
@@ -500,7 +516,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=character-selection-2" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=fullpage-scrollbar-1" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -936,7 +952,7 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
-      params.set('v', 'character-selection-2');
+      params.set('v', 'fullpage-scrollbar-1');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
