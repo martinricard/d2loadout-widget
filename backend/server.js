@@ -176,7 +176,7 @@ const maintenanceCache = {
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'D2 Loadout Widget Backend is running',
+    message: 'D2Loadout.report Backend is running',
     timestamp: new Date().toISOString(),
     version: '0.1.0',
     endpoints: [
@@ -2049,6 +2049,15 @@ async function processLoadout(characterId, equipment, itemComponents, characterD
   };
 }
 
+function isChampionArtifactMod(plugDef) {
+  const haystack = [plugDef?.name, plugDef?.description]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return /anti[-\s]?barrier|unstoppable|\bunstop\b|overload|shield[-\s]?piercing|pierc(?:e|ing).*barrier|stagger.*champion|disrupt.*champion/.test(haystack);
+}
+
 // Extract artifact mods from character progression data
 async function extractArtifactMods(characterProgressionData) {
   if (!characterProgressionData || !characterProgressionData.seasonalArtifact) {
@@ -2072,7 +2081,11 @@ async function extractArtifactMods(characterProgressionData) {
           const plugDef = await fetchPlugDefinition(item.itemHash);
           
           if (plugDef) {
-            // Include ALL visible/equipped artifact items (perks + weapon mods)
+            if (isChampionArtifactMod(plugDef)) {
+              console.log(`[Artifact] Skipping champion artifact item: ${plugDef.name} (hash: ${item.itemHash})`);
+              continue;
+            }
+
             artifactMods.push({
               name: plugDef.name,
               description: plugDef.description,
@@ -2084,7 +2097,7 @@ async function extractArtifactMods(characterProgressionData) {
               itemType: plugDef.itemType, // For debugging (19=armor, 42=weapon, etc)
               tierHash: tier.tierHash
             });
-            console.log(`[Artifact] ✅ Including EQUIPPED artifact item: ${plugDef.name} (hash: ${item.itemHash}, itemType: ${plugDef.itemType})`);
+            console.log(`[Artifact] Including EQUIPPED artifact item: ${plugDef.name} (hash: ${item.itemHash}, itemType: ${plugDef.itemType})`);
           }
         } else if (item.isActive && !item.isVisible) {
           // Unlocked but not equipped - skip for DIM link

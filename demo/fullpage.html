@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D2 Loadout</title>
+  <title>D2Loadout.report</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -118,7 +118,8 @@
     .search-wrap input::placeholder { color: var(--text-dim); }
 
     #platform-select,
-    #character-select {
+    #character-select,
+    #favorite-select {
       width: 100%;
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -132,12 +133,40 @@
     }
 
     #platform-select:focus,
-    #character-select:focus { border-color: var(--gold); }
+    #character-select:focus,
+    #favorite-select:focus { border-color: var(--gold); }
 
     #platform-select option,
-    #character-select option {
+    #character-select option,
+    #favorite-select option {
       background: var(--surface-2);
       color: var(--text);
+    }
+
+    .favorite-controls {
+      display: grid;
+      grid-template-columns: 104px minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .favorite-toggle {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .favorite-toggle:hover,
+    .favorite-toggle.active {
+      color: var(--gold);
+      border-color: var(--gold-dim);
+      background: rgba(241, 215, 112, 0.08);
     }
 
     .search-icon {
@@ -609,6 +638,22 @@
       margin-left: auto;
     }
 
+    .site-credit {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .site-credit a {
+      color: var(--text);
+      font-weight: 700;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .site-credit a:hover { color: var(--gold); }
+    .footer-heart { color: #d946ef; }
+
     /* ── ERROR ── */
     #error-banner {
       max-width: 1200px; margin: 16px auto 0;
@@ -829,7 +874,7 @@
 
 <!-- NAV -->
 <nav id="nav">
-  <span class="nav-logo">D2 <span>Loadout</span></span>
+  <span class="nav-logo">D2Loadout<span>.report</span></span>
   <span id="nav-status"></span>
   <button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-menu">
     <span></span>
@@ -841,6 +886,12 @@
       <span class="search-icon">⌕</span>
       <input type="text" id="bungie-input" placeholder="Bungie ID — e.g. Guardian#1234" list="bungie-history-list" />
       <datalist id="bungie-history-list"></datalist>
+    </div>
+    <div class="favorite-controls">
+      <button id="favorite-toggle" class="favorite-toggle" type="button">Favorite</button>
+      <select id="favorite-select" aria-label="Favorite Bungie IDs">
+        <option value="">Favorites</option>
+      </select>
     </div>
     <select id="platform-select" aria-label="Destiny Platform">
       <option value="-1">Auto</option>
@@ -1122,6 +1173,7 @@
     <span class="dim-label">DIM</span>
     <a href="#" id="dim-link" target="_blank"></a>
   </div>
+  <span class="site-credit">Made with <span class="footer-heart" aria-label="love">&#x1F49C;</span> by <a href="https://noticemesenpai.studio" target="_blank" rel="noopener">Notice Me Senpai</a></span>
   <span id="last-updated"></span>
 </div>
 
@@ -1150,6 +1202,7 @@
   let isFirstLoad = true;
   let loadoutAbortController = null;
   let loadoutRequestId = 0;
+  let activeLoadoutIdentityKey = '';
   const LOADOUT_FETCH_TIMEOUT_MS = 20000;
   const LOADOUT_CACHE_TTL_MS = 120000;
   const loadoutCache = new Map();
@@ -1254,6 +1307,27 @@
 
   function getLoadoutCacheKey(id, characterId = cfg.characterId) {
     return `${String(id || '').trim().toLowerCase()}|${cfg.membershipType || 'auto'}|${characterId || 'auto'}`;
+  }
+
+  function resetLoadoutRuntimeForIdentity(identityKey) {
+    if (activeLoadoutIdentityKey === identityKey) return;
+
+    activeLoadoutIdentityKey = identityKey;
+    loadoutRequestId++;
+
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+
+    if (loadoutAbortController) {
+      loadoutAbortController.abort();
+      loadoutAbortController = null;
+    }
+
+    loadoutCache.clear();
+    loadoutPrefetches.clear();
+    selectedPlayerCache.clear();
   }
 
   function getCachedLoadout(cacheKey) {
@@ -1379,61 +1453,167 @@
     }));
   }
 
+  function getIdentityKey(id = cfg.bungieInput, membershipType = cfg.membershipType) {
+    return String(id || '').trim().toLowerCase() + '|' + String(membershipType || '-1');
+  }
+
   function getBungieHistory() {
     try {
       const parsed = JSON.parse(localStorage.getItem(BUNGIE_HISTORY_KEY) || '[]');
       if (!Array.isArray(parsed)) return [];
 
-      return parsed
+      return sortBungieHistory(parsed
         .map(entry => typeof entry === 'string'
-          ? { id: entry, membershipType: '-1', lastUsed: 0 }
+          ? { id: entry, membershipType: '-1', favorite: false, lastUsed: 0 }
           : {
               id: String(entry.id || '').trim(),
               membershipType: String(entry.membershipType || '-1'),
+              favorite: Boolean(entry.favorite),
               lastUsed: Number(entry.lastUsed || 0)
             })
-        .filter(entry => entry.id);
+        .filter(entry => entry.id));
     } catch (error) {
       console.warn('Failed to load Bungie ID history:', error);
       return [];
     }
   }
 
-  function renderBungieHistory() {
-    const list = document.getElementById('bungie-history-list');
-    if (!list) return;
-
-    list.innerHTML = '';
-    getBungieHistory().forEach(entry => {
-      const option = document.createElement('option');
-      option.value = entry.id;
-      option.label = PLATFORM_LABELS[entry.membershipType] || 'Auto';
-      list.appendChild(option);
-    });
+  function sortBungieHistory(history) {
+    return [...history].sort((a, b) => Number(b.favorite) - Number(a.favorite) || b.lastUsed - a.lastUsed || a.id.localeCompare(b.id));
   }
 
-  function rememberBungieId(id, membershipType) {
+  function saveBungieHistory(history) {
+    const unique = [];
+    const seen = new Set();
+    sortBungieHistory(history).forEach(entry => {
+      const key = entry.id.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      unique.push(entry);
+    });
+
+    const favorites = unique.filter(entry => entry.favorite);
+    const recents = unique.filter(entry => !entry.favorite).slice(0, BUNGIE_HISTORY_LIMIT);
+    localStorage.setItem(BUNGIE_HISTORY_KEY, JSON.stringify([...favorites, ...recents]));
+    renderBungieHistory();
+  }
+
+  function renderBungieHistory() {
+    const list = document.getElementById('bungie-history-list');
+    if (list) {
+      list.innerHTML = '';
+      getBungieHistory().forEach(entry => {
+        const option = document.createElement('option');
+        option.value = entry.id;
+        option.label = (entry.favorite ? 'Favorite - ' : '') + (PLATFORM_LABELS[entry.membershipType] || 'Auto');
+        list.appendChild(option);
+      });
+    }
+
+    renderFavoriteBungieIds();
+    updateFavoriteButton();
+  }
+
+  function renderFavoriteBungieIds() {
+    const select = document.getElementById('favorite-select');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">Favorites</option>';
+    getBungieHistory()
+      .filter(entry => entry.favorite)
+      .forEach(entry => {
+        const option = document.createElement('option');
+        option.value = entry.id;
+        option.dataset.membershipType = entry.membershipType;
+        option.textContent = entry.id + ' (' + (PLATFORM_LABELS[entry.membershipType] || 'Auto') + ')';
+        select.appendChild(option);
+      });
+
+    select.value = [...select.options].some(option => option.value === currentValue) ? currentValue : '';
+  }
+
+  function rememberBungieId(id, membershipType, options = {}) {
     const normalizedId = String(id || '').trim();
     if (!normalizedId) return;
 
     const normalizedPlatform = String(membershipType || '-1');
-    const history = getBungieHistory()
-      .filter(entry => entry.id.toLowerCase() !== normalizedId.toLowerCase());
-
-    history.unshift({
+    const history = getBungieHistory();
+    const existing = history.find(entry => entry.id.toLowerCase() === normalizedId.toLowerCase());
+    const nextEntry = {
       id: normalizedId,
       membershipType: PLATFORM_LABELS[normalizedPlatform] ? normalizedPlatform : '-1',
+      favorite: options.favorite ?? existing?.favorite ?? false,
       lastUsed: Date.now()
-    });
+    };
 
-    localStorage.setItem(BUNGIE_HISTORY_KEY, JSON.stringify(history.slice(0, BUNGIE_HISTORY_LIMIT)));
-    renderBungieHistory();
+    saveBungieHistory([
+      nextEntry,
+      ...history.filter(entry => entry.id.toLowerCase() !== normalizedId.toLowerCase())
+    ]);
+  }
+
+  function updateFavoriteButton() {
+    const button = document.getElementById('favorite-toggle');
+    if (!button) return;
+
+    const currentId = document.getElementById('bungie-input')?.value.trim() || cfg.bungieInput;
+    const match = getBungieHistory().find(entry => entry.id.toLowerCase() === currentId.toLowerCase());
+    const isFavorite = Boolean(currentId && match?.favorite);
+    button.classList.toggle('active', isFavorite);
+    button.textContent = isFavorite ? 'Favorited' : 'Favorite';
+    button.disabled = !currentId;
+  }
+
+  function toggleFavoriteCurrentBungieId() {
+    const id = document.getElementById('bungie-input')?.value.trim();
+    if (!id) return;
+
+    const platform = document.getElementById('platform-select')?.value || cfg.membershipType || '-1';
+    const existing = getBungieHistory().find(entry => entry.id.toLowerCase() === id.toLowerCase());
+    rememberBungieId(id, platform, { favorite: !existing?.favorite });
+  }
+
+  function applyFavoriteBungieId() {
+    const select = document.getElementById('favorite-select');
+    const id = select?.value || '';
+    if (!id) return;
+
+    const match = getBungieHistory().find(entry => entry.id.toLowerCase() === id.toLowerCase());
+    document.getElementById('bungie-input').value = id;
+    if (match && PLATFORM_LABELS[match.membershipType]) {
+      document.getElementById('platform-select').value = match.membershipType;
+    }
+    clearCharacterSelection();
+    syncIdentityFromControls();
+    rememberBungieId(cfg.bungieInput, cfg.membershipType);
+    saveStoredPrefs();
+    fetchLoadout();
+  }
+
+  function clearCharacterSelection() {
+    cfg.characterId = '';
+    const select = document.getElementById('character-select');
+    if (select) select.value = '';
   }
 
   function syncIdentityFromControls() {
-    cfg.bungieInput = document.getElementById('bungie-input').value.trim();
-    cfg.membershipType = document.getElementById('platform-select').value || '-1';
-    cfg.characterId = document.getElementById('character-select').value || '';
+    const nextId = document.getElementById('bungie-input').value.trim();
+    const nextMembershipType = document.getElementById('platform-select').value || '-1';
+    const previousIdentity = getIdentityKey();
+    const nextIdentity = getIdentityKey(nextId, nextMembershipType);
+    const selectedCharacterId = document.getElementById('character-select').value || '';
+
+    cfg.bungieInput = nextId;
+    cfg.membershipType = nextMembershipType;
+
+    if (previousIdentity !== nextIdentity) {
+      clearCharacterSelection();
+    } else {
+      cfg.characterId = selectedCharacterId;
+    }
+
+    updateFavoriteButton();
   }
 
   function applyKnownPlatformForBungieId() {
@@ -1445,17 +1625,19 @@
       syncIdentityFromControls();
       saveStoredPrefs();
     }
+    updateFavoriteButton();
   }
 
   /* ── URL PARAMS ── */
   function readUrlParams() {
     const p = new URLSearchParams(window.location.search);
     const storedPrefs = readStoredPrefs();
+    const hasUrlIdentity = p.has('b') || p.has('platform') || p.has('membershipType');
     if (!p.has('b') && storedPrefs.bungieInput) cfg.bungieInput = storedPrefs.bungieInput;
     if (!p.has('platform') && !p.has('membershipType') && storedPrefs.membershipType) {
       cfg.membershipType = storedPrefs.membershipType;
     }
-    if (!p.has('characterId') && !p.has('character') && storedPrefs.characterId) {
+    if (!p.has('characterId') && !p.has('character') && !hasUrlIdentity && storedPrefs.characterId) {
       cfg.characterId = storedPrefs.characterId;
     }
 
@@ -1494,6 +1676,8 @@
     const id = cfg.bungieInput;
     if (!id) { setStatus('Enter a Bungie ID above'); return; }
 
+    resetLoadoutRuntimeForIdentity(String(id || '').trim().toLowerCase() + '|' + String(cfg.membershipType || '-1'));
+
     const requestedCharacterId = cfg.characterId || '';
     const cacheKey = getLoadoutCacheKey(id, requestedCharacterId);
     const cachedLoadout = getCachedLoadout(cacheKey);
@@ -1517,8 +1701,12 @@
 
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     loadoutAbortController = controller;
+    let didTimeout = false;
     const timeoutId = controller
-      ? setTimeout(() => controller.abort(), LOADOUT_FETCH_TIMEOUT_MS)
+      ? setTimeout(() => {
+          didTimeout = true;
+          controller.abort();
+        }, LOADOUT_FETCH_TIMEOUT_MS)
       : null;
 
     setStatus('Loading…');
@@ -1565,11 +1753,15 @@
     } catch(err) {
       if (requestId !== loadoutRequestId) return;
 
+      if (err.name === 'AbortError' && !didTimeout) {
+        return;
+      }
+
       const message = err.name === 'AbortError'
         ? 'Loadout request timed out. Try a different platform or refresh again.'
         : (err.message || 'Failed to fetch loadout data');
       showError(message);
-      setStatus('⚠ Error');
+      setStatus('Error');
     } finally {
       if (timeoutId) clearTimeout(timeoutId);
 
@@ -1856,22 +2048,31 @@
       Strength:   'https://www.bungie.net/common/destiny2_content/icons/fa534aca76d7f2d7e7b4ba4df4271b42.png',
     };
 
+    const statValues = new Map();
     document.querySelectorAll('.stat-row[data-stat]').forEach(row => {
       const stat = row.dataset.stat;
       const val = Math.max(0, Number(stats[stat]) || 0);
       const tier = Math.max(0, Math.floor(val / 10));
       const pct = Math.min(Math.max((val / 200) * 100, 0), 100);
+      statValues.set(stat, val);
 
       row.querySelector('.stat-val').textContent = val;
-      row.querySelector('.stat-tier').textContent = `T${tier}`;
+      row.querySelector('.stat-tier').textContent = 'T' + tier;
 
       const fill = row.querySelector('.stat-bar-fill');
       fill.style.width = pct + '%';
       fill.className = 'stat-bar-fill ' + (tier >= 10 ? 't10' : val >= 80 ? 'high' : val >= 50 ? 'mid' : 'low');
 
       const img = row.querySelector('.stat-icon-img');
-      if (icons[stat]) img.style.backgroundImage = `url('${icons[stat]}')`;
+      if (icons[stat]) img.style.backgroundImage = "url('" + icons[stat] + "')";
     });
+
+    const list = document.querySelector('.stats-list');
+    if (list) {
+      Array.from(list.querySelectorAll('.stat-row[data-stat]'))
+        .sort((a, b) => (statValues.get(b.dataset.stat) || 0) - (statValues.get(a.dataset.stat) || 0))
+        .forEach(row => list.appendChild(row));
+    }
   }
 
   /* ── SUBCLASS ── */
@@ -2013,16 +2214,20 @@
     if (e.key === 'Enter') applyAndFetch();
   });
 
+  document.getElementById('favorite-toggle')?.addEventListener('click', toggleFavoriteCurrentBungieId);
+  document.getElementById('favorite-select')?.addEventListener('change', applyFavoriteBungieId);
+
   document.getElementById('bungie-input').addEventListener('change', () => {
-    document.getElementById('character-select').value = '';
+    clearCharacterSelection();
     applyKnownPlatformForBungieId();
     syncIdentityFromControls();
     saveStoredPrefs();
   });
 
   document.getElementById('platform-select').addEventListener('change', () => {
-    document.getElementById('character-select').value = '';
+    clearCharacterSelection();
     syncIdentityFromControls();
+    rememberBungieId(cfg.bungieInput, cfg.membershipType);
     saveStoredPrefs();
     if (cfg.bungieInput) fetchLoadout();
   });

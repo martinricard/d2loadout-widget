@@ -12,6 +12,7 @@ let lastCommandTime = 0;
 let maintenanceCheckInterval = null;
 let loadoutAbortController = null;
 let loadoutRequestId = 0;
+let activeLoadoutIdentityKey = '';
 const LOADOUT_FETCH_TIMEOUT_MS = 20000;
 const LOADOUT_CACHE_TTL_MS = 120000;
 const loadoutCache = new Map();
@@ -463,6 +464,27 @@ function getLoadoutCacheKey(bungieId, membershipType = getRequestedMembershipTyp
   return `${getIdentityCacheKey(bungieId, membershipType)}|${characterId || 'auto'}`;
 }
 
+function resetLoadoutRuntimeForIdentity(identityKey) {
+  if (activeLoadoutIdentityKey === identityKey) return;
+
+  activeLoadoutIdentityKey = identityKey;
+  loadoutRequestId++;
+
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+
+  if (loadoutAbortController) {
+    loadoutAbortController.abort();
+    loadoutAbortController = null;
+  }
+
+  loadoutCache.clear();
+  loadoutPrefetches.clear();
+  playerRouteCache.clear();
+}
+
 function getCachedLoadout(cacheKey) {
   const cached = loadoutCache.get(cacheKey);
   if (!cached) return null;
@@ -592,6 +614,8 @@ async function fetchLoadout() {
   }
 
   const membershipType = getRequestedMembershipType();
+  resetLoadoutRuntimeForIdentity(getIdentityCacheKey(bungieId, membershipType));
+
   const requestedCharacterId = getRequestedCharacterId();
   const cacheKey = getLoadoutCacheKey(bungieId, membershipType, requestedCharacterId);
   const cachedLoadout = getCachedLoadout(cacheKey);
@@ -616,8 +640,12 @@ async function fetchLoadout() {
 
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   loadoutAbortController = controller;
+  let didTimeout = false;
   const timeoutId = controller
-    ? setTimeout(() => controller.abort(), LOADOUT_FETCH_TIMEOUT_MS)
+    ? setTimeout(() => {
+        didTimeout = true;
+        controller.abort();
+      }, LOADOUT_FETCH_TIMEOUT_MS)
     : null;
   
   try {
@@ -656,6 +684,10 @@ async function fetchLoadout() {
     
   } catch (error) {
     if (requestId !== loadoutRequestId) {
+      return;
+    }
+
+    if (error.name === 'AbortError' && !didTimeout) {
       return;
     }
 

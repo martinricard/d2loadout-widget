@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D2 Loadout Widget - Demo</title>
+  <title>D2Loadout.report - Demo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
@@ -308,6 +308,36 @@
     .panel-section h3 + label {
       margin-top: 0;
     }
+    .identity-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 104px;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .identity-actions select,
+    .identity-actions .demo-btn {
+      margin: 0;
+    }
+    .identity-actions .demo-btn.active {
+      color: var(--panel-accent);
+      border-color: rgba(198, 180, 107, 0.42);
+    }
+    .panel-credit {
+      padding: 2px 0 10px;
+      color: var(--panel-muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .panel-credit a {
+      color: var(--panel-text);
+      font-weight: 700;
+      text-decoration: none;
+      transition: color 0.16s ease;
+    }
+    .panel-credit a:hover {
+      color: var(--panel-accent);
+    }
+    .panel-heart { color: #d946ef; }
     .info-display {
       display: flex;
       flex-direction: column;
@@ -466,7 +496,7 @@
   <div class="demo-panel">
     <div class="panel-header">
       <div>
-        <h1>D2 Loadout</h1>
+        <h1>D2Loadout.report</h1>
         <p class="subtitle">Demo controls</p>
       </div>
       <div class="panel-actions">
@@ -482,6 +512,12 @@
       <label for="bungieInput">Bungie ID</label>
       <input type="text" id="bungieInput" value="Marty#2689" placeholder="Guardian#1234" list="bungieHistoryList">
       <datalist id="bungieHistoryList"></datalist>
+      <div class="identity-actions">
+        <select id="favoriteBungieSelect" aria-label="Favorite Bungie IDs">
+          <option value="">Favorites</option>
+        </select>
+        <button class="demo-btn" id="favoriteBungieId" type="button">Favorite</button>
+      </div>
       <label for="membershipType">Destiny Platform</label>
       <select id="membershipType">
         <option value="-1">Auto</option>
@@ -598,6 +634,10 @@
         Refresh
       </button>
     </div>
+
+    <div class="panel-credit">
+      Made with <span class="panel-heart" aria-label="love">&#x1F49C;</span> by <a href="https://noticemesenpai.studio" target="_blank" rel="noopener">Notice Me Senpai</a>
+    </div>
   </div>
   <button id="sidebarHandle" class="sidebar-toggle-handle hidden">
     <span class="btn-icon">➡️</span>
@@ -606,7 +646,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=responsive-menu-1" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=favorites-1" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -969,62 +1009,153 @@
       renderCharacterOptions(data.characters || []);
     };
 
+    const getIdentityKey = (id = window.fieldData.bungieInput, membershipType = window.fieldData.membershipType) =>
+      String(id || '').trim().toLowerCase() + '|' + String(membershipType || '-1');
+
+    const sortBungieHistory = (history) => [...history]
+      .sort((a, b) => Number(b.favorite) - Number(a.favorite) || b.lastUsed - a.lastUsed || a.id.localeCompare(b.id));
+
     const getBungieHistory = () => {
       try {
         const parsed = JSON.parse(localStorage.getItem(BUNGIE_HISTORY_KEY) || '[]');
         if (!Array.isArray(parsed)) return [];
 
-        return parsed
+        return sortBungieHistory(parsed
           .map(entry => typeof entry === 'string'
-            ? { id: entry, membershipType: '-1', lastUsed: 0 }
+            ? { id: entry, membershipType: '-1', favorite: false, lastUsed: 0 }
             : {
                 id: String(entry.id || '').trim(),
                 membershipType: String(entry.membershipType || '-1'),
+                favorite: Boolean(entry.favorite),
                 lastUsed: Number(entry.lastUsed || 0)
               })
-          .filter(entry => entry.id);
+          .filter(entry => entry.id));
       } catch (error) {
         console.warn('Failed to load Bungie ID history:', error);
         return [];
       }
     };
 
-    const renderBungieHistory = () => {
-      const list = document.getElementById('bungieHistoryList');
-      if (!list) return;
-
-      list.innerHTML = '';
-      getBungieHistory().forEach(entry => {
-        const option = document.createElement('option');
-        option.value = entry.id;
-        option.label = PLATFORM_LABELS[entry.membershipType] || 'Auto';
-        list.appendChild(option);
+    const saveBungieHistory = (history) => {
+      const unique = [];
+      const seen = new Set();
+      sortBungieHistory(history).forEach(entry => {
+        const key = entry.id.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        unique.push(entry);
       });
+
+      const favorites = unique.filter(entry => entry.favorite);
+      const recents = unique.filter(entry => !entry.favorite).slice(0, BUNGIE_HISTORY_LIMIT);
+      localStorage.setItem(BUNGIE_HISTORY_KEY, JSON.stringify([...favorites, ...recents]));
+      renderBungieHistory();
     };
 
-    const rememberBungieId = (id, membershipType) => {
+    const renderFavoriteBungieIds = () => {
+      const select = document.getElementById('favoriteBungieSelect');
+      if (!select) return;
+
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">Favorites</option>';
+      getBungieHistory()
+        .filter(entry => entry.favorite)
+        .forEach(entry => {
+          const option = document.createElement('option');
+          option.value = entry.id;
+          option.dataset.membershipType = entry.membershipType;
+          option.textContent = entry.id + ' (' + (PLATFORM_LABELS[entry.membershipType] || 'Auto') + ')';
+          select.appendChild(option);
+        });
+
+      select.value = [...select.options].some(option => option.value === currentValue) ? currentValue : '';
+    };
+
+    const updateFavoriteButton = () => {
+      const button = document.getElementById('favoriteBungieId');
+      if (!button) return;
+
+      const currentId = document.getElementById('bungieInput')?.value.trim() || window.fieldData.bungieInput;
+      const match = getBungieHistory().find(entry => entry.id.toLowerCase() === currentId.toLowerCase());
+      const isFavorite = Boolean(currentId && match?.favorite);
+      button.classList.toggle('active', isFavorite);
+      button.textContent = isFavorite ? 'Favorited' : 'Favorite';
+      button.disabled = !currentId;
+    };
+
+    const renderBungieHistory = () => {
+      const list = document.getElementById('bungieHistoryList');
+      if (list) {
+        list.innerHTML = '';
+        getBungieHistory().forEach(entry => {
+          const option = document.createElement('option');
+          option.value = entry.id;
+          option.label = (entry.favorite ? 'Favorite - ' : '') + (PLATFORM_LABELS[entry.membershipType] || 'Auto');
+          list.appendChild(option);
+        });
+      }
+
+      renderFavoriteBungieIds();
+      updateFavoriteButton();
+    };
+
+    const rememberBungieId = (id, membershipType, options = {}) => {
       const normalizedId = String(id || '').trim();
       if (!normalizedId) return;
 
       const normalizedPlatform = String(membershipType || '-1');
-      const history = getBungieHistory()
-        .filter(entry => entry.id.toLowerCase() !== normalizedId.toLowerCase());
-
-      history.unshift({
+      const history = getBungieHistory();
+      const existing = history.find(entry => entry.id.toLowerCase() === normalizedId.toLowerCase());
+      const nextEntry = {
         id: normalizedId,
         membershipType: PLATFORM_LABELS[normalizedPlatform] ? normalizedPlatform : '-1',
+        favorite: options.favorite ?? existing?.favorite ?? false,
         lastUsed: Date.now()
-      });
+      };
 
-      localStorage.setItem(BUNGIE_HISTORY_KEY, JSON.stringify(history.slice(0, BUNGIE_HISTORY_LIMIT)));
-      renderBungieHistory();
+      saveBungieHistory([
+        nextEntry,
+        ...history.filter(entry => entry.id.toLowerCase() !== normalizedId.toLowerCase())
+      ]);
     };
 
-    const rememberCurrentBungieId = () => {
+    const rememberCurrentBungieId = (options = {}) => {
       rememberBungieId(
         document.getElementById('bungieInput').value,
-        document.getElementById('membershipType').value
+        document.getElementById('membershipType').value,
+        options
       );
+    };
+
+    const clearCharacterSelection = () => {
+      window.fieldData.characterId = '';
+      const select = document.getElementById('characterId');
+      if (select) select.value = '';
+    };
+
+    const toggleFavoriteCurrentBungieId = () => {
+      const id = document.getElementById('bungieInput')?.value.trim();
+      if (!id) return;
+
+      const existing = getBungieHistory().find(entry => entry.id.toLowerCase() === id.toLowerCase());
+      rememberCurrentBungieId({ favorite: !existing?.favorite });
+    };
+
+    const applyFavoriteBungieId = () => {
+      const select = document.getElementById('favoriteBungieSelect');
+      const id = select?.value || '';
+      if (!id) return;
+
+      const match = getBungieHistory().find(entry => entry.id.toLowerCase() === id.toLowerCase());
+      document.getElementById('bungieInput').value = id;
+      if (match && PLATFORM_LABELS[match.membershipType]) {
+        document.getElementById('membershipType').value = match.membershipType;
+      }
+      clearCharacterSelection();
+      syncDemoIdentityFields();
+      rememberCurrentBungieId();
+      saveDemoPrefs();
+      if (window.fetchLoadout) window.fetchLoadout();
     };
 
     const applyKnownPlatformForBungieId = () => {
@@ -1035,6 +1166,7 @@
         select.value = match.membershipType;
         syncDemoIdentityFields();
       }
+      updateFavoriteButton();
     };
 
     const updateFullpageFrame = (force = false) => {
@@ -1042,7 +1174,7 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
-      params.set('v', 'responsive-menu-1');
+      params.set('v', 'favorites-1');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
@@ -1082,10 +1214,12 @@
       }
     };
 
-    const syncDemoIdentityFields = ({ updateFrame = true } = {}) => {
+    const syncDemoIdentityFields = ({ updateFrame = true, preserveCharacter = false } = {}) => {
       const newId = document.getElementById('bungieInput').value.trim();
       const membershipType = document.getElementById('membershipType').value || '-1';
-      const characterId = document.getElementById('characterId').value || '';
+      const previousIdentity = getIdentityKey();
+      const nextIdentity = getIdentityKey(newId, membershipType);
+      let characterId = document.getElementById('characterId').value || '';
 
       if (newId) {
         window.fieldData.bungieInput = newId;
@@ -1093,10 +1227,18 @@
       }
 
       window.fieldData.membershipType = membershipType;
+      if (!preserveCharacter && previousIdentity !== nextIdentity) {
+        characterId = '';
+        clearCharacterSelection();
+      }
       window.fieldData.characterId = characterId;
       document.getElementById('currentPlatform').textContent = PLATFORM_LABELS[membershipType] || 'Auto';
+      updateFavoriteButton();
       if (updateFrame) updateFullpageFrame();
     };
+
+    document.getElementById('favoriteBungieId')?.addEventListener('click', toggleFavoriteCurrentBungieId);
+    document.getElementById('favoriteBungieSelect')?.addEventListener('change', applyFavoriteBungieId);
 
     // Update Bungie ID button
     document.getElementById('updateBungieId').addEventListener('click', () => {
@@ -1109,7 +1251,7 @@
     });
 
     document.getElementById('membershipType').addEventListener('change', () => {
-      document.getElementById('characterId').value = '';
+      clearCharacterSelection();
       syncDemoIdentityFields();
       rememberCurrentBungieId();
       saveDemoPrefs();
@@ -1128,8 +1270,9 @@
     });
 
     document.getElementById('bungieInput').addEventListener('change', () => {
-      document.getElementById('characterId').value = '';
+      clearCharacterSelection();
       applyKnownPlatformForBungieId();
+      syncDemoIdentityFields();
       saveDemoPrefs();
     });
     
@@ -1163,7 +1306,7 @@
       const sidebarHidden = document.body.classList.contains('sidebar-hidden');
       const bungieInput = document.getElementById('bungieInput')?.value.trim() || window.fieldData.bungieInput;
       const membershipType = document.getElementById('membershipType')?.value || window.fieldData.membershipType || '-1';
-      const characterId = document.getElementById('characterId')?.value || window.fieldData.characterId || '';
+      const characterId = document.getElementById('characterId')?.value || '';
       localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden, bungieInput, membershipType, characterId }));
     };
 
@@ -1186,7 +1329,7 @@
           window.fieldData.characterId = prefs.characterId;
         }
         renderBungieHistory();
-        syncDemoIdentityFields();
+        syncDemoIdentityFields({ preserveCharacter: true });
         if (prefs.activeView) {
           const viewBtn = document.querySelector(`[data-view="${prefs.activeView}"]`);
           if (viewBtn) viewBtn.click();
