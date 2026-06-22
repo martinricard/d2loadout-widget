@@ -444,9 +444,33 @@ function getRequestedMembershipType() {
     : '';
 }
 
-function buildLoadoutApiUrl(bungieId) {
+async function buildLoadoutApiUrl(bungieId, fetchOptions = {}) {
   const params = new URLSearchParams({ t: String(Date.now()) });
   const membershipType = getRequestedMembershipType();
+
+  if (membershipType && bungieId.includes('#')) {
+    const searchUrl = `https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(bungieId)}`;
+    const searchResponse = await fetch(searchUrl, fetchOptions);
+    if (!searchResponse.ok) {
+      const errorData = await searchResponse.json().catch(() => ({}));
+      throw new Error(errorData.message || `Player search failed: ${searchResponse.status}`);
+    }
+
+    const searchData = await searchResponse.json();
+    const selectedPlayer = (searchData.players || [])
+      .find(player => Number(player.membershipType) === Number(membershipType));
+
+    if (!selectedPlayer) {
+      const availablePlatforms = (searchData.players || [])
+        .map(player => player.platformName)
+        .filter(Boolean)
+        .join(', ');
+      throw new Error(`${bungieId} was found, but not on the selected platform. Available platforms: ${availablePlatforms || 'none'}.`);
+    }
+
+    return `https://d2loadout-widget.onrender.com/api/loadout/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
+  }
+
   if (membershipType) {
     params.set('membershipType', membershipType);
   }
@@ -482,8 +506,8 @@ async function fetchLoadout() {
       document.getElementById('characterName').classList.add('loading');
     }
     
-    const apiUrl = buildLoadoutApiUrl(bungieId);
     const fetchOptions = controller ? { signal: controller.signal } : {};
+    const apiUrl = await buildLoadoutApiUrl(bungieId, fetchOptions);
     const response = await fetch(apiUrl, fetchOptions);
     
     if (!response.ok) {

@@ -24,6 +24,7 @@ app.use(express.json());
 // Bungie API Base URL
 const BUNGIE_API_BASE = 'https://www.bungie.net/Platform';
 const BUNGIE_REQUEST_TIMEOUT_MS = 15000;
+const DIM_LINK_TIMEOUT_MS = 8000;
 
 const DESTINY_PLATFORM_ALIASES = {
   auto: -1,
@@ -80,6 +81,25 @@ function ensureManifestCacheFresh() {
     manifestCache.itemSetsLoaded = false;
     manifestCache.artifacts.clear();
     manifestCache.lastUpdate = now;
+  }
+}
+
+async function withFallbackTimeout(promise, ms, fallback, label) {
+  let timeoutId;
+  const timeoutPromise = new Promise(resolve => {
+    timeoutId = setTimeout(() => {
+      console.warn(`[${label}] Timed out after ${ms}ms; continuing without optional data.`);
+      resolve(fallback);
+    }, ms);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } catch (error) {
+    console.error(`[${label}] Failed:`, error.message);
+    return fallback;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -410,15 +430,20 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
     artifactInfo = await fetchArtifactModHashes(seasonalArtifact.artifactHash);
   }
   
-  // Generate DIM link
+  // Generate DIM link, but do not block the loadout payload on optional enrichment.
   const displayName = data.profile?.data?.userInfo?.displayName || 'Guardian';
-  const dimLink = await generateDIMLink(
-    displayName,
-    character.classType,
-    characterEquipment,
-    itemComponents,
-    artifactMods,
-    characterProgression
+  const dimLink = await withFallbackTimeout(
+    generateDIMLink(
+      displayName,
+      character.classType,
+      characterEquipment,
+      itemComponents,
+      artifactMods,
+      characterProgression
+    ),
+    DIM_LINK_TIMEOUT_MS,
+    null,
+    'DIM Link'
   );
   return {
     platform,
@@ -600,7 +625,8 @@ async function fetchItemDefinition(itemHash) {
   try {
     const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyInventoryItemDefinition/${itemHash}/`;
     const response = await axios.get(url, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     
     const definition = response.data.Response;
@@ -627,7 +653,8 @@ async function fetchPlugDefinition(plugHash) {
   try {
     const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyInventoryItemDefinition/${plugHash}/`;
     const response = await axios.get(url, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     
     const definition = response.data.Response;
@@ -682,7 +709,8 @@ async function fetchSandboxPerkDefinition(perkHash) {
   try {
     const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinySandboxPerkDefinition/${perkHash}/`;
     const response = await axios.get(url, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
 
     const definition = response.data.Response;
@@ -716,7 +744,8 @@ async function fetchEquipableItemSetDefinitions() {
 
   try {
     const manifestResponse = await axios.get(`${BUNGIE_API_BASE}/Destiny2/Manifest/`, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     const itemSetPath = manifestResponse.data.Response?.jsonWorldComponentContentPaths?.en?.DestinyEquipableItemSetDefinition;
 
@@ -725,7 +754,9 @@ async function fetchEquipableItemSetDefinitions() {
       return manifestCache.itemSets;
     }
 
-    const itemSetResponse = await axios.get(`https://www.bungie.net${itemSetPath}`);
+    const itemSetResponse = await axios.get(`https://www.bungie.net${itemSetPath}`, {
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
+    });
     const itemSetDefinitions = itemSetResponse.data || {};
 
     manifestCache.itemSets.clear();
@@ -775,7 +806,8 @@ async function fetchArtifactModHashes(artifactHash) {
   try {
     const url = `${BUNGIE_API_BASE}/Destiny2/Manifest/DestinyArtifactDefinition/${artifactHash}/`;
     const response = await axios.get(url, {
-      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY }
+      headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
+      timeout: BUNGIE_REQUEST_TIMEOUT_MS
     });
     
     const artifactDef = response.data.Response;

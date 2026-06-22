@@ -1099,7 +1099,30 @@
       }
 
       const fetchOptions = controller ? { signal: controller.signal } : {};
-      const res = await fetch(`https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`, fetchOptions);
+      let loadoutUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`;
+      if (cfg.membershipType && cfg.membershipType !== '-1' && id.includes('#')) {
+        const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(id)}`, fetchOptions);
+        if (!searchRes.ok) {
+          const e = await searchRes.json().catch(() => ({}));
+          throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
+        }
+
+        const searchData = await searchRes.json();
+        const selectedPlayer = (searchData.players || [])
+          .find(player => Number(player.membershipType) === Number(cfg.membershipType));
+
+        if (!selectedPlayer) {
+          const availablePlatforms = (searchData.players || [])
+            .map(player => player.platformName)
+            .filter(Boolean)
+            .join(', ');
+          throw new Error(`${id} was found, but not on the selected platform. Available platforms: ${availablePlatforms || 'none'}.`);
+        }
+
+        loadoutUrl = `https://d2loadout-widget.onrender.com/api/loadout/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
+      }
+
+      const res = await fetch(loadoutUrl, fetchOptions);
       if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.message || `API Error ${res.status}`); }
 
       const data = await res.json();
