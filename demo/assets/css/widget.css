@@ -1053,6 +1053,17 @@ body {
   display: block;
 }
 
+.artifact-mod:first-child .artifact-mod-tooltip {
+  left: 0;
+  transform: none;
+}
+
+.artifact-mod:last-child:not(:first-child) .artifact-mod-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .artifact-mod-tooltip-name {
   font-size: 0.7em;
   font-weight: 600;

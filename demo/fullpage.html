@@ -590,6 +590,8 @@
     }
 
     /* ── ARTIFACT ── */
+    #artifact-card { overflow: visible; }
+
     .artifact-mods {
       display: flex; flex-wrap: wrap; gap: 6px;
     }
@@ -609,6 +611,28 @@
     .artifact-mod:hover {
       border-color: rgba(255,255,255,0.3);
       transform: scale(1.08); z-index: 5;
+    }
+
+    .artifact-mods .artifact-mod:first-child[data-tip]:hover::before {
+      left: 0;
+      transform: none;
+    }
+
+    .artifact-mods .artifact-mod:first-child[data-tip]:hover::after {
+      left: 20px;
+      transform: translateX(-50%);
+    }
+
+    .artifact-mods .artifact-mod:last-child:not(:first-child)[data-tip]:hover::before {
+      left: auto;
+      right: 0;
+      transform: none;
+    }
+
+    .artifact-mods .artifact-mod:last-child:not(:first-child)[data-tip]:hover::after {
+      left: auto;
+      right: 20px;
+      transform: translateX(50%);
     }
 
     /* ── DIM LINK / FOOTER ── */
@@ -2141,7 +2165,6 @@
       if (mod.iconUrl) el.style.backgroundImage = `url('${mod.iconUrl}')`;
       const tipText = mod.description ? `${mod.name || 'Mod'} — ${mod.description}` : (mod.name || 'Mod');
       el.setAttribute('data-tip', tipText.length > 80 ? mod.name || 'Mod' : tipText);
-      el.title = mod.description ? `${mod.name}\n${mod.description}` : mod.name;
       grid.appendChild(el);
     });
   }
