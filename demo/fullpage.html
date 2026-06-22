@@ -138,17 +138,6 @@
 
     .nav-spacer { flex: 1; }
 
-    .obs-btn {
-      background: transparent; border: 1px solid var(--border-light);
-      color: var(--text-muted); font-family: var(--font);
-      font-size: 11px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.5px; padding: 6px 12px;
-      border-radius: var(--radius); cursor: pointer;
-      transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
-    }
-
-    .obs-btn:hover { border-color: var(--gold); color: var(--gold); }
-
     /* ── HERO BANNER ── */
     #hero {
       position: relative; overflow: hidden;
@@ -649,7 +638,6 @@
   <button class="nav-btn" onclick="applyAndFetch()">Load</button>
   <span id="nav-status"></span>
   <div class="nav-spacer"></div>
-  <button class="obs-btn" onclick="copyObsUrl()">📋 OBS URL</button>
 </nav>
 
 <!-- HERO BANNER -->
@@ -1274,23 +1262,6 @@
       document.getElementById('character-select').value = '';
     }
     renderBungieHistory();
-  }
-
-  function buildObsUrl() {
-    const base = location.origin + location.pathname;
-    return `${base}?${new URLSearchParams({ b:cfg.bungieInput, r:cfg.refreshRate,
-      weapons:cfg.showWeapons, armor:cfg.showArmor, stats:cfg.showStats,
-      subclass:cfg.showSubclass, artifact:cfg.showArtifact,
-      perks:cfg.showPerks, dimlink:cfg.showDIMLink, platform:cfg.membershipType,
-      characterId:cfg.characterId, obs:'1' })}`;
-  }
-
-  function copyObsUrl() {
-    syncIdentityFromControls();
-    rememberBungieId(cfg.bungieInput, cfg.membershipType);
-    saveStoredPrefs();
-    navigator.clipboard.writeText(buildObsUrl())
-      .then(() => showToast('OBS URL copied — paste as Browser Source'));
   }
 
   /* ── FETCH ── */
