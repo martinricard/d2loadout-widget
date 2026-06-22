@@ -945,13 +945,33 @@
     '6': 'Epic Games'
   };
 
+  function setCharacterSelectorState(label = 'Most Recently Played', disabled = false, characterId = '') {
+    const select = document.getElementById('character-select');
+    if (!select) return;
+
+    select.innerHTML = '';
+    const option = document.createElement('option');
+    option.value = characterId;
+    option.textContent = label;
+    select.appendChild(option);
+    select.disabled = disabled;
+    select.value = characterId;
+    cfg.characterId = characterId;
+  }
+
   function renderCharacterOptions(characters = []) {
     const select = document.getElementById('character-select');
     if (!select) return;
 
+    if (!characters.length) {
+      setCharacterSelectorState('Most Recently Played');
+      return;
+    }
+
     const selectedCharacterId = String(cfg.characterId || '');
     const mostRecentCharacter = characters.find(character => character.isMostRecent);
     select.innerHTML = '';
+    select.disabled = false;
 
     const autoOption = document.createElement('option');
     autoOption.value = '';
@@ -973,6 +993,48 @@
     const hasSelectedCharacter = characters.some(character => String(character.id) === selectedCharacterId);
     select.value = hasSelectedCharacter ? selectedCharacterId : '';
     cfg.characterId = select.value;
+  }
+
+  async function buildAccountApiUrl(resource, id, fetchOptions = {}) {
+    const params = new URLSearchParams({ t: String(Date.now()) });
+    if (cfg.membershipType && cfg.membershipType !== '-1' && id.includes('#')) {
+      const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(id)}`, fetchOptions);
+      if (!searchRes.ok) {
+        const e = await searchRes.json().catch(() => ({}));
+        throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
+      }
+
+      const searchData = await searchRes.json();
+      const selectedPlayer = (searchData.players || [])
+        .find(player => Number(player.membershipType) === Number(cfg.membershipType));
+
+      if (!selectedPlayer) {
+        throw new Error(`${id} was found, but not on the selected platform.`);
+      }
+
+      return `https://d2loadout-widget.onrender.com/api/${resource}/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
+    }
+
+    if (cfg.membershipType && cfg.membershipType !== '-1') {
+      params.set('membershipType', cfg.membershipType);
+    }
+
+    return `https://d2loadout-widget.onrender.com/api/${resource}/${encodeURIComponent(id)}?${params.toString()}`;
+  }
+
+  async function fetchCharacterOptions(fetchOptions = {}) {
+    if (!cfg.bungieInput) return;
+
+    const previousCharacterId = cfg.characterId || '';
+    setCharacterSelectorState('Loading characters...', true, previousCharacterId);
+    const res = await fetch(await buildAccountApiUrl('characters', cfg.bungieInput, fetchOptions), fetchOptions);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e?.message || `Character list failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    renderCharacterOptions(data.characters || []);
   }
 
   function readStoredPrefs() {
@@ -1191,7 +1253,16 @@
       document.getElementById('main-col').classList.remove('hidden');
       document.getElementById('side-col').classList.remove('hidden');
 
-      renderCharacterOptions(data.characters || []);
+      const characters = data.characters || [];
+      if (characters.length) {
+        renderCharacterOptions(characters);
+      } else {
+        await fetchCharacterOptions(fetchOptions)
+          .catch(error => {
+            console.warn('Failed to load character options:', error);
+            setCharacterSelectorState('Character list unavailable', true, cfg.characterId || '');
+          });
+      }
       displayLoadout(data);
       isFirstLoad = false;
 

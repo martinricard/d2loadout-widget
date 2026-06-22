@@ -500,7 +500,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=character-selection-1" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=character-selection-2" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -734,7 +734,7 @@
   </div>
   </div> <!-- Close widget-viewport -->
 </div> <!-- Close widget-area -->
-  <script src="widget.js?v=character-selection-1"></script>
+  <script src="widget.js?v=character-selection-2"></script>
   <script>
     // Demo configuration
     window.fieldData = {
@@ -766,13 +766,34 @@
     const BUNGIE_HISTORY_KEY = 'd2loadoutDemoBungieHistory';
     const BUNGIE_HISTORY_LIMIT = 12;
 
+    const setCharacterSelectorState = (label = 'Most Recently Played', disabled = false, characterId = '') => {
+      const select = document.getElementById('characterId');
+      if (!select) return;
+
+      select.innerHTML = '';
+      const option = document.createElement('option');
+      option.value = characterId;
+      option.textContent = label;
+      select.appendChild(option);
+      select.disabled = disabled;
+      select.value = characterId;
+      window.fieldData.characterId = characterId;
+      updateFullpageFrame();
+    };
+
     const renderCharacterOptions = (characters = []) => {
       const select = document.getElementById('characterId');
       if (!select) return;
 
+      if (!characters.length) {
+        setCharacterSelectorState('Most Recently Played');
+        return;
+      }
+
       const selectedCharacterId = String(window.fieldData.characterId || '');
       const mostRecentCharacter = characters.find(character => character.isMostRecent);
       select.innerHTML = '';
+      select.disabled = false;
 
       const autoOption = document.createElement('option');
       autoOption.value = '';
@@ -794,6 +815,52 @@
       const hasSelectedCharacter = characters.some(character => String(character.id) === selectedCharacterId);
       select.value = hasSelectedCharacter ? selectedCharacterId : '';
       window.fieldData.characterId = select.value;
+      updateFullpageFrame();
+    };
+
+    const buildAccountApiUrl = async (resource, bungieId, fetchOptions = {}) => {
+      const params = new URLSearchParams({ t: String(Date.now()) });
+      const membershipType = window.fieldData.membershipType;
+
+      if (membershipType && membershipType !== '-1' && bungieId.includes('#')) {
+        const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(bungieId)}`, fetchOptions);
+        if (!searchRes.ok) {
+          const e = await searchRes.json().catch(() => ({}));
+          throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
+        }
+
+        const searchData = await searchRes.json();
+        const selectedPlayer = (searchData.players || [])
+          .find(player => Number(player.membershipType) === Number(membershipType));
+
+        if (!selectedPlayer) {
+          throw new Error(`${bungieId} was found, but not on the selected platform.`);
+        }
+
+        return `https://d2loadout-widget.onrender.com/api/${resource}/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
+      }
+
+      if (membershipType && membershipType !== '-1') {
+        params.set('membershipType', membershipType);
+      }
+
+      return `https://d2loadout-widget.onrender.com/api/${resource}/${encodeURIComponent(bungieId)}?${params.toString()}`;
+    };
+
+    const fetchCharacterOptions = async () => {
+      const bungieId = (window.fieldData.bungieInput || '').trim();
+      if (!bungieId) return;
+
+      const previousCharacterId = window.fieldData.characterId || '';
+      setCharacterSelectorState('Loading characters...', true, previousCharacterId);
+      const res = await fetch(await buildAccountApiUrl('characters', bungieId));
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(e?.message || `Character list failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+      renderCharacterOptions(data.characters || []);
     };
 
     const getBungieHistory = () => {
@@ -869,7 +936,7 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
-      params.set('v', 'character-selection-1');
+      params.set('v', 'character-selection-2');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
@@ -949,7 +1016,16 @@
     });
 
     window.addEventListener('d2LoadoutLoaded', event => {
-      renderCharacterOptions(event.detail?.characters || []);
+      const characters = event.detail?.characters || [];
+      if (characters.length) {
+        renderCharacterOptions(characters);
+      } else {
+        fetchCharacterOptions()
+          .catch(error => {
+            console.warn('Failed to load character options:', error);
+            setCharacterSelectorState('Character list unavailable', true, window.fieldData.characterId || '');
+          });
+      }
       saveDemoPrefs();
     });
 
