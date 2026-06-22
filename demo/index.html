@@ -384,6 +384,10 @@
         <option value="3">Steam</option>
         <option value="6">Epic Games</option>
       </select>
+      <label>Character:</label>
+      <select id="characterId">
+        <option value="">Most Recently Played</option>
+      </select>
       <button class="demo-btn" id="updateBungieId">
         <span class="btn-icon">🔄</span>
         Update & Refresh
@@ -496,7 +500,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=platform-selection-2" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=character-selection-1" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -730,12 +734,13 @@
   </div>
   </div> <!-- Close widget-viewport -->
 </div> <!-- Close widget-area -->
-  <script src="widget.js?v=platform-selection-2"></script>
+  <script src="widget.js?v=character-selection-1"></script>
   <script>
     // Demo configuration
     window.fieldData = {
       bungieInput: 'Marty#2689',
       membershipType: '-1',
+      characterId: '',
       autoHide: 'false',
       showWeapons: 'true',
       showArmor: 'true',
@@ -760,6 +765,36 @@
 
     const BUNGIE_HISTORY_KEY = 'd2loadoutDemoBungieHistory';
     const BUNGIE_HISTORY_LIMIT = 12;
+
+    const renderCharacterOptions = (characters = []) => {
+      const select = document.getElementById('characterId');
+      if (!select) return;
+
+      const selectedCharacterId = String(window.fieldData.characterId || '');
+      const mostRecentCharacter = characters.find(character => character.isMostRecent);
+      select.innerHTML = '';
+
+      const autoOption = document.createElement('option');
+      autoOption.value = '';
+      autoOption.textContent = mostRecentCharacter
+        ? `Most Recently Played (${mostRecentCharacter.class} ${mostRecentCharacter.light || ''})`
+        : 'Most Recently Played';
+      select.appendChild(autoOption);
+
+      characters.forEach(character => {
+        const option = document.createElement('option');
+        option.value = character.id;
+        option.textContent = `${character.class} ${character.light || ''}`;
+        if (character.lastPlayed) {
+          option.textContent += ` - ${new Date(character.lastPlayed).toLocaleDateString()}`;
+        }
+        select.appendChild(option);
+      });
+
+      const hasSelectedCharacter = characters.some(character => String(character.id) === selectedCharacterId);
+      select.value = hasSelectedCharacter ? selectedCharacterId : '';
+      window.fieldData.characterId = select.value;
+    };
 
     const getBungieHistory = () => {
       try {
@@ -834,10 +869,13 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
-      params.set('v', 'platform-selection-2');
+      params.set('v', 'character-selection-1');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
+      }
+      if (window.fieldData.characterId) {
+        params.set('characterId', window.fieldData.characterId);
       }
 
       const nextSrc = `fullpage.html${params.toString() ? `?${params.toString()}` : ''}`;
@@ -855,6 +893,7 @@
     const syncDemoIdentityFields = () => {
       const newId = document.getElementById('bungieInput').value.trim();
       const membershipType = document.getElementById('membershipType').value || '-1';
+      const characterId = document.getElementById('characterId').value || '';
 
       if (newId) {
         window.fieldData.bungieInput = newId;
@@ -862,6 +901,7 @@
       }
 
       window.fieldData.membershipType = membershipType;
+      window.fieldData.characterId = characterId;
       document.getElementById('currentPlatform').textContent = PLATFORM_LABELS[membershipType] || 'Auto';
       updateFullpageFrame();
     };
@@ -877,6 +917,7 @@
     });
 
     document.getElementById('membershipType').addEventListener('change', () => {
+      document.getElementById('characterId').value = '';
       syncDemoIdentityFields();
       rememberCurrentBungieId();
       saveDemoPrefs();
@@ -885,7 +926,16 @@
       }
     });
 
+    document.getElementById('characterId').addEventListener('change', () => {
+      syncDemoIdentityFields();
+      saveDemoPrefs();
+      if (window.fieldData.bungieInput) {
+        if (window.fetchLoadout) window.fetchLoadout();
+      }
+    });
+
     document.getElementById('bungieInput').addEventListener('change', () => {
+      document.getElementById('characterId').value = '';
       applyKnownPlatformForBungieId();
       saveDemoPrefs();
     });
@@ -898,6 +948,11 @@
       if (window.fetchLoadout) window.fetchLoadout();
     });
 
+    window.addEventListener('d2LoadoutLoaded', event => {
+      renderCharacterOptions(event.detail?.characters || []);
+      saveDemoPrefs();
+    });
+
     const DEMO_PREFS_KEY = 'd2loadoutDemoPrefs';
 
     const saveDemoPrefs = () => {
@@ -906,7 +961,8 @@
       const sidebarHidden = document.body.classList.contains('sidebar-hidden');
       const bungieInput = document.getElementById('bungieInput')?.value.trim() || window.fieldData.bungieInput;
       const membershipType = document.getElementById('membershipType')?.value || window.fieldData.membershipType || '-1';
-      localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden, bungieInput, membershipType }));
+      const characterId = document.getElementById('characterId')?.value || window.fieldData.characterId || '';
+      localStorage.setItem(DEMO_PREFS_KEY, JSON.stringify({ activeView, activeLayout, sidebarHidden, bungieInput, membershipType, characterId }));
     };
 
     const applyDemoPrefs = () => {
@@ -917,6 +973,15 @@
         }
         if (prefs.membershipType && PLATFORM_LABELS[prefs.membershipType]) {
           document.getElementById('membershipType').value = prefs.membershipType;
+        }
+        if (prefs.characterId) {
+          const characterSelect = document.getElementById('characterId');
+          const savedOption = document.createElement('option');
+          savedOption.value = prefs.characterId;
+          savedOption.textContent = 'Saved Character';
+          characterSelect.appendChild(savedOption);
+          characterSelect.value = prefs.characterId;
+          window.fieldData.characterId = prefs.characterId;
         }
         renderBungieHistory();
         syncDemoIdentityFields();

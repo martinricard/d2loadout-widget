@@ -25,6 +25,13 @@
     },
     "group": "🔗 Connection"
   },
+  "characterId": {
+    "type": "textfield",
+    "label": "Character ID (optional)",
+    "value": "",
+    "placeholder": "Leave blank for most recently played",
+    "group": "Connection"
+  },
   "refreshRate": {
     "type": "number",
     "label": "Refresh Rate (seconds)",

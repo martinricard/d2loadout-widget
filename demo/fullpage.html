@@ -78,7 +78,8 @@
     .search-wrap input:focus { border-color: var(--gold); }
     .search-wrap input::placeholder { color: var(--text-dim); }
 
-    #platform-select {
+    #platform-select,
+    #character-select {
       background: var(--surface-2);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -90,9 +91,11 @@
       cursor: pointer;
     }
 
-    #platform-select:focus { border-color: var(--gold); }
+    #platform-select:focus,
+    #character-select:focus { border-color: var(--gold); }
 
-    #platform-select option {
+    #platform-select option,
+    #character-select option {
       background: var(--surface-2);
       color: var(--text);
     }
@@ -625,6 +628,9 @@
     <option value="3">Steam</option>
     <option value="6">Epic Games</option>
   </select>
+  <select id="character-select" aria-label="Destiny Character">
+    <option value="">Most Recently Played</option>
+  </select>
   <button class="nav-btn" onclick="applyAndFetch()">Load</button>
   <span id="nav-status"></span>
   <div class="nav-spacer"></div>
@@ -907,6 +913,7 @@
   let cfg = {
     bungieInput: '',
     membershipType: '-1',
+    characterId: '',
     refreshRate: 60,
     showWeapons: 'true',
     showArmor: 'true',
@@ -938,6 +945,36 @@
     '6': 'Epic Games'
   };
 
+  function renderCharacterOptions(characters = []) {
+    const select = document.getElementById('character-select');
+    if (!select) return;
+
+    const selectedCharacterId = String(cfg.characterId || '');
+    const mostRecentCharacter = characters.find(character => character.isMostRecent);
+    select.innerHTML = '';
+
+    const autoOption = document.createElement('option');
+    autoOption.value = '';
+    autoOption.textContent = mostRecentCharacter
+      ? `Most Recently Played (${mostRecentCharacter.class} ${mostRecentCharacter.light || ''})`
+      : 'Most Recently Played';
+    select.appendChild(autoOption);
+
+    characters.forEach(character => {
+      const option = document.createElement('option');
+      option.value = character.id;
+      option.textContent = `${character.class} ${character.light || ''}`;
+      if (character.lastPlayed) {
+        option.textContent += ` - ${new Date(character.lastPlayed).toLocaleDateString()}`;
+      }
+      select.appendChild(option);
+    });
+
+    const hasSelectedCharacter = characters.some(character => String(character.id) === selectedCharacterId);
+    select.value = hasSelectedCharacter ? selectedCharacterId : '';
+    cfg.characterId = select.value;
+  }
+
   function readStoredPrefs() {
     try {
       const demoPrefs = JSON.parse(localStorage.getItem(DEMO_PREFS_KEY) || '{}');
@@ -955,7 +992,8 @@
   function saveStoredPrefs() {
     localStorage.setItem(FULLPAGE_PREFS_KEY, JSON.stringify({
       bungieInput: cfg.bungieInput,
-      membershipType: cfg.membershipType
+      membershipType: cfg.membershipType,
+      characterId: cfg.characterId
     }));
   }
 
@@ -1013,6 +1051,7 @@
   function syncIdentityFromControls() {
     cfg.bungieInput = document.getElementById('bungie-input').value.trim();
     cfg.membershipType = document.getElementById('platform-select').value || '-1';
+    cfg.characterId = document.getElementById('character-select').value || '';
   }
 
   function applyKnownPlatformForBungieId() {
@@ -1034,14 +1073,28 @@
     if (!p.has('platform') && !p.has('membershipType') && storedPrefs.membershipType) {
       cfg.membershipType = storedPrefs.membershipType;
     }
+    if (!p.has('characterId') && !p.has('character') && storedPrefs.characterId) {
+      cfg.characterId = storedPrefs.characterId;
+    }
 
-    const map = { b:'bungieInput', platform:'membershipType', membershipType:'membershipType', r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
+    const map = { b:'bungieInput', platform:'membershipType', membershipType:'membershipType', characterId:'characterId', character:'characterId',
+      r:'refreshRate', weapons:'showWeapons', armor:'showArmor',
       stats:'showStats', subclass:'showSubclass', artifact:'showArtifact',
       perks:'showPerks', dimlink:'showDIMLink' };
     for (const [k, v] of Object.entries(map)) if (p.has(k)) cfg[v] = p.get(k);
     if (p.has('obs') || p.has('overlay')) document.body.classList.add('obs-mode');
     if (cfg.bungieInput) document.getElementById('bungie-input').value = cfg.bungieInput;
     document.getElementById('platform-select').value = cfg.membershipType || '-1';
+    if (cfg.characterId) {
+      const characterSelect = document.getElementById('character-select');
+      const savedOption = document.createElement('option');
+      savedOption.value = cfg.characterId;
+      savedOption.textContent = 'Saved Character';
+      characterSelect.appendChild(savedOption);
+      characterSelect.value = cfg.characterId;
+    } else {
+      document.getElementById('character-select').value = '';
+    }
     renderBungieHistory();
   }
 
@@ -1050,7 +1103,8 @@
     return `${base}?${new URLSearchParams({ b:cfg.bungieInput, r:cfg.refreshRate,
       weapons:cfg.showWeapons, armor:cfg.showArmor, stats:cfg.showStats,
       subclass:cfg.showSubclass, artifact:cfg.showArtifact,
-      perks:cfg.showPerks, dimlink:cfg.showDIMLink, platform:cfg.membershipType, obs:'1' })}`;
+      perks:cfg.showPerks, dimlink:cfg.showDIMLink, platform:cfg.membershipType,
+      characterId:cfg.characterId, obs:'1' })}`;
   }
 
   function copyObsUrl() {
@@ -1097,6 +1151,9 @@
       if (cfg.membershipType && cfg.membershipType !== '-1') {
         params.set('membershipType', cfg.membershipType);
       }
+      if (cfg.characterId) {
+        params.set('characterId', cfg.characterId);
+      }
 
       const fetchOptions = controller ? { signal: controller.signal } : {};
       let loadoutUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`;
@@ -1134,6 +1191,7 @@
       document.getElementById('main-col').classList.remove('hidden');
       document.getElementById('side-col').classList.remove('hidden');
 
+      renderCharacterOptions(data.characters || []);
       displayLoadout(data);
       isFirstLoad = false;
 
@@ -1563,12 +1621,20 @@
   });
 
   document.getElementById('bungie-input').addEventListener('change', () => {
+    document.getElementById('character-select').value = '';
     applyKnownPlatformForBungieId();
     syncIdentityFromControls();
     saveStoredPrefs();
   });
 
   document.getElementById('platform-select').addEventListener('change', () => {
+    document.getElementById('character-select').value = '';
+    syncIdentityFromControls();
+    saveStoredPrefs();
+    if (cfg.bungieInput) fetchLoadout();
+  });
+
+  document.getElementById('character-select').addEventListener('change', () => {
     syncIdentityFromControls();
     saveStoredPrefs();
     if (cfg.bungieInput) fetchLoadout();

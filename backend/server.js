@@ -183,6 +183,7 @@ app.get('/', (req, res) => {
       'GET /health - Health check',
       'GET /api/status - Check Bungie maintenance status',
       'GET /api/loadout/:platform/:membershipId - Get character loadout',
+      'GET /api/characters/:platform/:membershipId - Get available characters',
       'GET /api/search/:displayName - Search player by Bungie name'
     ]
   });
@@ -354,7 +355,75 @@ function selectDestinyPlayer(players, requestedMembershipType, displayName) {
   throw new Error(`${displayName} was found, but no ${requestedPlatform} account was returned. Available platforms: ${availablePlatforms || 'none'}.`);
 }
 
-async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType = null) {
+function getClassName(classType) {
+  const classNames = {
+    0: 'Titan',
+    1: 'Hunter',
+    2: 'Warlock'
+  };
+  return classNames[classType] || 'Unknown';
+}
+
+function getMostRecentCharacterId(characters) {
+  let mostRecentCharacterId = null;
+  let mostRecentDate = null;
+
+  for (const [charId, charData] of Object.entries(characters)) {
+    const lastPlayed = new Date(charData.dateLastPlayed);
+    if (!mostRecentDate || lastPlayed > mostRecentDate) {
+      mostRecentDate = lastPlayed;
+      mostRecentCharacterId = charId;
+    }
+  }
+
+  return mostRecentCharacterId;
+}
+
+function formatCharacterSummary(characterId, character, mostRecentCharacterId) {
+  return {
+    id: characterId,
+    class: getClassName(character.classType),
+    classType: character.classType,
+    race: character.raceType,
+    light: character.light,
+    emblemPath: character.emblemPath ? `https://www.bungie.net${character.emblemPath}` : null,
+    emblemBackgroundPath: character.emblemBackgroundPath ? `https://www.bungie.net${character.emblemBackgroundPath}` : null,
+    lastPlayed: character.dateLastPlayed,
+    isMostRecent: characterId === mostRecentCharacterId
+  };
+}
+
+function formatCharacterList(characters) {
+  const mostRecentCharacterId = getMostRecentCharacterId(characters);
+  return Object.entries(characters)
+    .map(([characterId, character]) => formatCharacterSummary(characterId, character, mostRecentCharacterId))
+    .sort((a, b) => new Date(b.lastPlayed) - new Date(a.lastPlayed));
+}
+
+function selectCharacterId(characters, requestedCharacterId) {
+  const mostRecentCharacterId = getMostRecentCharacterId(characters);
+  if (!mostRecentCharacterId) {
+    throw new Error('This player has no Destiny 2 characters');
+  }
+
+  const normalizedCharacterId = String(requestedCharacterId || '').trim();
+  if (!normalizedCharacterId || normalizedCharacterId === '-1' || normalizedCharacterId.toLowerCase() === 'auto') {
+    return mostRecentCharacterId;
+  }
+
+  if (characters[normalizedCharacterId]) {
+    return normalizedCharacterId;
+  }
+
+  const availableCharacters = formatCharacterList(characters)
+    .map(character => `${character.class} (${character.id})`)
+    .join(', ');
+  const error = new Error(`Character ${normalizedCharacterId} was not found on this account. Available characters: ${availableCharacters || 'none'}.`);
+  error.statusCode = 400;
+  throw error;
+}
+
+async function resolveDestinyMembership(platformOrName, membershipIdOrTag, requestedMembershipType = null) {
   let platform = platformOrName;
   let membershipId = membershipIdOrTag;
   
@@ -377,19 +446,45 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
     platform = selectedPlayer.membershipType;
     membershipId = selectedPlayer.membershipId;
   }
-  
-  // Fetch profile with character equipment and stats
-  // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 202=CharacterProgressions,
-  //             205=CharacterEquipment, 300=ItemInstances, 304=ItemStats, 305=ItemSockets
-  const components = '?components=100,104,200,202,205,300,304,305';
-  const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/${components}`;
-  
+
+  return { platform, membershipId };
+}
+
+async function fetchDestinyProfile(platform, membershipId, components) {
+  const profileUrl = `${BUNGIE_API_BASE}/Destiny2/${platform}/Profile/${membershipId}/?components=${components}`;
+
   const response = await axios.get(profileUrl, {
     headers: { 'X-API-Key': process.env.BUNGIE_API_KEY },
     timeout: BUNGIE_REQUEST_TIMEOUT_MS
   });
+
+  return response.data.Response;
+}
+
+async function fetchCharacterList(platformOrName, membershipIdOrTag, requestedMembershipType = null) {
+  const { platform, membershipId } = await resolveDestinyMembership(platformOrName, membershipIdOrTag, requestedMembershipType);
+  const data = await fetchDestinyProfile(platform, membershipId, '100,200');
+  const characters = data.characters?.data || {};
+
+  if (Object.keys(characters).length === 0) {
+    throw new Error('This player has no Destiny 2 characters');
+  }
+
+  return {
+    platform,
+    membershipId,
+    displayName: data.profile?.data?.userInfo?.displayName || 'Guardian',
+    characters: formatCharacterList(characters)
+  };
+}
+
+async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType = null, requestedCharacterId = null) {
+  const { platform, membershipId } = await resolveDestinyMembership(platformOrName, membershipIdOrTag, requestedMembershipType);
   
-  const data = response.data.Response;
+  // Fetch profile with character equipment and stats
+  // Components: 100=Profile, 104=ProfileProgression, 200=Characters, 202=CharacterProgressions,
+  //             205=CharacterEquipment, 300=ItemInstances, 304=ItemStats, 305=ItemSockets
+  const data = await fetchDestinyProfile(platform, membershipId, '100,104,200,202,205,300,304,305');
   const characters = data.characters?.data || {};
   const equipment = data.characterEquipment?.data || {};
   const characterProgressions = data.characterProgressions?.data || {};
@@ -400,25 +495,19 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
     sockets: data.itemComponents?.sockets?.data || {}
   };
   
-  // Find the most recently played character
-  let mostRecentCharacterId = null;
-  let mostRecentDate = null;
-  
-  for (const [charId, charData] of Object.entries(characters)) {
-    const lastPlayed = new Date(charData.dateLastPlayed);
-    if (!mostRecentDate || lastPlayed > mostRecentDate) {
-      mostRecentDate = lastPlayed;
-      mostRecentCharacterId = charId;
-    }
-  }
-  
+  const mostRecentCharacterId = getMostRecentCharacterId(characters);
   if (!mostRecentCharacterId) {
     throw new Error('This player has no Destiny 2 characters');
   }
-  
-  const character = characters[mostRecentCharacterId];
-  const characterEquipment = equipment[mostRecentCharacterId];
-  const characterProgression = characterProgressions[mostRecentCharacterId];
+
+  const characterId = selectCharacterId(characters, requestedCharacterId);
+  const character = characters[characterId];
+  const characterEquipment = equipment[characterId];
+  const characterProgression = characterProgressions[characterId];
+
+  if (!characterEquipment) {
+    throw new Error(`No equipped loadout data returned for character ${characterId}`);
+  }
   
   // Extract artifact mods
   const artifactMods = await extractArtifactMods(characterProgression);
@@ -450,9 +539,11 @@ async function fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMemb
     membershipId,
     data,
     character,
+    characterId,
     mostRecentCharacterId,
     characterEquipment,
     characterProgression,
+    characters: formatCharacterList(characters),
     itemComponents,
     artifactMods,
     artifactInfo,
@@ -478,13 +569,14 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
   
   try {
     const requestedMembershipType = normalizeRequestedMembershipType(req.query.membershipType || req.query.platform);
+    const requestedCharacterId = req.query.characterId || req.query.character || null;
 
     // Use shared helper to fetch all data
-    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType);
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType, requestedCharacterId);
     
     // Process the loadout
     const loadout = await processLoadout(
-      loadoutData.mostRecentCharacterId,
+      loadoutData.characterId,
       loadoutData.characterEquipment,
       loadoutData.itemComponents,
       loadoutData.character
@@ -492,13 +584,6 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     
     // Add artifact mods to loadout
     loadout.artifactMods = loadoutData.artifactMods;
-    
-    // Get class name
-    const classNames = {
-      0: 'Titan',
-      1: 'Hunter',
-      2: 'Warlock'
-    };
     
     // ============================================================================
     // LOG STATS BEING SENT TO CLIENT
@@ -514,8 +599,8 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
       platform: loadoutData.platform,
       platformName: getPlatformName(parseInt(loadoutData.platform)),
       character: {
-        id: loadoutData.mostRecentCharacterId,
-        class: classNames[loadoutData.character.classType] || 'Unknown',
+        id: loadoutData.characterId,
+        class: getClassName(loadoutData.character.classType),
         race: loadoutData.character.raceType,
         light: loadoutData.character.light,
         emblemPath: loadoutData.character.emblemPath 
@@ -526,6 +611,7 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
           : null,
         lastPlayed: loadoutData.character.dateLastPlayed
       },
+      characters: loadoutData.characters,
       artifact: loadoutData.seasonalArtifact ? {
         name: loadoutData.artifactInfo?.name || 'Unknown Artifact',
         icon: loadoutData.artifactInfo?.icon || '',
@@ -540,9 +626,44 @@ app.get('/api/loadout/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     
   } catch (error) {
     console.error('Loadout fetch error:', error.message);
-    res.status(error.response?.status || 500).json({ 
+    res.status(error.statusCode || error.response?.status || 500).json({
       success: false,
       error: 'Failed to fetch loadout',
+      message: error.response?.data?.Message || error.message,
+      errorCode: error.response?.data?.ErrorCode || 'Unknown'
+    });
+  }
+});
+
+app.get('/api/characters/:platformOrName/:membershipIdOrTag?', async (req, res) => {
+  const { platformOrName, membershipIdOrTag } = req.params;
+
+  if (!process.env.BUNGIE_API_KEY) {
+    return res.status(500).json({
+      success: false,
+      error: 'Server configuration error',
+      message: 'Bungie API key not configured'
+    });
+  }
+
+  try {
+    const requestedMembershipType = normalizeRequestedMembershipType(req.query.membershipType || req.query.platform);
+    const characterData = await fetchCharacterList(platformOrName, membershipIdOrTag, requestedMembershipType);
+
+    res.json({
+      success: true,
+      displayName: characterData.displayName,
+      membershipId: characterData.membershipId,
+      platform: characterData.platform,
+      platformName: getPlatformName(parseInt(characterData.platform)),
+      characters: characterData.characters,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Character list fetch error:', error.message);
+    res.status(error.statusCode || error.response?.status || 500).json({
+      success: false,
+      error: 'Failed to fetch characters',
       message: error.response?.data?.Message || error.message,
       errorCode: error.response?.data?.ErrorCode || 'Unknown'
     });
@@ -560,11 +681,12 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
     const { platformOrName, membershipIdOrTag } = req.params;
     const format = req.query.format;
     const requestedMembershipType = normalizeRequestedMembershipType(req.query.membershipType || req.query.platform);
+    const requestedCharacterId = req.query.characterId || req.query.character || null;
     
     console.log(`[DIM Link] Request for: ${platformOrName}${membershipIdOrTag ? '/' + membershipIdOrTag : ''}`);
     
     // Use shared helper to fetch data and generate DIM link
-    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType);
+    const loadoutData = await fetchLoadoutData(platformOrName, membershipIdOrTag, requestedMembershipType, requestedCharacterId);
     
     if (!loadoutData.dimLink) {
       return res.status(500).json({ 
@@ -584,7 +706,8 @@ app.get('/api/dimlink/:platformOrName/:membershipIdOrTag?', async (req, res) => 
         success: true,
         dimLink: loadoutData.dimLink,
         displayName: loadoutData.data.profile?.data?.userInfo?.displayName || 'Guardian',
-        characterClass: ['Titan', 'Hunter', 'Warlock'][loadoutData.character.classType] || 'Unknown'
+        characterId: loadoutData.characterId,
+        characterClass: getClassName(loadoutData.character.classType)
       });
     }
     

@@ -444,9 +444,21 @@ function getRequestedMembershipType() {
     : '';
 }
 
+function getRequestedCharacterId() {
+  const characterId = String(fieldData.characterId || fieldData.character || 'auto').trim();
+  return characterId && characterId !== '-1' && characterId.toLowerCase() !== 'auto'
+    ? characterId
+    : '';
+}
+
 async function buildLoadoutApiUrl(bungieId, fetchOptions = {}) {
   const params = new URLSearchParams({ t: String(Date.now()) });
   const membershipType = getRequestedMembershipType();
+  const characterId = getRequestedCharacterId();
+
+  if (characterId) {
+    params.set('characterId', characterId);
+  }
 
   if (membershipType && bungieId.includes('#')) {
     const searchUrl = `https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(bungieId)}`;
@@ -530,6 +542,7 @@ async function fetchLoadout() {
     // Hide error, show data
     hideError();
     displayLoadout(data);
+    window.dispatchEvent(new CustomEvent('d2LoadoutLoaded', { detail: data }));
     
     // Mark first load as complete
     isFirstLoad = false;
