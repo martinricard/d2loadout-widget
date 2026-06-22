@@ -414,12 +414,13 @@ function renderStats(stats) {
     statOrder.forEach(statName => {
         const stat = stats.find(s => s.name === statName);
         if (!stat) return;
+        const value = Math.max(0, Number(stat.value) || 0);
         
         const row = document.createElement('div');
         row.className = 'stat-row';
         
         row.innerHTML = `
-            <div class="stat-value">${stat.value}</div>
+            <div class="stat-value">${value}</div>
             <div class="stat-label">
                 ${stat.icon ? `<div class="stat-icon" style="background-image: url(${stat.icon})"></div>` : ''}
                 <div class="stat-name">${stat.name}</div>

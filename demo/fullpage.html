@@ -1580,9 +1580,9 @@
 
     document.querySelectorAll('.stat-row[data-stat]').forEach(row => {
       const stat = row.dataset.stat;
-      const val = stats[stat] || 0;
-      const tier = Math.floor(val / 10);
-      const pct = Math.min((val / 200) * 100, 100);
+      const val = Math.max(0, Number(stats[stat]) || 0);
+      const tier = Math.max(0, Math.floor(val / 10));
+      const pct = Math.min(Math.max((val / 200) * 100, 0), 100);
 
       row.querySelector('.stat-val').textContent = val;
       row.querySelector('.stat-tier').textContent = `T${tier}`;

@@ -2007,8 +2007,9 @@ async function processLoadout(characterId, equipment, itemComponents, characterD
     for (const [statHash, statValue] of Object.entries(characterData.stats)) {
       const statName = STAT_HASHES[statHash];
       if (statName) {
-        totalStats[statName] = statValue;
-        console.log(`[STATS] ${statName} (hash ${statHash}): ${statValue}`);
+        const normalizedStatValue = Math.max(0, Number(statValue) || 0);
+        totalStats[statName] = normalizedStatValue;
+        console.log(`[STATS] ${statName} (hash ${statHash}): ${normalizedStatValue}`);
       }
     }
     
