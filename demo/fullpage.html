@@ -434,8 +434,9 @@
       font-size: 10px; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.5px;
       color: var(--text-muted); text-align: center;
-      max-width: 60px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 72px;
+      white-space: normal; overflow: visible; text-overflow: clip;
+      word-break: break-word; line-height: 1.2;
     }
 
     .subclass-abilities {
@@ -946,6 +947,10 @@
   let loadoutAbortController = null;
   let loadoutRequestId = 0;
   const LOADOUT_FETCH_TIMEOUT_MS = 20000;
+  const LOADOUT_CACHE_TTL_MS = 120000;
+  const loadoutCache = new Map();
+  const loadoutPrefetches = new Map();
+  const selectedPlayerCache = new Map();
 
   const FULLPAGE_PREFS_KEY = 'd2loadoutFullpagePrefs';
   const DEMO_PREFS_KEY = 'd2loadoutDemoPrefs';
@@ -1012,18 +1017,25 @@
   async function buildAccountApiUrl(resource, id, fetchOptions = {}) {
     const params = new URLSearchParams({ t: String(Date.now()) });
     if (cfg.membershipType && cfg.membershipType !== '-1' && id.includes('#')) {
-      const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(id)}`, fetchOptions);
-      if (!searchRes.ok) {
-        const e = await searchRes.json().catch(() => ({}));
-        throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
-      }
-
-      const searchData = await searchRes.json();
-      const selectedPlayer = (searchData.players || [])
-        .find(player => Number(player.membershipType) === Number(cfg.membershipType));
+      const playerCacheKey = `${id.trim().toLowerCase()}|${cfg.membershipType}`;
+      let selectedPlayer = selectedPlayerCache.get(playerCacheKey);
 
       if (!selectedPlayer) {
-        throw new Error(`${id} was found, but not on the selected platform.`);
+        const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(id)}`, fetchOptions);
+        if (!searchRes.ok) {
+          const e = await searchRes.json().catch(() => ({}));
+          throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
+        }
+
+        const searchData = await searchRes.json();
+        selectedPlayer = (searchData.players || [])
+          .find(player => Number(player.membershipType) === Number(cfg.membershipType));
+
+        if (!selectedPlayer) {
+          throw new Error(`${id} was found, but not on the selected platform.`);
+        }
+
+        selectedPlayerCache.set(playerCacheKey, selectedPlayer);
       }
 
       return `https://d2loadout-widget.onrender.com/api/${resource}/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
@@ -1034,6 +1046,96 @@
     }
 
     return `https://d2loadout-widget.onrender.com/api/${resource}/${encodeURIComponent(id)}?${params.toString()}`;
+  }
+
+  function getLoadoutCacheKey(id, characterId = cfg.characterId) {
+    return `${String(id || '').trim().toLowerCase()}|${cfg.membershipType || 'auto'}|${characterId || 'auto'}`;
+  }
+
+  function getCachedLoadout(cacheKey) {
+    const cached = loadoutCache.get(cacheKey);
+    if (!cached) return null;
+    if (Date.now() - cached.cachedAt > LOADOUT_CACHE_TTL_MS) {
+      loadoutCache.delete(cacheKey);
+      return null;
+    }
+    return cached.data;
+  }
+
+  function cacheLoadoutData(id, requestedCharacterId, data) {
+    if (!data?.success) return;
+
+    const entry = { data, cachedAt: Date.now() };
+    loadoutCache.set(getLoadoutCacheKey(id, requestedCharacterId), entry);
+
+    if (data.characterId) {
+      loadoutCache.set(getLoadoutCacheKey(id, data.characterId), entry);
+    }
+  }
+
+  async function buildLoadoutUrl(id, characterId, fetchOptions = {}) {
+    const url = new URL(await buildAccountApiUrl('loadout', id, fetchOptions));
+    if (characterId) {
+      url.searchParams.set('characterId', characterId);
+    }
+    return url.toString();
+  }
+
+  function scheduleRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(fetchLoadout, cfg.refreshRate * 1000);
+  }
+
+  async function renderLoadoutData(data, fetchOptions = {}) {
+    hideError();
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('main-col').classList.remove('hidden');
+    document.getElementById('side-col').classList.remove('hidden');
+
+    const characters = data.characters || [];
+    if (characters.length) {
+      renderCharacterOptions(characters);
+    } else {
+      await fetchCharacterOptions(fetchOptions)
+        .catch(error => {
+          console.warn('Failed to load character options:', error);
+          setCharacterSelectorState('Character list unavailable', true, cfg.characterId || '');
+        });
+    }
+
+    displayLoadout(data);
+    isFirstLoad = false;
+
+    const now = new Date();
+    document.getElementById('last-updated').textContent = `Updated ${now.toLocaleTimeString()}`;
+    setStatus('Loaded');
+  }
+
+  function prefetchCharacterLoadouts(characters = [], id, activeCharacterId) {
+    characters.forEach(character => {
+      const characterId = String(character.id || '');
+      if (!characterId || characterId === String(activeCharacterId || '')) return;
+
+      const cacheKey = getLoadoutCacheKey(id, characterId);
+      if (getCachedLoadout(cacheKey) || loadoutPrefetches.has(cacheKey)) return;
+
+      const prefetch = buildLoadoutUrl(id, characterId)
+        .then(url => fetch(url))
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (data?.success) {
+            cacheLoadoutData(id, characterId, data);
+          }
+          return data;
+        })
+        .catch(error => {
+          console.warn('Character prefetch failed:', error);
+          return null;
+        })
+        .finally(() => loadoutPrefetches.delete(cacheKey));
+
+      loadoutPrefetches.set(cacheKey, prefetch);
+    });
   }
 
   async function fetchCharacterOptions(fetchOptions = {}) {
@@ -1204,6 +1306,22 @@
     const id = cfg.bungieInput;
     if (!id) { setStatus('Enter a Bungie ID above'); return; }
 
+    const requestedCharacterId = cfg.characterId || '';
+    const cacheKey = getLoadoutCacheKey(id, requestedCharacterId);
+    const cachedLoadout = getCachedLoadout(cacheKey);
+    if (cachedLoadout) {
+      loadoutRequestId++;
+      if (loadoutAbortController) {
+        loadoutAbortController.abort();
+        loadoutAbortController = null;
+      }
+
+      await renderLoadoutData(cachedLoadout);
+      prefetchCharacterLoadouts(cachedLoadout.characters || [], id, cachedLoadout.characterId);
+      scheduleRefresh();
+      return;
+    }
+
     const requestId = ++loadoutRequestId;
     if (loadoutAbortController) {
       loadoutAbortController.abort();
@@ -1223,37 +1341,8 @@
         n.textContent = 'Loading…'; n.classList.add('loading');
       }
 
-      const params = new URLSearchParams({ t: String(Date.now()) });
-      if (cfg.membershipType && cfg.membershipType !== '-1') {
-        params.set('membershipType', cfg.membershipType);
-      }
-      if (cfg.characterId) {
-        params.set('characterId', cfg.characterId);
-      }
-
       const fetchOptions = controller ? { signal: controller.signal } : {};
-      let loadoutUrl = `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(id)}?${params.toString()}`;
-      if (cfg.membershipType && cfg.membershipType !== '-1' && id.includes('#')) {
-        const searchRes = await fetch(`https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(id)}`, fetchOptions);
-        if (!searchRes.ok) {
-          const e = await searchRes.json().catch(() => ({}));
-          throw new Error(e?.message || `Player search failed: ${searchRes.status}`);
-        }
-
-        const searchData = await searchRes.json();
-        const selectedPlayer = (searchData.players || [])
-          .find(player => Number(player.membershipType) === Number(cfg.membershipType));
-
-        if (!selectedPlayer) {
-          const availablePlatforms = (searchData.players || [])
-            .map(player => player.platformName)
-            .filter(Boolean)
-            .join(', ');
-          throw new Error(`${id} was found, but not on the selected platform. Available platforms: ${availablePlatforms || 'none'}.`);
-        }
-
-        loadoutUrl = `https://d2loadout-widget.onrender.com/api/loadout/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
-      }
+      const loadoutUrl = await buildLoadoutUrl(id, requestedCharacterId, fetchOptions);
 
       const res = await fetch(loadoutUrl, fetchOptions);
       if (!res.ok) { const e = await res.json().catch(()=>{}); throw new Error(e?.message || `API Error ${res.status}`); }
@@ -1261,6 +1350,7 @@
       const data = await res.json();
       if (requestId !== loadoutRequestId) return;
       if (!data.success) throw new Error(data.message || 'Failed to fetch loadout');
+      cacheLoadoutData(id, requestedCharacterId, data);
 
       hideError();
       document.getElementById('empty-state').classList.add('hidden');
@@ -1282,7 +1372,8 @@
 
       const now = new Date();
       document.getElementById('last-updated').textContent = `Updated ${now.toLocaleTimeString()}`;
-      setStatus(`✓ Loaded`);
+      setStatus('Loaded');
+      prefetchCharacterLoadouts(data.characters || [], id, data.characterId);
     } catch(err) {
       if (requestId !== loadoutRequestId) return;
 
@@ -1297,8 +1388,7 @@
       if (requestId !== loadoutRequestId) return;
       loadoutAbortController = null;
 
-      if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(fetchLoadout, cfg.refreshRate * 1000);
+      scheduleRefresh();
     }
   }
 
@@ -1723,6 +1813,23 @@
     syncIdentityFromControls();
     saveStoredPrefs();
     if (cfg.bungieInput) fetchLoadout();
+  });
+
+  window.setD2LoadoutCharacter = function(characterId) {
+    const select = document.getElementById('character-select');
+    cfg.characterId = characterId || '';
+    if (select) {
+      select.value = cfg.characterId;
+    }
+    saveStoredPrefs();
+    if (cfg.bungieInput) fetchLoadout();
+  };
+
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type === 'd2loadout:setCharacter') {
+      window.setD2LoadoutCharacter(event.data.characterId || '');
+    }
   });
 
   window.addEventListener('beforeunload', () => {

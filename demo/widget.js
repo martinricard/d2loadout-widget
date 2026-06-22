@@ -13,6 +13,10 @@ let maintenanceCheckInterval = null;
 let loadoutAbortController = null;
 let loadoutRequestId = 0;
 const LOADOUT_FETCH_TIMEOUT_MS = 20000;
+const LOADOUT_CACHE_TTL_MS = 120000;
+const loadoutCache = new Map();
+const loadoutPrefetches = new Map();
+const playerRouteCache = new Map();
 
 // Widget initialization
 window.addEventListener('onWidgetLoad', function (obj) {
@@ -451,35 +455,77 @@ function getRequestedCharacterId() {
     : '';
 }
 
-async function buildLoadoutApiUrl(bungieId, fetchOptions = {}) {
+function getIdentityCacheKey(bungieId, membershipType = getRequestedMembershipType()) {
+  return `${String(bungieId || '').trim().toLowerCase()}|${membershipType || 'auto'}`;
+}
+
+function getLoadoutCacheKey(bungieId, membershipType = getRequestedMembershipType(), characterId = getRequestedCharacterId()) {
+  return `${getIdentityCacheKey(bungieId, membershipType)}|${characterId || 'auto'}`;
+}
+
+function getCachedLoadout(cacheKey) {
+  const cached = loadoutCache.get(cacheKey);
+  if (!cached) return null;
+  if (Date.now() - cached.cachedAt > LOADOUT_CACHE_TTL_MS) {
+    loadoutCache.delete(cacheKey);
+    return null;
+  }
+  return cached.data;
+}
+
+function cacheLoadoutData(bungieId, membershipType, requestedCharacterId, data) {
+  if (!data?.success) return;
+
+  const entry = { data, cachedAt: Date.now() };
+  loadoutCache.set(getLoadoutCacheKey(bungieId, membershipType, requestedCharacterId), entry);
+
+  if (data.characterId) {
+    loadoutCache.set(getLoadoutCacheKey(bungieId, membershipType, data.characterId), entry);
+  }
+}
+
+async function resolveSelectedPlayer(bungieId, membershipType, fetchOptions = {}) {
+  const routeCacheKey = getIdentityCacheKey(bungieId, membershipType);
+  if (playerRouteCache.has(routeCacheKey)) {
+    return playerRouteCache.get(routeCacheKey);
+  }
+
+  const searchUrl = `https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(bungieId)}`;
+  const searchResponse = await fetch(searchUrl, fetchOptions);
+  if (!searchResponse.ok) {
+    const errorData = await searchResponse.json().catch(() => ({}));
+    throw new Error(errorData.message || `Player search failed: ${searchResponse.status}`);
+  }
+
+  const searchData = await searchResponse.json();
+  const selectedPlayer = (searchData.players || [])
+    .find(player => Number(player.membershipType) === Number(membershipType));
+
+  if (!selectedPlayer) {
+    const availablePlatforms = (searchData.players || [])
+      .map(player => player.platformName)
+      .filter(Boolean)
+      .join(', ');
+    throw new Error(`${bungieId} was found, but not on the selected platform. Available platforms: ${availablePlatforms || 'none'}.`);
+  }
+
+  playerRouteCache.set(routeCacheKey, selectedPlayer);
+  return selectedPlayer;
+}
+
+async function buildLoadoutApiUrl(bungieId, fetchOptions = {}, characterIdOverride) {
   const params = new URLSearchParams({ t: String(Date.now()) });
   const membershipType = getRequestedMembershipType();
-  const characterId = getRequestedCharacterId();
+  const characterId = characterIdOverride === undefined
+    ? getRequestedCharacterId()
+    : String(characterIdOverride || '').trim();
 
   if (characterId) {
     params.set('characterId', characterId);
   }
 
   if (membershipType && bungieId.includes('#')) {
-    const searchUrl = `https://d2loadout-widget.onrender.com/api/search/${encodeURIComponent(bungieId)}`;
-    const searchResponse = await fetch(searchUrl, fetchOptions);
-    if (!searchResponse.ok) {
-      const errorData = await searchResponse.json().catch(() => ({}));
-      throw new Error(errorData.message || `Player search failed: ${searchResponse.status}`);
-    }
-
-    const searchData = await searchResponse.json();
-    const selectedPlayer = (searchData.players || [])
-      .find(player => Number(player.membershipType) === Number(membershipType));
-
-    if (!selectedPlayer) {
-      const availablePlatforms = (searchData.players || [])
-        .map(player => player.platformName)
-        .filter(Boolean)
-        .join(', ');
-      throw new Error(`${bungieId} was found, but not on the selected platform. Available platforms: ${availablePlatforms || 'none'}.`);
-    }
-
+    const selectedPlayer = await resolveSelectedPlayer(bungieId, membershipType, fetchOptions);
     return `https://d2loadout-widget.onrender.com/api/loadout/${selectedPlayer.membershipType}/${selectedPlayer.membershipId}?${params.toString()}`;
   }
 
@@ -490,11 +536,76 @@ async function buildLoadoutApiUrl(bungieId, fetchOptions = {}) {
   return `https://d2loadout-widget.onrender.com/api/loadout/${encodeURIComponent(bungieId)}?${params.toString()}`;
 }
 
+function renderLoadoutData(data) {
+  hideError();
+  displayLoadout(data);
+  window.dispatchEvent(new CustomEvent('d2LoadoutLoaded', { detail: data }));
+
+  isFirstLoad = false;
+
+  const now = new Date();
+  document.getElementById('lastUpdated').textContent =
+    `Last updated: ${now.toLocaleTimeString()}`;
+
+  updateDIMLink(data.dimLink);
+}
+
+function scheduleRefresh() {
+  const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(fetchLoadout, refreshRate);
+}
+
+function prefetchCharacterLoadouts(characters = [], bungieId, membershipType, activeCharacterId) {
+  characters.forEach(character => {
+    const characterId = String(character.id || '');
+    if (!characterId || characterId === String(activeCharacterId || '')) return;
+
+    const cacheKey = getLoadoutCacheKey(bungieId, membershipType, characterId);
+    if (getCachedLoadout(cacheKey) || loadoutPrefetches.has(cacheKey)) return;
+
+    const prefetch = buildLoadoutApiUrl(bungieId, {}, characterId)
+      .then(url => fetch(url))
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data?.success) {
+          cacheLoadoutData(bungieId, membershipType, characterId, data);
+        }
+        return data;
+      })
+      .catch(error => {
+        console.warn('[D2 Loadout Widget] Character prefetch failed:', error);
+        return null;
+      })
+      .finally(() => loadoutPrefetches.delete(cacheKey));
+
+    loadoutPrefetches.set(cacheKey, prefetch);
+  });
+}
+
 async function fetchLoadout() {
   const bungieId = (fieldData.bungieInput || '').trim();
   
   if (!bungieId || bungieId === '') {
     showError('Please enter your Bungie name in widget settings (e.g., Marty#2689)');
+    return;
+  }
+
+  const membershipType = getRequestedMembershipType();
+  const requestedCharacterId = getRequestedCharacterId();
+  const cacheKey = getLoadoutCacheKey(bungieId, membershipType, requestedCharacterId);
+  const cachedLoadout = getCachedLoadout(cacheKey);
+  if (cachedLoadout) {
+    loadoutRequestId++;
+    if (loadoutAbortController) {
+      loadoutAbortController.abort();
+      loadoutAbortController = null;
+    }
+
+    console.log('[D2 Loadout Widget] Using cached loadout:', cacheKey);
+    renderLoadoutData(cachedLoadout);
+    prefetchCharacterLoadouts(cachedLoadout.characters || [], bungieId, membershipType, cachedLoadout.characterId);
+    scheduleRefresh();
     return;
   }
 
@@ -538,22 +649,10 @@ async function fetchLoadout() {
     }
     
     console.log('[D2 Loadout Widget] Loadout data received:', data);
+    cacheLoadoutData(bungieId, membershipType, requestedCharacterId, data);
     
-    // Hide error, show data
-    hideError();
-    displayLoadout(data);
-    window.dispatchEvent(new CustomEvent('d2LoadoutLoaded', { detail: data }));
-    
-    // Mark first load as complete
-    isFirstLoad = false;
-    
-    // Update last updated time
-    const now = new Date();
-    document.getElementById('lastUpdated').textContent = 
-      `Last updated: ${now.toLocaleTimeString()}`;
-    
-    // Update DIM link if available and enabled
-    updateDIMLink(data.dimLink);
+    renderLoadoutData(data);
+    prefetchCharacterLoadouts(data.characters || [], bungieId, membershipType, data.characterId);
     
   } catch (error) {
     if (requestId !== loadoutRequestId) {
@@ -570,11 +669,7 @@ async function fetchLoadout() {
 
     if (requestId === loadoutRequestId) {
       loadoutAbortController = null;
-
-      // Setup refresh interval (moved to end like comp widget)
-      const refreshRate = parseInt(fieldData.refreshRate || 60) * 1000;
-      if (refreshInterval) clearInterval(refreshInterval);
-      refreshInterval = setInterval(fetchLoadout, refreshRate);
+      scheduleRefresh();
     }
   }
 }

@@ -536,7 +536,7 @@
   <div id="widget-area" class="widget-view">
     <!-- StreamElements browser source viewport (854x547) -->
     <div class="widget-viewport">
-      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=stat-clamp-1" title="Fullpage Demo" loading="lazy"></iframe>
+      <iframe id="fullpageFrame" class="fullpage-frame" src="fullpage.html?v=character-swap-1" title="Fullpage Demo" loading="lazy"></iframe>
       <div id="d2-loadout-widget" class="loadout-widget">
         <div class="widget-container">
         <!-- Maintenance Banner (hidden by default) -->
@@ -770,7 +770,7 @@
   </div>
   </div> <!-- Close widget-viewport -->
 </div> <!-- Close widget-area -->
-  <script src="widget.js?v=stat-clamp-1"></script>
+  <script src="widget.js?v=character-swap-1"></script>
   <script>
     // Demo configuration
     window.fieldData = {
@@ -972,7 +972,7 @@
       if (!frame) return;
 
       const params = new URLSearchParams();
-      params.set('v', 'stat-clamp-1');
+      params.set('v', 'character-swap-1');
       if (window.fieldData.bungieInput) params.set('b', window.fieldData.bungieInput);
       if (window.fieldData.membershipType && window.fieldData.membershipType !== '-1') {
         params.set('platform', window.fieldData.membershipType);
@@ -993,7 +993,26 @@
       }
     };
 
-    const syncDemoIdentityFields = () => {
+    const syncFullpageCharacterSelection = () => {
+      const frame = document.getElementById('fullpageFrame');
+      const isFullpageActive = document.getElementById('widget-area')?.classList.contains('fullpage-view');
+      if (!isFullpageActive || !frame?.contentWindow) return false;
+
+      const characterId = window.fieldData.characterId || '';
+      try {
+        if (typeof frame.contentWindow.setD2LoadoutCharacter === 'function') {
+          frame.contentWindow.setD2LoadoutCharacter(characterId);
+        } else {
+          frame.contentWindow.postMessage({ type: 'd2loadout:setCharacter', characterId }, window.location.origin);
+        }
+        return true;
+      } catch (error) {
+        console.warn('Failed to sync fullpage character selection:', error);
+        return false;
+      }
+    };
+
+    const syncDemoIdentityFields = ({ updateFrame = true } = {}) => {
       const newId = document.getElementById('bungieInput').value.trim();
       const membershipType = document.getElementById('membershipType').value || '-1';
       const characterId = document.getElementById('characterId').value || '';
@@ -1006,7 +1025,7 @@
       window.fieldData.membershipType = membershipType;
       window.fieldData.characterId = characterId;
       document.getElementById('currentPlatform').textContent = PLATFORM_LABELS[membershipType] || 'Auto';
-      updateFullpageFrame();
+      if (updateFrame) updateFullpageFrame();
     };
 
     // Update Bungie ID button
@@ -1030,9 +1049,10 @@
     });
 
     document.getElementById('characterId').addEventListener('change', () => {
-      syncDemoIdentityFields();
+      syncDemoIdentityFields({ updateFrame: false });
       saveDemoPrefs();
-      if (window.fieldData.bungieInput) {
+      const handledFullpage = syncFullpageCharacterSelection();
+      if (!handledFullpage && window.fieldData.bungieInput) {
         if (window.fetchLoadout) window.fetchLoadout();
       }
     });
